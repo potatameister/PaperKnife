@@ -1,4 +1,4 @@
-import { FileText, Shield, Zap, Download, Grid, ChevronRight, Moon, Sun } from 'lucide-react'
+import { Shield, Zap, Download, ChevronRight, Moon, Sun } from 'lucide-react'
 import { Theme, Tool } from '../types'
 
 export const PaperKnifeLogo = ({ size = 24 }: { size?: number }) => (
