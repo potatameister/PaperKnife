@@ -7,4 +7,5 @@ export interface Tool {
   title: string
   desc: string
   icon: LucideIcon
+  implemented?: boolean
 }

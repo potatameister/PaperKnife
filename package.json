@@ -13,10 +13,15 @@
     "@capacitor/android": "^8.0.2",
     "@capacitor/cli": "^8.0.2",
     "@capacitor/core": "^8.0.2",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "lucide-react": "^0.446.0",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.4.530",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.10",
