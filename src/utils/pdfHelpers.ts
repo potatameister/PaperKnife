@@ -22,7 +22,7 @@ export const generateThumbnail = async (file: File): Promise<PdfMetaData> => {
     });
 
     // Handle password protected files
-    loadingTask.onPassword = (updatePassword: (p: string) => void, reason: number) => {
+    loadingTask.onPassword = (_updatePassword: (p: string) => void, reason: number) => {
       console.warn('PDF is password protected', reason);
       // We don't ask for password here, just flag it as locked
       throw new Error('PASSWORD_REQUIRED');
