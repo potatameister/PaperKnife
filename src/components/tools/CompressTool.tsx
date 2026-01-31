@@ -89,13 +89,6 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
     await new Promise(resolve => setTimeout(resolve, 100))
 
     try {
-      const arrayBuffer = await pdfData.file.arrayBuffer()
-      // We load it with password to ensure it's fully accessible for rendering if needed
-      await PDFDocument.load(arrayBuffer, { 
-        password: pdfData.password,
-        ignoreEncryption: false 
-      } as any)
-
       const newPdf = await PDFDocument.create()
       
       // Settings based on quality
