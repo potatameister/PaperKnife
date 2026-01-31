@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { ArrowLeft, Download, Loader2, CheckCircle2, Moon, Sun, Edit2, Scissors, Heart, Check, Plus } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, CheckCircle2, Moon, Sun, Edit2, Scissors, Heart, Check, Plus, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PDFDocument } from 'pdf-lib'
 import JSZip from 'jszip'
@@ -290,6 +290,16 @@ export default function SplitTool({ theme, toggleTheme }: { theme: Theme, toggle
                          <div className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-green-100 dark:border-green-900/30">
                             <CheckCircle2 size={16} /> Ready for Download
                          </div>
+
+                         {splitMode === 'single' && (
+                           <button 
+                             onClick={() => window.open(downloadUrl, '_blank')}
+                             className="w-full bg-white dark:bg-zinc-800 text-gray-900 dark:text-white p-4 rounded-2xl font-black flex items-center justify-center gap-3 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-all active:scale-95"
+                           >
+                             <Eye size={20} /> Preview PDF
+                           </button>
+                         )}
+
                          <a 
                           href={downloadUrl} 
                           download={`${customFileName || 'split'}.${splitMode === 'single' ? 'pdf' : 'zip'}`}
