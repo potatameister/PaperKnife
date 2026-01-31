@@ -4,7 +4,7 @@ import {
   Shield, Download, 
   Moon, Sun, 
   History, Upload, ChevronRight, ChevronDown,
-  Plus, Trash2, CheckCircle2, Home, Info
+  Plus, Trash2, CheckCircle2, Home, Info, ArrowLeft
 } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { Theme, Tool } from '../types'
@@ -104,6 +104,15 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
       {/* Unified Top Header */}
       <header className="flex items-center justify-between px-4 md:px-8 h-16 md:h-20 border-b border-gray-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-[100] transition-colors">
         <div className="flex items-center gap-2 md:gap-4">
+          {!isHome && (
+            <button 
+              onClick={() => navigate('/')}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-xl transition-colors text-gray-500 hover:text-rose-500 mr-1"
+              title="Back to Home"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <PaperKnifeLogo size={28} />
             <span className="font-black tracking-tighter text-lg md:text-xl dark:text-white hidden sm:block">PaperKnife</span>

@@ -82,11 +82,11 @@ function App() {
                   <AndroidView tools={tools} />
                 )
               } />
-              <Route path="/merge" element={<MergeTool theme={theme} toggleTheme={toggleTheme} />} />
-              <Route path="/split" element={<SplitTool theme={theme} toggleTheme={toggleTheme} />} />
-              <Route path="/protect" element={<ProtectTool theme={theme} toggleTheme={toggleTheme} />} />
-              <Route path="/unlock" element={<UnlockTool theme={theme} toggleTheme={toggleTheme} />} />
-              <Route path="/compress" element={<CompressTool theme={theme} toggleTheme={toggleTheme} />} />
+              <Route path="/merge" element={<MergeTool />} />
+              <Route path="/split" element={<SplitTool />} />
+              <Route path="/protect" element={<ProtectTool />} />
+              <Route path="/unlock" element={<UnlockTool />} />
+              <Route path="/compress" element={<CompressTool />} />
               <Route path="/about" element={<About theme={theme} toggleTheme={toggleTheme} />} />
             </Routes>
           </Suspense>

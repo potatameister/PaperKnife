@@ -1,15 +1,12 @@
 import { useState, useRef } from 'react'
-import { ArrowLeft, Upload, Plus, X, Download, Loader2, CheckCircle2, GripVertical, Moon, Sun, Lock, Eye, Edit2, RotateCw, Heart } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Plus, X, Download, Loader2, CheckCircle2, GripVertical, Lock, Eye, Edit2, RotateCw, Upload } from 'lucide-react'
 import { PDFDocument, degrees } from 'pdf-lib'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-import { Theme } from '../../types'
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
-import { PaperKnifeLogo } from '../Logo'
 
 // File Item Type
 type PdfFile = {
@@ -126,8 +123,7 @@ function SortableItem({ id, file, onRemove, onRotate, onUnlock }: { id: string, 
   )
 }
 
-export default function MergeTool({ theme, toggleTheme }: { theme: Theme, toggleTheme: () => void }) {
-  const navigate = useNavigate()
+export default function MergeTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<PdfFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -287,43 +283,18 @@ export default function MergeTool({ theme, toggleTheme }: { theme: Theme, toggle
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="min-h-screen w-full overflow-x-hidden bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] dark:from-zinc-900 dark:via-zinc-950 dark:to-black text-gray-900 dark:text-zinc-100 font-sans animate-slide-in relative transition-colors duration-300 ease-out"
+      className="flex-1"
     >
       {/* Global Drop Overlay */}
       {isDraggingGlobal && (
-        <div className="fixed inset-0 z-[200] bg-rose-500/10 dark:bg-rose-500/20 backdrop-blur-sm flex items-center justify-center border-8 border-dashed border-rose-500/50 m-4 rounded-[3rem] pointer-events-none animate-in fade-in zoom-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 p-8 rounded-full shadow-2xl scale-110">
-            <Upload size={48} className="text-rose-500 animate-bounce" />
+        <div className="fixed inset-0 z-[100] bg-rose-500/90 backdrop-blur-xl flex flex-col items-center justify-center text-white p-6 animate-in fade-in duration-300">
+          <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mb-8 animate-bounce">
+            <Plus size={64} strokeWidth={3} />
           </div>
+          <h2 className="text-4xl md:text-6xl font-black mb-4 text-center">Drop to Add</h2>
+          <p className="text-lg md:text-xl font-medium opacity-80 text-center">Add more files to your merge queue</p>
         </div>
       )}
-
-      {/* Header */}
-      <header className="bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 shrink-0">
-            <button 
-              onClick={() => navigate('/')}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-gray-500 hover:text-rose-500 mr-1"
-              title="Back to Home"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <PaperKnifeLogo size={28} />
-            <h1 className="text-xl md:text-2xl font-black tracking-tighter text-gray-900 dark:text-white hidden sm:block">PaperKnife</h1>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <h1 className="font-black text-sm uppercase tracking-widest text-rose-500 hidden md:block">Merge PDF</h1>
-            <button 
-              onClick={toggleTheme}
-              className="flex items-center justify-center h-10 w-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-700 hover:border-rose-500 transition-all active:scale-95"
-            >
-              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
-          </div>
-        </div>
-      </header>
 
       <main className="max-w-4xl mx-auto px-6 py-6 md:py-10">
         <div className="text-center mb-8 md:mb-12">
@@ -493,21 +464,6 @@ export default function MergeTool({ theme, toggleTheme }: { theme: Theme, toggle
           100% Client-Side Processing
         </div>
       </main>
-
-      <footer className="py-12 border-t border-gray-100 dark:border-zinc-900 mt-20">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-gray-400 dark:text-zinc-600">
-          <p>© 2026 PaperKnife</p>
-          <div className="flex items-center gap-4">
-            <a href="https://github.com/sponsors/potatameister" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-rose-500 hover:text-rose-600 transition-colors">
-              <Heart size={12} fill="currentColor" /> Sponsor
-            </a>
-            <span className="hidden md:block text-gray-200 dark:text-zinc-800">|</span>
-            <p>Built with ❤️ by <a href="https://github.com/potatameister" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">potatameister</a></p>
-            <span className="hidden md:block text-gray-200 dark:text-zinc-800">|</span>
-            <a href="https://github.com/potatameister/PaperKnife" target="_blank" rel="noopener noreferrer" className="hover:text-rose-500 transition-colors">GitHub</a>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
