@@ -8,6 +8,7 @@ import { CSS } from '@dnd-kit/utilities'
 
 import { Theme } from '../../types'
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
+import { addActivity } from '../../utils/recentActivity'
 import { PaperKnifeLogo } from '../Logo'
 
 // File Item Type
@@ -265,6 +266,14 @@ export default function MergeTool({ theme, toggleTheme }: { theme: Theme, toggle
       const blob = new Blob([mergedPdfBytes as any], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       setDownloadUrl(url)
+
+      // Add to local activity history
+      addActivity({
+        name: `${customFileName || 'merged'}.pdf`,
+        tool: 'Merge',
+        size: blob.size,
+        resultUrl: url
+      })
     } catch (error: any) {
       console.error('Final Merge Error:', error)
       alert(error.message || 'An unexpected error occurred during merging.')

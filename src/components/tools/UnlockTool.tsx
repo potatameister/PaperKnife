@@ -5,6 +5,7 @@ import { PDFDocument } from 'pdf-lib'
 
 import { Theme } from '../../types'
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
+import { addActivity } from '../../utils/recentActivity'
 import { PaperKnifeLogo } from '../Logo'
 
 type UnlockPdfFile = {
@@ -62,8 +63,15 @@ export default function UnlockTool({ theme, toggleTheme }: { theme: Theme, toggl
 
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
-      setDownloadUrl(URL.createObjectURL(blob))
+      const url = URL.createObjectURL(blob)
+      setDownloadUrl(url)
 
+      addActivity({
+        name: `${customFileName || 'unlocked'}.pdf`,
+        tool: 'Unlock',
+        size: blob.size,
+        resultUrl: url
+      })
     } catch (error: any) {
       alert(error.message || 'Error unlocking PDF.')
     } finally {

@@ -6,6 +6,7 @@ import JSZip from 'jszip'
 
 import { Theme } from '../../types'
 import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
+import { addActivity } from '../../utils/recentActivity'
 import { PaperKnifeLogo } from '../Logo'
 
 type SplitPdfFile = {
@@ -166,7 +167,15 @@ export default function SplitTool({ theme, toggleTheme }: { theme: Theme, toggle
 
         const pdfBytes = await newPdf.save()
         const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
-        setDownloadUrl(URL.createObjectURL(blob))
+        const url = URL.createObjectURL(blob)
+        setDownloadUrl(url)
+
+        addActivity({
+          name: `${customFileName || 'split'}.pdf`,
+          tool: 'Split',
+          size: blob.size,
+          resultUrl: url
+        })
       } else {
         const zip = new JSZip()
         const sortedPages = Array.from(selectedPages).sort((a, b) => a - b)
@@ -180,7 +189,15 @@ export default function SplitTool({ theme, toggleTheme }: { theme: Theme, toggle
         }
         
         const zipBlob = await zip.generateAsync({ type: 'blob' })
-        setDownloadUrl(URL.createObjectURL(zipBlob))
+        const url = URL.createObjectURL(zipBlob)
+        setDownloadUrl(url)
+
+        addActivity({
+          name: `${customFileName || 'split'}.zip`,
+          tool: 'Split',
+          size: zipBlob.size,
+          resultUrl: url
+        })
       }
     } catch (error: any) {
       alert(error.message || 'Error splitting PDF.')

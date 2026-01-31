@@ -6,6 +6,7 @@ import { encryptPDF } from '@pdfsmaller/pdf-encrypt-lite'
 
 import { Theme } from '../../types'
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
+import { addActivity } from '../../utils/recentActivity'
 import { PaperKnifeLogo } from '../Logo'
 
 type ProtectPdfFile = {
@@ -90,8 +91,15 @@ export default function ProtectTool({ theme, toggleTheme }: { theme: Theme, togg
       const encryptedBytes = await encryptPDF(pdfBytes, password)
 
       const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' })
-      setDownloadUrl(URL.createObjectURL(blob))
+      const url = URL.createObjectURL(blob)
+      setDownloadUrl(url)
 
+      addActivity({
+        name: `${customFileName || 'protected'}.pdf`,
+        tool: 'Protect',
+        size: blob.size,
+        resultUrl: url
+      })
     } catch (error: any) {
       console.error('Protect Error:', error)
       alert(`Failed to protect PDF: ${error.message}`)

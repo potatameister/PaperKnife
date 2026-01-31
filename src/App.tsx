@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { FileText, Shield, Zap, Download, Smartphone, Monitor, Grid } from 'lucide-react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Theme, ViewMode, Tool } from './types'
+import Layout from './components/Layout'
 
 // Lazy load views for code splitting
 const WebView = lazy(() => import('./components/WebView'))
@@ -62,44 +63,49 @@ function App() {
     </div>
   )
 
+  const handleGlobalDrop = (files: FileList) => {
+    const file = files[0]
+    if (!file || file.type !== 'application/pdf') return
+    console.log('Global drop:', file.name)
+  }
+
   return (
     <BrowserRouter basename="/PaperKnife/">
-      <div className={`${theme} w-full overflow-x-hidden min-h-screen transition-colors duration-300 ease-out`}>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
-            <Route path="/" element={
-              viewMode === 'web' ? (
-                <WebView theme={theme} toggleTheme={toggleTheme} tools={tools} />
-              ) : (
-                <AndroidView theme={theme} toggleTheme={toggleTheme} tools={tools} />
-              )
-            } />
-            <Route path="/merge" element={<MergeTool theme={theme} toggleTheme={toggleTheme} />} />
-            <Route path="/split" element={<SplitTool theme={theme} toggleTheme={toggleTheme} />} />
-            <Route path="/protect" element={<ProtectTool theme={theme} toggleTheme={toggleTheme} />} />
-            <Route path="/unlock" element={<UnlockTool theme={theme} toggleTheme={toggleTheme} />} />
-            <Route path="/compress" element={<CompressTool theme={theme} toggleTheme={toggleTheme} />} />
-            <Route path="/about" element={<About theme={theme} toggleTheme={toggleTheme} />} />
-          </Routes>
-        </Suspense>
+      <Layout theme={theme} toggleTheme={toggleTheme} tools={tools} onFileDrop={handleGlobalDrop}>
+        <div className={`${theme} w-full overflow-x-hidden min-h-screen transition-colors duration-300 ease-out`}>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route path="/" element={
+                viewMode === 'web' ? (
+                  <WebView theme={theme} toggleTheme={toggleTheme} tools={tools} />
+                ) : (
+                  <AndroidView theme={theme} toggleTheme={toggleTheme} tools={tools} />
+                )
+              } />
+              <Route path="/merge" element={<MergeTool theme={theme} toggleTheme={toggleTheme} />} />
+              <Route path="/split" element={<SplitTool theme={theme} toggleTheme={toggleTheme} />} />
+              <Route path="/protect" element={<ProtectTool theme={theme} toggleTheme={toggleTheme} />} />
+              <Route path="/unlock" element={<UnlockTool theme={theme} toggleTheme={toggleTheme} />} />
+              <Route path="/compress" element={<CompressTool theme={theme} toggleTheme={toggleTheme} />} />
+              <Route path="/about" element={<About theme={theme} toggleTheme={toggleTheme} />} />
+            </Routes>
+          </Suspense>
 
-        {/* Chameleon Toggle (Dev Only) */}
-        {import.meta.env.DEV && (
-          <div className="fixed bottom-24 right-6 z-[100] flex flex-col gap-2">
-            <button
-              onClick={() => {
-                console.log("Switching view mode...");
-                setViewMode(prev => prev === 'web' ? 'android' : 'web');
-              }}
-              className="bg-gray-900 dark:bg-zinc-800 text-white p-4 rounded-3xl shadow-2xl hover:bg-rose-500 transition-all duration-300 flex items-center gap-3 border border-white/10 group active:scale-95"
-              title="Toggle Chameleon Mode"
-            >
-              {viewMode === 'web' ? <Smartphone size={20} /> : <Monitor size={20} />}
-              <span className="text-xs font-black uppercase tracking-tighter">{viewMode}</span>
-            </button>
-          </div>
-        )}
-      </div>
+          {/* Chameleon Toggle (Dev Only) */}
+          {import.meta.env.DEV && (
+            <div className="fixed bottom-24 right-6 z-[100] flex flex-col gap-2">
+              <button
+                onClick={() => setViewMode(prev => prev === 'web' ? 'android' : 'web')}
+                className="bg-gray-900 dark:bg-zinc-800 text-white p-4 rounded-3xl shadow-2xl hover:bg-rose-500 transition-all duration-300 flex items-center gap-3 border border-white/10 group active:scale-95"
+                title="Toggle Chameleon Mode"
+              >
+                {viewMode === 'web' ? <Smartphone size={20} /> : <Monitor size={20} />}
+                <span className="text-xs font-black uppercase tracking-tighter">{viewMode}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </Layout>
     </BrowserRouter>
   )
 }

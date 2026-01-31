@@ -5,6 +5,7 @@ import { PDFDocument } from 'pdf-lib'
 
 import { Theme } from '../../types'
 import { getPdfMetaData, loadPdfDocument, unlockPdf } from '../../utils/pdfHelpers'
+import { addActivity } from '../../utils/recentActivity'
 import { PaperKnifeLogo } from '../Logo'
 
 type CompressPdfFile = {
@@ -130,9 +131,16 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
 
       const pdfBytes = await newPdf.save()
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
       setResultSize(blob.size)
-      setDownloadUrl(URL.createObjectURL(blob))
+      setDownloadUrl(url)
 
+      addActivity({
+        name: `${customFileName || 'compressed'}.pdf`,
+        tool: 'Compress',
+        size: blob.size,
+        resultUrl: url
+      })
     } catch (error: any) {
       console.error('Compress Error:', error)
       alert(`Compression failed: ${error.message}`)
