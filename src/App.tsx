@@ -77,9 +77,9 @@ function App() {
             <Routes>
               <Route path="/" element={
                 viewMode === 'web' ? (
-                  <WebView theme={theme} toggleTheme={toggleTheme} tools={tools} />
+                  <WebView tools={tools} />
                 ) : (
-                  <AndroidView theme={theme} toggleTheme={toggleTheme} tools={tools} />
+                  <AndroidView tools={tools} />
                 )
               } />
               <Route path="/merge" element={<MergeTool theme={theme} toggleTheme={toggleTheme} />} />

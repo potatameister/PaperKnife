@@ -1,6 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom'
-import { Shield, Zap, Download, ChevronRight, Moon, Sun, Github, Info, Heart } from 'lucide-react'
-import { Theme, Tool } from '../types'
+import { Shield, Zap, Download, ChevronRight, Github, Heart } from 'lucide-react'
+import { Tool } from '../types'
 import { PaperKnifeLogo } from './Logo'
 
 const ToolCard = ({ title, desc, icon: Icon, className = "", implemented = false, onClick }: Tool & { className?: string, onClick?: () => void }) => (
@@ -35,7 +35,7 @@ const ToolCard = ({ title, desc, icon: Icon, className = "", implemented = false
   </div>
 )
 
-export default function WebView({ theme, toggleTheme, tools }: { theme: Theme, toggleTheme: () => void, tools: Tool[] }) {
+export default function WebView({ tools }: { tools: Tool[] }) {
   const navigate = useNavigate()
 
   // Bento Grid Layout Configuration
@@ -65,38 +65,6 @@ export default function WebView({ theme, toggleTheme, tools }: { theme: Theme, t
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] dark:from-zinc-900 dark:via-zinc-950 dark:to-black text-gray-900 dark:text-zinc-100 font-sans selection:bg-rose-100 dark:selection:bg-rose-900 selection:text-rose-600 transition-colors duration-300 ease-out">
-      <header className="bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-3 shrink-0 hover:opacity-80 transition-opacity">
-            <PaperKnifeLogo size={28} />
-            <h1 className="text-xl md:text-2xl font-black tracking-tighter text-gray-900 dark:text-white">PaperKnife</h1>
-          </Link>
-          <div className="flex items-center gap-2 md:gap-6">
-            <nav className="flex items-center gap-4 text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-zinc-400 mr-2">
-              <a href="https://github.com/sponsors/potatameister" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:text-rose-600 transition flex items-center gap-2 px-3 py-1.5 bg-rose-50 dark:bg-rose-900/20 rounded-xl">
-                <Heart size={18} fill="currentColor" />
-                <span className="hidden sm:block">Sponsor</span>
-              </a>
-              <Link to="/about" className="hover:text-rose-500 transition flex items-center gap-2">
-                <Info size={20} className="md:hidden" />
-                <span className="hidden md:block">About</span>
-              </Link>
-            </nav>
-            <div className="flex items-center gap-2 border-l border-gray-100 dark:border-zinc-800 pl-2 md:pl-6">
-              <a href="https://github.com/potatameister/PaperKnife" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center justify-center h-10 w-10 rounded-xl text-gray-500 hover:text-rose-500 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all">
-                <Github size={20} />
-              </a>
-              <button 
-                onClick={toggleTheme}
-                className="flex items-center justify-center h-10 w-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-700 hover:border-rose-500 transition-all active:scale-95"
-              >
-                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-6xl mx-auto px-6 py-10 md:py-20">
         <div className="text-center mb-10 md:mb-20">
           <span className="inline-block px-4 py-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-[10px] md:text-xs font-bold rounded-full mb-6 border border-rose-100 dark:border-rose-900/30">
