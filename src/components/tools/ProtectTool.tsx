@@ -48,10 +48,17 @@ export default function ProtectTool({ theme, toggleTheme }: { theme: Theme, togg
 
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      // Load with ignoreEncryption to handle files with minor restrictions safely
-      const pdfDoc: any = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true })
+      // Load source PDF
+      const sourcePdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true })
       
-      pdfDoc.encrypt({
+      // Create a new PDF to ensure clean state and full feature support
+      const newPdf = await PDFDocument.create()
+      const pages = await newPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
+      pages.forEach(page => newPdf.addPage(page))
+      
+      // Encrypt the new PDF
+      // @ts-ignore
+      newPdf.encrypt({
         userPassword: password,
         ownerPassword: password,
         permissions: {
@@ -65,7 +72,7 @@ export default function ProtectTool({ theme, toggleTheme }: { theme: Theme, togg
         },
       })
 
-      const pdfBytes = await pdfDoc.save()
+      const pdfBytes = await newPdf.save()
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       setDownloadUrl(URL.createObjectURL(blob))
 
