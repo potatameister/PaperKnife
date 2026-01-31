@@ -71,8 +71,8 @@ export default function ProtectTool() {
       const arrayBuffer = await pdfData.file.arrayBuffer()
       // Load source PDF
       const sourcePdf = await PDFDocument.load(arrayBuffer, { 
-        password: pdfData.sourcePassword,
-        ignoreEncryption: false 
+        password: pdfData.sourcePassword || undefined,
+        ignoreEncryption: true 
       } as any)
       
       // Create a new PDF to ensure clean state

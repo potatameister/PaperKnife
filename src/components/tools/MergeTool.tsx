@@ -241,8 +241,8 @@ export default function MergeTool() {
         try {
           const fileBuffer = await pdfFile.file.arrayBuffer()
           const pdf = await PDFDocument.load(fileBuffer, { 
-            password: pdfFile.password,
-            ignoreEncryption: false 
+            password: pdfFile.password || undefined,
+            ignoreEncryption: true 
           } as any)
           const pageIndices = pdf.getPageIndices()
           const copiedPages = await mergedPdf.copyPages(pdf, pageIndices)

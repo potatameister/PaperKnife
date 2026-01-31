@@ -53,8 +53,8 @@ export default function UnlockTool() {
       const arrayBuffer = await pdfData.file.arrayBuffer()
       // Load with password and explicitly decrypt
       const pdfDoc = await PDFDocument.load(arrayBuffer, { 
-        password: password,
-        ignoreEncryption: false 
+        password: password || undefined,
+        ignoreEncryption: true 
       } as any)
 
       const pdfBytes = await pdfDoc.save()

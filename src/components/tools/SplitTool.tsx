@@ -84,6 +84,7 @@ export default function SplitTool() {
     setIsLoadingMeta(true)
     try {
       const meta = await getPdfMetaData(file)
+      console.log('File metadata:', meta)
       if (meta.isLocked) {
         setPdfData({ file, pageCount: 0, isLocked: true })
       } else {
@@ -152,8 +153,8 @@ export default function SplitTool() {
     try {
       const originalBuffer = await pdfData.file.arrayBuffer()
       const originalPdf = await PDFDocument.load(originalBuffer, { 
-        password: pdfData.password,
-        ignoreEncryption: false
+        password: pdfData.password || undefined,
+        ignoreEncryption: true
       } as any)
       
       if (splitMode === 'single') {
@@ -197,6 +198,62 @@ export default function SplitTool() {
         })
       }
     } catch (error: any) {
+      if (error.message.includes('encrypted') && pdfData.password) {
+        // Retry with ignoreEncryption: true as LAST RESORT
+        try {
+          const originalBuffer = await pdfData.file.arrayBuffer()
+          const originalPdf = await PDFDocument.load(originalBuffer, { 
+            password: pdfData.password,
+            ignoreEncryption: true
+          } as any)
+          
+          // Re-run the split logic
+          if (splitMode === 'single') {
+            const newPdf = await PDFDocument.create()
+            const sortedIndices = Array.from(selectedPages).sort((a, b) => a - b).map(p => p - 1)
+            const copiedPages = await newPdf.copyPages(originalPdf, sortedIndices)
+            copiedPages.forEach(page => newPdf.addPage(page))
+
+            const pdfBytes = await newPdf.save()
+            const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
+            const url = URL.createObjectURL(blob)
+            setDownloadUrl(url)
+
+            addActivity({
+              name: `${customFileName || 'split'}.pdf`,
+              tool: 'Split',
+              size: blob.size,
+              resultUrl: url
+            })
+          } else {
+            const zip = new JSZip()
+            const sortedPages = Array.from(selectedPages).sort((a, b) => a - b)
+            
+            for (const pageNum of sortedPages) {
+              const newPdf = await PDFDocument.create()
+              const [copiedPage] = await newPdf.copyPages(originalPdf, [pageNum - 1])
+              newPdf.addPage(copiedPage)
+              const pdfBytes = await newPdf.save()
+              zip.file(`${customFileName || 'page'}-${pageNum}.pdf`, pdfBytes)
+            }
+            
+            const zipBlob = await zip.generateAsync({ type: 'blob' })
+            const url = URL.createObjectURL(zipBlob)
+            setDownloadUrl(url)
+
+            addActivity({
+              name: `${customFileName || 'split'}.zip`,
+              tool: 'Split',
+              size: zipBlob.size,
+              resultUrl: url
+            })
+          }
+          setIsProcessing(false)
+          return
+        } catch (retryErr: any) {
+           alert(`Failed even with bypass: ${retryErr.message}`)
+        }
+      }
       alert(error.message || 'Error splitting PDF.')
     } finally {
       setIsProcessing(false)
