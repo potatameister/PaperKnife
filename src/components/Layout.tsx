@@ -6,6 +6,7 @@ import {
   History, Upload, ChevronRight,
   Plus, Trash2, CheckCircle2, Home
 } from 'lucide-react'
+import { Capacitor } from '@capacitor/core'
 import { Theme, Tool } from '../types'
 import { PaperKnifeLogo } from './Logo'
 import { ActivityEntry, getRecentActivity, clearActivity } from '../utils/recentActivity'
@@ -24,6 +25,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   const [isDragging, setIsDragging] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [activity, setActivity] = useState<ActivityEntry[]>([])
+  const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
     if (showHistory) {
@@ -131,59 +133,39 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-24 md:pb-0">
+      <div class={`flex-1 flex flex-col min-w-0 ${isNative ? 'pb-24 md:pb-0' : ''}`}>
         {/* Universal Top Header (Visible when not on Home) */}
-        {!isHome && (
-          <header className="flex items-center justify-between px-6 h-16 md:h-20 border-b border-gray-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-[40]">
-            <div className="flex items-center gap-2">
-              <PaperKnifeLogo size={24} />
-              <span className="font-black tracking-tighter text-sm md:text-base dark:text-white">PaperKnife</span>
-              <span className="hidden md:block mx-2 text-gray-200 dark:text-zinc-800">/</span>
-              <span className="hidden md:block text-xs font-black uppercase tracking-widest text-rose-500">{activeTool?.title}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={toggleTheme} className="p-2 text-gray-400 hover:text-rose-500 transition-colors">
-                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-              </button>
-              <button 
-                onClick={() => setShowHistory(true)} 
-                className={`p-2 transition-colors ${showHistory ? 'text-rose-500' : 'text-gray-400 hover:text-rose-500'}`}
-                title="View History"
-              >
-                <History size={20} />
-              </button>
-            </div>
-          </header>
-        )}
-
+// ...
         {children}
 
-        {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800 flex items-center justify-around px-4 z-50 pb-safe">
-          <button 
-            onClick={() => navigate('/')}
-            className={`flex flex-col items-center gap-1 ${isHome ? 'text-rose-500' : 'text-gray-400'}`}
-          >
-            <Home size={20} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Home</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowHistory(true)}
-            className={`flex flex-col items-center gap-1 ${showHistory ? 'text-rose-500' : 'text-gray-400'}`}
-          >
-            <History size={20} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">History</span>
-          </button>
+        {/* Mobile Bottom Navigation (APK ONLY) */}
+        {isNative && (
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800 flex items-center justify-around px-4 z-50 pb-safe">
+            <button 
+              onClick={() => navigate('/')}
+              className={`flex flex-col items-center gap-1 ${isHome ? 'text-rose-500' : 'text-gray-400'}`}
+            >
+              <Home size={20} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Home</span>
+            </button>
+            
+            <button 
+              onClick={() => setShowHistory(true)}
+              className={`flex flex-col items-center gap-1 ${showHistory ? 'text-rose-500' : 'text-gray-400'}`}
+            >
+              <History size={20} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">History</span>
+            </button>
 
-          <Link 
-            to="/about"
-            className={`flex flex-col items-center gap-1 ${location.pathname.includes('about') ? 'text-rose-500' : 'text-gray-400'}`}
-          >
-            <Shield size={20} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Privacy</span>
-          </Link>
-        </nav>
+            <Link 
+              to="/about"
+              className={`flex flex-col items-center gap-1 ${location.pathname.includes('about') ? 'text-rose-500' : 'text-gray-400'}`}
+            >
+              <Shield size={20} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Privacy</span>
+            </Link>
+          </nav>
+        )}
       </div>
 
       {/* Recent Activity Sidebar (Drawer) */}
