@@ -87,9 +87,9 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
       )}
 
       {/* Desktop Sidebar (Navigation Rail) */}
-      <aside className="hidden lg:flex flex-col w-20 border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 h-screen z-50 transition-colors">
+      <aside className="hidden md:flex flex-col w-20 border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 h-screen z-50 transition-colors shadow-sm">
         <div className="p-4 flex flex-col items-center gap-8 py-8">
-          <Link to="/" title="Home" className={`p-3 rounded-2xl transition-all ${isHome ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}>
+          <Link to="/" title="Home" className={`p-3 rounded-2xl transition-all ${isHome ? 'bg-rose-500 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}>
             <Home size={20} />
           </Link>
           
@@ -131,20 +131,26 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-0">
-        {/* Mobile Header Toggle for History */}
+      <div className="flex-1 flex flex-col min-w-0 pb-24 md:pb-0">
+        {/* Universal Top Header (Visible when not on Home) */}
         {!isHome && (
-          <header className="lg:hidden flex items-center justify-between px-6 h-16 border-b border-gray-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-[40]">
+          <header className="flex items-center justify-between px-6 h-16 md:h-20 border-b border-gray-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-[40]">
             <div className="flex items-center gap-2">
               <PaperKnifeLogo size={24} />
-              <span className="font-black tracking-tighter text-sm dark:text-white">PaperKnife</span>
+              <span className="font-black tracking-tighter text-sm md:text-base dark:text-white">PaperKnife</span>
+              <span className="hidden md:block mx-2 text-gray-200 dark:text-zinc-800">/</span>
+              <span className="hidden md:block text-xs font-black uppercase tracking-widest text-rose-500">{activeTool?.title}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={toggleTheme} className="p-2 text-gray-400">
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+              <button onClick={toggleTheme} className="p-2 text-gray-400 hover:text-rose-500 transition-colors">
+                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
               </button>
-              <button onClick={() => setShowHistory(true)} className="p-2 text-gray-400">
-                <History size={18} />
+              <button 
+                onClick={() => setShowHistory(true)} 
+                className={`p-2 transition-colors ${showHistory ? 'text-rose-500' : 'text-gray-400 hover:text-rose-500'}`}
+                title="View History"
+              >
+                <History size={20} />
               </button>
             </div>
           </header>
@@ -153,7 +159,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
         {children}
 
         {/* Mobile Bottom Navigation */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800 flex items-center justify-around px-4 z-50 pb-safe">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800 flex items-center justify-around px-4 z-50 pb-safe">
           <button 
             onClick={() => navigate('/')}
             className={`flex flex-col items-center gap-1 ${isHome ? 'text-rose-500' : 'text-gray-400'}`}
