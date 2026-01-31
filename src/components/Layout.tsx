@@ -4,7 +4,7 @@ import {
   Shield, Download, 
   Moon, Sun, 
   History, Upload, ChevronRight,
-  Plus, Trash2, CheckCircle2
+  Plus, Trash2, CheckCircle2, Home
 } from 'lucide-react'
 import { Theme, Tool } from '../types'
 import { PaperKnifeLogo } from './Logo'
@@ -44,7 +44,6 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
     }
     const handleDragLeave = (e: DragEvent) => {
       e.preventDefault()
-      // Only hide if we leave the window
       if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
         setIsDragging(false)
       }
@@ -68,7 +67,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   }, [onFileDrop])
 
   const activeTool = tools.find(t => {
-    const path = t.title.split(' ')[0].toLowerCase()
+    const path = `/${t.title.split(' ')[0].toLowerCase()}`
     return location.pathname.includes(path)
   })
 
@@ -88,58 +87,101 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
       )}
 
       {/* Desktop Sidebar (Navigation Rail) */}
-      {!isHome && (
-        <aside className="hidden lg:flex flex-col w-20 border-r border-gray-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-xl sticky top-0 h-screen z-50">
-          <div className="p-4 flex flex-col items-center gap-8 py-8">
-            <Link to="/" title="Home">
-              <PaperKnifeLogo size={32} />
-            </Link>
-            
-            <nav className="flex flex-col gap-4">
-              {tools.filter(t => t.implemented).map((tool, i) => {
-                const Icon = tool.icon
-                const isActive = activeTool?.title === tool.title
-                const path = `/${tool.title.split(' ')[0].toLowerCase()}`
-                
-                return (
-                  <button
-                    key={i}
-                    onClick={() => navigate(path)}
-                    className={`p-3 rounded-2xl transition-all group relative ${isActive ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
-                    title={tool.title}
-                  >
-                    <Icon size={20} />
-                    <span className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100]">
-                      {tool.title}
-                    </span>
-                  </button>
-                )
-              })}
-            </nav>
-          </div>
+      <aside className="hidden lg:flex flex-col w-20 border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 h-screen z-50 transition-colors">
+        <div className="p-4 flex flex-col items-center gap-8 py-8">
+          <Link to="/" title="Home" className={`p-3 rounded-2xl transition-all ${isHome ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}>
+            <Home size={20} />
+          </Link>
           
-          <div className="mt-auto p-4 flex flex-col items-center gap-4 pb-8">
-            <button onClick={toggleTheme} className="p-3 rounded-2xl text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all">
-              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
-            <button 
-              onClick={() => setShowHistory(!showHistory)}
-              className={`p-3 rounded-2xl transition-all ${showHistory ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
-              title="Recent Activity"
-            >
-              <History size={20} />
-            </button>
-          </div>
-        </aside>
-      )}
+          <nav className="flex flex-col gap-4">
+            {tools.filter(t => t.implemented).map((tool, i) => {
+              const Icon = tool.icon
+              const isActive = activeTool?.title === tool.title && !isHome
+              const path = `/${tool.title.split(' ')[0].toLowerCase()}`
+              
+              return (
+                <button
+                  key={i}
+                  onClick={() => navigate(path)}
+                  className={`p-3 rounded-2xl transition-all group relative ${isActive ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
+                  title={tool.title}
+                >
+                  <Icon size={20} />
+                  <span className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100]">
+                    {tool.title}
+                  </span>
+                </button>
+              )
+            })}
+          </nav>
+        </div>
+        
+        <div className="mt-auto p-4 flex flex-col items-center gap-4 pb-8">
+          <button onClick={toggleTheme} className="p-3 rounded-2xl text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all">
+            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+          </button>
+          <button 
+            onClick={() => setShowHistory(!showHistory)}
+            className={`p-3 rounded-2xl transition-all ${showHistory ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
+            title="Recent Activity"
+          >
+            <History size={20} />
+          </button>
+        </div>
+      </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-0">
+        {/* Mobile Header Toggle for History */}
+        {!isHome && (
+          <header className="lg:hidden flex items-center justify-between px-6 h-16 border-b border-gray-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-[40]">
+            <div className="flex items-center gap-2">
+              <PaperKnifeLogo size={24} />
+              <span className="font-black tracking-tighter text-sm dark:text-white">PaperKnife</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={toggleTheme} className="p-2 text-gray-400">
+                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+              </button>
+              <button onClick={() => setShowHistory(true)} className="p-2 text-gray-400">
+                <History size={18} />
+              </button>
+            </div>
+          </header>
+        )}
+
         {children}
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800 flex items-center justify-around px-4 z-50 pb-safe">
+          <button 
+            onClick={() => navigate('/')}
+            className={`flex flex-col items-center gap-1 ${isHome ? 'text-rose-500' : 'text-gray-400'}`}
+          >
+            <Home size={20} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Home</span>
+          </button>
+          
+          <button 
+            onClick={() => setShowHistory(true)}
+            className={`flex flex-col items-center gap-1 ${showHistory ? 'text-rose-500' : 'text-gray-400'}`}
+          >
+            <History size={20} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">History</span>
+          </button>
+
+          <Link 
+            to="/about"
+            className={`flex flex-col items-center gap-1 ${location.pathname.includes('about') ? 'text-rose-500' : 'text-gray-400'}`}
+          >
+            <Shield size={20} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Privacy</span>
+          </Link>
+        </nav>
       </div>
 
       {/* Recent Activity Sidebar (Drawer) */}
-      <aside className={`fixed top-0 right-0 h-screen w-80 bg-white dark:bg-zinc-950 border-l border-gray-100 dark:border-zinc-800 z-[150] shadow-2xl transition-transform duration-500 ease-out transform ${showHistory ? 'translate-x-0' : 'translate-x-full'}`}>
+      <aside className={`fixed top-0 right-0 h-screen w-full sm:w-80 bg-white dark:bg-zinc-950 border-l border-gray-100 dark:border-zinc-800 z-[150] shadow-2xl transition-transform duration-500 ease-out transform ${showHistory ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
