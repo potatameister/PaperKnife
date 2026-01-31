@@ -152,7 +152,8 @@ export default function SplitTool() {
     try {
       const originalBuffer = await pdfData.file.arrayBuffer()
       const originalPdf = await PDFDocument.load(originalBuffer, { 
-        password: pdfData.password 
+        password: pdfData.password,
+        ignoreEncryption: false
       } as any)
       
       if (splitMode === 'single') {
@@ -398,6 +399,15 @@ export default function SplitTool() {
 
                   <button onClick={() => setPdfData(null)} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors tracking-[0.2em]">Close File</button>
                 </div>
+
+                {pdfData.password && (
+                  <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/20 flex items-start gap-3">
+                    <Lock size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed font-medium">
+                      <strong>Security Note:</strong> This file was protected. The extracted pages will be saved <strong>without</strong> a password.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

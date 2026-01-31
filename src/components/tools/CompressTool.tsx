@@ -318,6 +318,15 @@ export default function CompressTool() {
           </div>
         )}
 
+        {pdfData?.password && (
+          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/20 flex items-start gap-3 max-w-md mx-auto">
+            <Lock size={14} className="text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed font-medium">
+              <strong>Security Note:</strong> This file was protected. The compressed document will be saved <strong>without</strong> a password.
+            </p>
+          </div>
+        )}
+
         <div className="mt-12 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-600">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
           Secure Client-Side Processing

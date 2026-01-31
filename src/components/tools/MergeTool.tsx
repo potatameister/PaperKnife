@@ -458,6 +458,15 @@ export default function MergeTool() {
           </div>
         </div>
 
+        {files.some(f => f.password) && (
+          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/20 flex items-start gap-3 max-w-lg mx-auto">
+            <Lock size={14} className="text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed font-medium">
+              <strong>Security Note:</strong> One or more files are protected. The merged document will be saved <strong>without</strong> a password.
+            </p>
+          </div>
+        )}
+
         {/* Privacy Note */}
         <div className="mt-8 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-600">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
