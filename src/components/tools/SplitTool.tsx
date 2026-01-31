@@ -124,6 +124,9 @@ export default function SplitTool({ theme, toggleTheme }: { theme: Theme, toggle
   const splitPDF = async () => {
     if (!pdfData || selectedPages.size === 0) return
     setIsProcessing(true)
+    // Yield to main thread for UI update
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     try {
       const originalBuffer = await pdfData.file.arrayBuffer()
       const originalPdf = await PDFDocument.load(originalBuffer)

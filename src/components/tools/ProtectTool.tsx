@@ -43,13 +43,17 @@ export default function ProtectTool({ theme, toggleTheme }: { theme: Theme, togg
     if (!pdfData || !password || password !== confirmPassword) return
 
     setIsProcessing(true)
+    // Yield to the main thread to let React render the spinner
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc: any = await PDFDocument.load(arrayBuffer)
+      // Load with ignoreEncryption to handle files with minor restrictions safely
+      const pdfDoc: any = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true })
       
       pdfDoc.encrypt({
         userPassword: password,
-        ownerPassword: password, // Same for simplicity in this tool
+        ownerPassword: password,
         permissions: {
           printing: 'highResolution',
           modifying: false,
@@ -67,7 +71,7 @@ export default function ProtectTool({ theme, toggleTheme }: { theme: Theme, togg
 
     } catch (error: any) {
       console.error('Protect Error:', error)
-      alert(error.message || 'Error protecting PDF.')
+      alert(`Failed to protect PDF: ${error.message}`)
     } finally {
       setIsProcessing(false)
     }
