@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react'
-import { ArrowLeft, Download, Loader2, CheckCircle2, Moon, Sun, Zap, Heart, Shield, Info } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, CheckCircle2, Moon, Sun, Zap, Heart, Shield, Info, Lock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PDFDocument } from 'pdf-lib'
 
 import { Theme } from '../../types'
-import { getPdfMetaData, loadPdfDocument } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, unlockPdf } from '../../utils/pdfHelpers'
 import { PaperKnifeLogo } from '../Logo'
 
 type CompressPdfFile = {
@@ -13,6 +13,7 @@ type CompressPdfFile = {
   pageCount: number
   isLocked: boolean
   pdfDoc?: any
+  password?: string
 }
 
 type CompressionQuality = 'low' | 'medium' | 'high'
@@ -27,6 +28,27 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
   const [quality, setQuality] = useState<CompressionQuality>('medium')
   const [resultSize, setResultSize] = useState<number | null>(null)
   const [customFileName, setCustomFileName] = useState('paperknife-compressed')
+  const [unlockPassword, setUnlockPassword] = useState('')
+
+  const handleUnlock = async () => {
+    if (!pdfData || !unlockPassword) return
+    setIsProcessing(true)
+    const result = await unlockPdf(pdfData.file, unlockPassword)
+    if (result.success) {
+      setPdfData({
+        ...pdfData,
+        isLocked: false,
+        pageCount: result.pageCount,
+        pdfDoc: result.pdfDoc,
+        thumbnail: result.thumbnail,
+        password: unlockPassword
+      })
+      setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-compressed`)
+    } else {
+      alert('Incorrect password')
+    }
+    setIsProcessing(false)
+  }
 
   const handleFile = async (file: File) => {
     if (file.type !== 'application/pdf') return
@@ -35,7 +57,6 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
       const meta = await getPdfMetaData(file)
       if (meta.isLocked) {
         setPdfData({ file, pageCount: 0, isLocked: true })
-        alert('This file is password protected. Please unlock it using the Split or Protect tool first.')
       } else {
         const pdfDoc = await loadPdfDocument(file)
         setPdfData({
@@ -68,6 +89,13 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
     await new Promise(resolve => setTimeout(resolve, 100))
 
     try {
+      const arrayBuffer = await pdfData.file.arrayBuffer()
+      // We load it with password to ensure it's fully accessible for rendering if needed
+      await PDFDocument.load(arrayBuffer, { 
+        password: pdfData.password,
+        ignoreEncryption: false 
+      } as any)
+
       const newPdf = await PDFDocument.create()
       
       // Settings based on quality
@@ -161,6 +189,40 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
                 <p className="text-xs md:text-sm text-gray-400 dark:text-zinc-500">Tap to start compressing</p>
               </>
             )}
+          </div>
+        ) : pdfData.isLocked ? (
+          <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-zinc-800 shadow-xl text-center">
+              <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Lock size={32} />
+              </div>
+              <h3 className="text-2xl font-bold mb-2 dark:text-white">File is Protected</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-8">Unlock this file to compress it.</p>
+              
+              <div className="space-y-4">
+                <input 
+                  type="password" 
+                  value={unlockPassword}
+                  onChange={(e) => setUnlockPassword(e.target.value)}
+                  placeholder="Enter Password"
+                  className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-gray-100 dark:border-zinc-800 focus:border-rose-500 outline-none font-bold text-center transition-all"
+                  autoFocus
+                />
+                <button 
+                  onClick={handleUnlock}
+                  disabled={!unlockPassword || isProcessing}
+                  className="w-full bg-rose-500 hover:bg-rose-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isProcessing ? 'Unlocking...' : 'Unlock PDF'}
+                </button>
+                <button 
+                  onClick={() => setPdfData(null)}
+                  className="w-full py-2 text-xs font-bold text-gray-400 hover:text-rose-500"
+                >
+                  Choose different file
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
