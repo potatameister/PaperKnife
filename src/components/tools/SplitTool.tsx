@@ -63,12 +63,11 @@ export default function SplitTool({ theme, toggleTheme }: { theme: Theme, toggle
     setIsLoadingMeta(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      const pdfDoc = await loadPdfDocument(pdfData.file)
       setPdfData({
         ...pdfData,
         isLocked: false,
         pageCount: result.pageCount,
-        pdfDoc,
+        pdfDoc: result.pdfDoc,
         password: unlockPassword
       })
       // Select all by default

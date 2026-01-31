@@ -79,7 +79,7 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
   }
 };
 
-export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean }> => {
+export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, pdfDoc?: any }> => {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({
@@ -98,7 +98,8 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       thumbnail: firstPageThumb,
       pageCount: pdf.numPages,
       isLocked: false,
-      success: true
+      success: true,
+      pdfDoc: pdf
     };
   } catch (error: any) {
     return {
