@@ -91,10 +91,11 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
     try {
       const newPdf = await PDFDocument.create()
       
-      // Settings based on quality
-      // We render at different scales and JPEG qualities
-      const scaleMap = { low: 1.0, medium: 1.5, high: 2.0 }
-      const qualityMap = { low: 0.3, medium: 0.5, high: 0.7 }
+      // Settings based on COMPRESSION LEVEL
+      // High Compression = Low Scale/Quality
+      // Low Compression = High Scale/Quality
+      const scaleMap = { high: 1.0, medium: 1.5, low: 2.0 }
+      const qualityMap = { high: 0.3, medium: 0.5, low: 0.7 }
       
       const scale = scaleMap[quality]
       const jpegQuality = qualityMap[quality]
@@ -237,14 +238,16 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><Zap size={12} /> Compression Level</label>
                     <div className="grid grid-cols-3 gap-3">
-                      {(['low', 'medium', 'high'] as const).map((lvl) => (
+                      {(['high', 'medium', 'low'] as const).map((lvl) => (
                         <button
                           key={lvl}
                           onClick={() => setQuality(lvl)}
                           className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 ${quality === lvl ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-zinc-800 hover:border-rose-200 dark:hover:border-rose-800'}`}
                         >
                           <span className={`font-black uppercase text-[10px] ${quality === lvl ? 'text-rose-500' : 'text-gray-400'}`}>{lvl}</span>
-                          <span className="text-[8px] text-gray-400 font-bold">{lvl === 'low' ? 'Max Shrink' : lvl === 'medium' ? 'Balanced' : 'High Quality'}</span>
+                          <span className="text-[8px] text-gray-400 font-bold">
+                            {lvl === 'high' ? 'Max Shrink' : lvl === 'medium' ? 'Balanced' : 'Best Quality'}
+                          </span>
                         </button>
                       ))}
                     </div>
