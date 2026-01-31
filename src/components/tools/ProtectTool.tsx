@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { ArrowLeft, Moon, Sun, Lock, ShieldCheck, Heart, Loader2, Download, CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PDFDocument } from 'pdf-lib'
+import { encryptPDF } from '@pdfsmaller/pdf-encrypt-lite'
 
 import { Theme } from '../../types'
 import { getPdfMetaData } from '../../utils/pdfHelpers'
@@ -51,29 +52,18 @@ export default function ProtectTool({ theme, toggleTheme }: { theme: Theme, togg
       // Load source PDF
       const sourcePdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true })
       
-      // Create a new PDF to ensure clean state and full feature support
+      // Create a new PDF to ensure clean state
       const newPdf = await PDFDocument.create()
       const pages = await newPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
       pages.forEach(page => newPdf.addPage(page))
       
-      // Encrypt the new PDF
-      // @ts-ignore
-      newPdf.encrypt({
-        userPassword: password,
-        ownerPassword: password,
-        permissions: {
-          printing: 'highResolution',
-          modifying: false,
-          copying: false,
-          annotating: false,
-          fillingForms: false,
-          contentAccessibility: false,
-          documentAssembly: false,
-        },
-      })
-
+      // Save the unencrypted bytes first
       const pdfBytes = await newPdf.save()
-      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
+      
+      // Use the helper library to encrypt the bytes
+      const encryptedBytes = await encryptPDF(pdfBytes, password)
+
+      const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' })
       setDownloadUrl(URL.createObjectURL(blob))
 
     } catch (error: any) {

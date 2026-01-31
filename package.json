@@ -16,6 +16,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@pdfsmaller/pdf-encrypt-lite": "^1.0.1",
     "@types/jszip": "^3.4.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.446.0",
