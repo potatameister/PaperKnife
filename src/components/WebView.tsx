@@ -56,6 +56,8 @@ export default function WebView({ theme, toggleTheme, tools }: { theme: Theme, t
       navigate('/split')
     } else if (tool.title === 'Protect PDF') {
       navigate('/protect')
+    } else if (tool.title === 'Compress PDF') {
+      navigate('/compress')
     }
   }
 

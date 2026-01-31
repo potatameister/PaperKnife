@@ -9,12 +9,13 @@ const AndroidView = lazy(() => import('./components/AndroidView'))
 const MergeTool = lazy(() => import('./components/tools/MergeTool'))
 const SplitTool = lazy(() => import('./components/tools/SplitTool'))
 const ProtectTool = lazy(() => import('./components/tools/ProtectTool'))
+const CompressTool = lazy(() => import('./components/tools/CompressTool'))
 const About = lazy(() => import('./components/About'))
 
 const tools: Tool[] = [
   { title: 'Merge PDF', desc: 'Combine multiple PDF files into a single document effortlessly.', icon: FileText, implemented: true },
   { title: 'Split PDF', desc: 'Extract specific pages or divide your PDF into separate files.', icon: Grid, implemented: true },
-  { title: 'Compress PDF', desc: 'Optimize your file size for sharing without quality loss.', icon: Zap, implemented: false },
+  { title: 'Compress PDF', desc: 'Optimize your file size for sharing without quality loss.', icon: Zap, implemented: true },
   { title: 'PDF to Image', desc: 'Convert document pages into high-quality JPG or PNG images.', icon: Download, implemented: false },
   { title: 'Protect PDF', desc: 'Secure your documents with strong password encryption.', icon: Shield, implemented: true },
   { title: 'Unlock PDF', desc: 'Remove passwords and restrictions from your PDF files.', icon: Shield, implemented: false },
@@ -75,6 +76,7 @@ function App() {
             <Route path="/merge" element={<MergeTool theme={theme} toggleTheme={toggleTheme} />} />
             <Route path="/split" element={<SplitTool theme={theme} toggleTheme={toggleTheme} />} />
             <Route path="/protect" element={<ProtectTool theme={theme} toggleTheme={toggleTheme} />} />
+            <Route path="/compress" element={<CompressTool theme={theme} toggleTheme={toggleTheme} />} />
             <Route path="/about" element={<About theme={theme} toggleTheme={toggleTheme} />} />
           </Routes>
         </Suspense>
