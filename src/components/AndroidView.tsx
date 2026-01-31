@@ -42,6 +42,8 @@ export default function AndroidView({ theme, toggleTheme, tools }: { theme: Them
       navigate('/split')
     } else if (tool.title === 'Protect PDF') {
       navigate('/protect')
+    } else if (tool.title === 'Unlock PDF') {
+      navigate('/unlock')
     } else if (tool.title === 'Compress PDF') {
       navigate('/compress')
     }

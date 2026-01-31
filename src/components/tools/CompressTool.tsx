@@ -26,6 +26,7 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [quality, setQuality] = useState<CompressionQuality>('medium')
   const [resultSize, setResultSize] = useState<number | null>(null)
+  const [customFileName, setCustomFileName] = useState('paperknife-compressed')
 
   const handleFile = async (file: File) => {
     if (file.type !== 'application/pdf') return
@@ -44,6 +45,7 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
           pdfDoc,
           thumbnail: meta.thumbnail
         })
+        setCustomFileName(`${file.name.replace('.pdf', '')}-compressed`)
       }
     } catch (err) {
       console.error(err)
@@ -200,6 +202,19 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
                     </p>
                   </div>
 
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Output Filename</label>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-gray-100 dark:border-zinc-800 focus-within:border-rose-500 transition-colors">
+                      <input 
+                        type="text" 
+                        value={customFileName}
+                        onChange={(e) => setCustomFileName(e.target.value)}
+                        className="bg-transparent outline-none flex-1 text-sm font-bold dark:text-white"
+                      />
+                      <span className="text-gray-400 text-xs font-bold">.pdf</span>
+                    </div>
+                  </div>
+
                   <div className="space-y-4">
                     {isProcessing && (
                       <div className="space-y-3">
@@ -245,7 +260,7 @@ export default function CompressTool({ theme, toggleTheme }: { theme: Theme, tog
                       </button>
                       <a 
                         href={downloadUrl} 
-                        download={`compressed-${pdfData.file.name}`}
+                        download={`${customFileName || 'compressed'}.pdf`}
                         className="flex-[2] bg-gray-900 dark:bg-white text-white dark:text-black p-4 rounded-3xl font-black text-lg flex items-center justify-center gap-3 hover:scale-[1.01] active:scale-95 transition-all shadow-xl"
                       >
                         <Download size={24} /> Download PDF

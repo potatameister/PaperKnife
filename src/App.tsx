@@ -10,6 +10,7 @@ const MergeTool = lazy(() => import('./components/tools/MergeTool'))
 const SplitTool = lazy(() => import('./components/tools/SplitTool'))
 const ProtectTool = lazy(() => import('./components/tools/ProtectTool'))
 const CompressTool = lazy(() => import('./components/tools/CompressTool'))
+const UnlockTool = lazy(() => import('./components/tools/UnlockTool'))
 const About = lazy(() => import('./components/About'))
 
 const tools: Tool[] = [
@@ -18,7 +19,7 @@ const tools: Tool[] = [
   { title: 'Compress PDF', desc: 'Optimize your file size for sharing without quality loss.', icon: Zap, implemented: true },
   { title: 'PDF to Image', desc: 'Convert document pages into high-quality JPG or PNG images.', icon: Download, implemented: false },
   { title: 'Protect PDF', desc: 'Secure your documents with strong password encryption.', icon: Shield, implemented: true },
-  { title: 'Unlock PDF', desc: 'Remove passwords and restrictions from your PDF files.', icon: Shield, implemented: false },
+  { title: 'Unlock PDF', desc: 'Remove passwords and restrictions from your PDF files.', icon: Shield, implemented: true },
   { title: 'Rotate PDF', desc: 'Rotate pages in your PDF document to the correct orientation.', icon: Smartphone, implemented: false },
   { title: 'PDF to Text', desc: 'Extract plain text from your PDF documents for easy editing.', icon: FileText, implemented: false },
   { title: 'Rearrange PDF', desc: 'Organize and reorder pages within a single PDF file.', icon: Grid, implemented: false },
@@ -76,6 +77,7 @@ function App() {
             <Route path="/merge" element={<MergeTool theme={theme} toggleTheme={toggleTheme} />} />
             <Route path="/split" element={<SplitTool theme={theme} toggleTheme={toggleTheme} />} />
             <Route path="/protect" element={<ProtectTool theme={theme} toggleTheme={toggleTheme} />} />
+            <Route path="/unlock" element={<UnlockTool theme={theme} toggleTheme={toggleTheme} />} />
             <Route path="/compress" element={<CompressTool theme={theme} toggleTheme={toggleTheme} />} />
             <Route path="/about" element={<About theme={theme} toggleTheme={toggleTheme} />} />
           </Routes>
