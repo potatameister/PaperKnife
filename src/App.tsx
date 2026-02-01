@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { FileText, Shield, Zap, Download, Smartphone, Monitor, Grid } from 'lucide-react'
+import { FileText, Shield, Zap, Download, Smartphone, Monitor, Grid, Type, Hash, Edit3 } from 'lucide-react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Theme, ViewMode, Tool } from './types'
 import Layout from './components/Layout'
@@ -16,6 +16,9 @@ const PdfToImageTool = lazy(() => import('./components/tools/PdfToImageTool'))
 const RotateTool = lazy(() => import('./components/tools/RotateTool'))
 const PdfToTextTool = lazy(() => import('./components/tools/PdfToTextTool'))
 const RearrangeTool = lazy(() => import('./components/tools/RearrangeTool'))
+const WatermarkTool = lazy(() => import('./components/tools/WatermarkTool'))
+const PageNumberTool = lazy(() => import('./components/tools/PageNumberTool'))
+const MetadataTool = lazy(() => import('./components/tools/MetadataTool'))
 const About = lazy(() => import('./components/About'))
 
 const tools: Tool[] = [
@@ -26,6 +29,9 @@ const tools: Tool[] = [
   { title: 'Protect PDF', desc: 'Secure your documents with strong password encryption.', icon: Shield, implemented: true, path: '/protect' },
   { title: 'Unlock PDF', desc: 'Remove passwords and restrictions from your PDF files.', icon: Shield, implemented: true, path: '/unlock' },
   { title: 'Rotate PDF', desc: 'Rotate pages in your PDF document to the correct orientation.', icon: Smartphone, implemented: true, path: '/rotate-pdf' },
+  { title: 'Watermark', desc: 'Overlay custom text on your PDF pages for branding or security.', icon: Type, implemented: true, path: '/watermark' },
+  { title: 'Page Numbers', desc: 'Automatically add custom page numbering to your documents.', icon: Hash, implemented: true, path: '/page-numbers' },
+  { title: 'Metadata', desc: 'Edit document properties like Title, Author, and Keywords.', icon: Edit3, implemented: true, path: '/metadata' },
   { title: 'PDF to Text', desc: 'Extract plain text from your PDF documents for easy editing.', icon: FileText, implemented: true, path: '/pdf-to-text' },
   { title: 'Rearrange PDF', desc: 'Organize and reorder pages within a single PDF file.', icon: Grid, implemented: true, path: '/rearrange-pdf' },
 ]
@@ -95,6 +101,9 @@ function App() {
               <Route path="/rotate-pdf" element={<RotateTool />} />
               <Route path="/pdf-to-text" element={<PdfToTextTool />} />
               <Route path="/rearrange-pdf" element={<RearrangeTool />} />
+              <Route path="/watermark" element={<WatermarkTool />} />
+              <Route path="/page-numbers" element={<PageNumberTool />} />
+              <Route path="/metadata" element={<MetadataTool />} />
               <Route path="/about" element={<About theme={theme} toggleTheme={toggleTheme} />} />
             </Routes>
           </Suspense>
