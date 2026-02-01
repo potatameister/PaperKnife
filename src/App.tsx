@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { FileText, Shield, Zap, Download, Smartphone, Monitor, Grid, Type, Hash, Edit3, Image as ImageIcon } from 'lucide-react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Toaster } from 'sonner'
+import { FileText, Shield, Zap, Smartphone, Monitor, Edit3, Scissors, Grid } from 'lucide-react'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { Toaster, toast } from 'sonner'
 import { Theme, ViewMode, Tool } from './types'
 import Layout from './components/Layout'
 
@@ -21,26 +21,78 @@ const WatermarkTool = lazy(() => import('./components/tools/WatermarkTool'))
 const PageNumberTool = lazy(() => import('./components/tools/PageNumberTool'))
 const MetadataTool = lazy(() => import('./components/tools/MetadataTool'))
 const ImageToPdfTool = lazy(() => import('./components/tools/ImageToPdfTool'))
+const SignatureTool = lazy(() => import('./components/tools/SignatureTool'))
 const About = lazy(() => import('./components/About'))
 
 const tools: Tool[] = [
-  { title: 'Merge PDF', desc: 'Combine multiple PDF files into a single document effortlessly.', icon: FileText, implemented: true, path: '/merge' },
-  { title: 'Split PDF', desc: 'Extract specific pages or divide your PDF into separate files.', icon: Grid, implemented: true, path: '/split' },
-  { title: 'Compress PDF', desc: 'Optimize your file size for sharing without quality loss.', icon: Zap, implemented: true, path: '/compress' },
-  { title: 'Image to PDF', desc: 'Convert multiple images into a single professional PDF document.', icon: ImageIcon, implemented: true, path: '/image-to-pdf' },
-  { title: 'PDF to Image', desc: 'Convert document pages into high-quality JPG or PNG images.', icon: Download, implemented: true, path: '/pdf-to-image' },
-  { title: 'Protect PDF', desc: 'Secure your documents with strong password encryption.', icon: Shield, implemented: true, path: '/protect' },
-  { title: 'Unlock PDF', desc: 'Remove passwords and restrictions from your PDF files.', icon: Shield, implemented: true, path: '/unlock' },
-  { title: 'Rotate PDF', desc: 'Rotate pages in your PDF document to the correct orientation.', icon: Smartphone, implemented: true, path: '/rotate-pdf' },
-  { title: 'Watermark', desc: 'Overlay custom text on your PDF pages for branding or security.', icon: Type, implemented: true, path: '/watermark' },
-  { title: 'Page Numbers', desc: 'Automatically add custom page numbering to your documents.', icon: Hash, implemented: true, path: '/page-numbers' },
-  { title: 'Metadata', desc: 'Edit document properties like Title, Author, and Keywords.', icon: Edit3, implemented: true, path: '/metadata' },
-  { title: 'PDF to Text', desc: 'Extract plain text from your PDF documents for easy editing.', icon: FileText, implemented: true, path: '/pdf-to-text' },
-  { title: 'Rearrange PDF', desc: 'Organize and reorder pages within a single PDF file.', icon: Grid, implemented: true, path: '/rearrange-pdf' },
+  { title: 'Merge PDF', desc: 'Combine multiple PDF files into a single document effortlessly.', icon: FileText, implemented: true, path: '/merge', category: 'Edit' },
+  { title: 'Split PDF', desc: 'Extract specific pages or divide your PDF into separate files.', icon: Scissors, implemented: true, path: '/split', category: 'Edit' },
+  { title: 'Compress PDF', desc: 'Optimize your file size for sharing without quality loss.', icon: Zap, implemented: true, path: '/compress', category: 'Optimize' },
+  { title: 'Image to PDF', icon: Edit3, desc: 'Convert multiple images into a single professional PDF document.', implemented: true, path: '/image-to-pdf', category: 'Convert' },
+  { title: 'PDF to Image', icon: FileText, desc: 'Convert document pages into high-quality JPG or PNG images.', implemented: true, path: '/pdf-to-image', category: 'Convert' },
+  { title: 'Protect PDF', desc: 'Secure your documents with strong password encryption.', icon: Shield, implemented: true, path: '/protect', category: 'Secure' },
+  { title: 'Unlock PDF', desc: 'Remove passwords and restrictions from your PDF files.', icon: Shield, implemented: true, path: '/unlock', category: 'Secure' },
+  { title: 'Rotate PDF', desc: 'Rotate pages in your PDF document to the correct orientation.', icon: Smartphone, implemented: true, path: '/rotate-pdf', category: 'Edit' },
+  { title: 'Watermark', desc: 'Overlay custom text on your PDF pages for branding or security.', icon: Edit3, implemented: true, path: '/watermark', category: 'Edit' },
+  { title: 'Page Numbers', desc: 'Automatically add custom page numbering to your documents.', icon: FileText, implemented: true, path: '/page-numbers', category: 'Edit' },
+  { title: 'Metadata', desc: 'Edit document properties like Title, Author, and Keywords.', icon: Edit3, implemented: true, path: '/metadata', category: 'Secure' },
+  { title: 'PDF to Text', desc: 'Extract plain text from your PDF documents for easy editing.', icon: FileText, implemented: true, path: '/pdf-to-text', category: 'Convert' },
+  { title: 'Rearrange PDF', desc: 'Organize and reorder pages within a single PDF file.', icon: Grid, implemented: true, path: '/rearrange-pdf', category: 'Edit' },
+  { title: 'Signature', desc: 'Add your electronic signature to any PDF document securely.', icon: Edit3, implemented: true, path: '/signature', category: 'Edit' },
 ]
+
+function QuickDropModal({ file, onClear }: { file: File, onClear: () => void }) {
+  const navigate = useNavigate()
+  
+  const actions = [
+    { title: 'Compress', icon: Zap, path: '/compress', color: 'text-amber-500' },
+    { title: 'Protect', icon: Shield, path: '/protect', color: 'text-blue-500' },
+    { title: 'Split', icon: Scissors, path: '/split', color: 'text-rose-500' },
+    { title: 'Metadata', icon: Edit3, path: '/metadata', color: 'text-purple-500' },
+  ]
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/10">
+        <div className="p-8 text-center border-b border-gray-100 dark:border-zinc-800">
+          <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FileText size={32} />
+          </div>
+          <h3 className="text-xl font-black truncate dark:text-white">{file.name}</h3>
+          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">{(file.size / (1024*1024)).toFixed(2)} MB • Quick Actions</p>
+        </div>
+        
+        <div className="grid grid-cols-2 p-4 gap-3 bg-gray-50/50 dark:bg-black/20">
+          {actions.map(action => (
+            <button
+              key={action.title}
+              onClick={() => {
+                onClear()
+                navigate(action.path)
+                toast.success(`Opening ${action.title}...`)
+              }}
+              className="flex flex-col items-center gap-3 p-6 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl hover:border-rose-500 transition-all group"
+            >
+              <action.icon className={`${action.color} group-hover:scale-110 transition-transform`} size={24} />
+              <span className="text-xs font-black uppercase tracking-widest dark:text-zinc-300">{action.title}</span>
+            </button>
+          ))}
+        </div>
+
+        <button 
+          onClick={onClear}
+          className="w-full py-6 text-xs font-black uppercase tracking-[0.2em] text-gray-400 hover:text-rose-500 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800 transition-colors"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('web')
+  const [droppedFile, setDroppedFile] = useState<File | null>(null)
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as Theme
@@ -78,14 +130,20 @@ function App() {
 
   const handleGlobalDrop = (files: FileList) => {
     const file = files[0]
-    if (!file || file.type !== 'application/pdf') return
-    console.log('Global drop:', file.name)
+    if (!file || file.type !== 'application/pdf') {
+      toast.error('Please drop a valid PDF file.')
+      return
+    }
+    setDroppedFile(file)
   }
 
   return (
     <BrowserRouter basename="/PaperKnife/">
       <Layout theme={theme} toggleTheme={toggleTheme} tools={tools} onFileDrop={handleGlobalDrop}>
         <Toaster position="bottom-center" expand={true} richColors />
+        
+        {droppedFile && <QuickDropModal file={droppedFile} onClear={() => setDroppedFile(null)} />}
+
         <div className={`${theme} w-full overflow-x-hidden min-h-screen transition-colors duration-300 ease-out`}>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
@@ -109,6 +167,7 @@ function App() {
               <Route path="/page-numbers" element={<PageNumberTool />} />
               <Route path="/metadata" element={<MetadataTool />} />
               <Route path="/image-to-pdf" element={<ImageToPdfTool />} />
+              <Route path="/signature" element={<SignatureTool />} />
               <Route path="/about" element={<About theme={theme} toggleTheme={toggleTheme} />} />
             </Routes>
           </Suspense>

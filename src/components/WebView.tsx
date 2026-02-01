@@ -1,51 +1,55 @@
+import { useState, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Shield, Zap, Download, ChevronRight, Github, Heart } from 'lucide-react'
-import { Tool } from '../types'
+import { Shield, Zap, Download, ChevronRight, Github, Heart, Search } from 'lucide-react'
+import { Tool, ToolCategory } from '../types'
 import { PaperKnifeLogo } from './Logo'
 
 const ToolCard = ({ title, desc, icon: Icon, className = "", implemented = false, onClick }: Tool & { className?: string, onClick?: () => void }) => (
   <div 
     onClick={implemented ? onClick : undefined}
     className={`
-      rounded-3xl border transition-all duration-300 group overflow-hidden flex flex-col p-6 md:p-8 relative
+      rounded-3xl border transition-all duration-300 group overflow-hidden flex flex-col p-6 md:p-8 relative h-full
       ${implemented 
-        ? 'cursor-pointer hover:shadow-lg dark:hover:shadow-rose-900/10 hover:border-rose-200 dark:hover:border-rose-800 hover:-translate-y-0.5' 
-        : 'cursor-not-allowed opacity-60 saturate-0'}
+        ? 'cursor-pointer bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 hover:shadow-lg dark:hover:shadow-rose-900/10 hover:border-rose-200 dark:hover:border-rose-800 hover:-translate-y-0.5' 
+        : 'cursor-not-allowed opacity-60 saturate-0 bg-gray-50 dark:bg-zinc-950 border-transparent'}
       ${className}
     `}
   >
     <div className={`
-      bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl flex items-center justify-center transition-all duration-300 mb-6 
+      bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl flex items-center justify-center transition-all duration-300 mb-6 w-12 h-12 md:w-14 md:h-14
       ${implemented ? 'group-hover:bg-rose-500 group-hover:text-white' : ''}
-      ${className.includes('row-span-2') ? 'w-16 h-16 md:w-20 md:h-20' : 'w-12 h-12 md:w-14 md:h-14'}
     `}>
-      <Icon size={className.includes('row-span-2') ? 32 : 24} className="md:w-[28px] md:h-[28px]" strokeWidth={1.5} />
+      <Icon size={24} className="md:w-[28px] md:h-[28px]" strokeWidth={1.5} />
     </div>
     <div className="flex-1 flex flex-col justify-end">
       <div className="flex items-center justify-between mb-2 md:mb-3">
-        <h3 className={`font-bold text-gray-900 dark:text-white ${className.includes('row-span-2') ? 'text-2xl md:text-3xl' : 'text-lg md:text-xl'}`}>{title}</h3>
+        <h3 className="font-bold text-gray-900 dark:text-white text-lg md:text-xl">{title}</h3>
         {implemented ? (
           <ChevronRight size={18} className="text-gray-300 dark:text-zinc-600 group-hover:text-rose-500 transition-colors transform group-hover:translate-x-1" />
         ) : (
           <span className="text-[10px] font-black uppercase tracking-tighter bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded-md text-gray-400">Soon</span>
         )}
       </div>
-      <p className={`text-gray-500 dark:text-zinc-400 leading-relaxed ${className.includes('row-span-2') ? 'text-base md:text-lg' : 'text-xs md:text-sm'}`}>{desc}</p>
+      <p className="text-gray-500 dark:text-zinc-400 leading-relaxed text-xs md:text-sm">{desc}</p>
     </div>
   </div>
 )
 
 export default function WebView({ tools }: { tools: Tool[] }) {
   const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeCategory, setActiveCategory] = useState<ToolCategory | 'All'>('All')
 
-  // Bento Grid Layout Configuration
-  const getBentoClass = (i: number) => {
-    switch(i) {
-      case 0: return "md:col-span-2 md:row-span-2 bg-gradient-to-br from-white to-rose-50 dark:from-zinc-900 dark:to-rose-950/10 border-rose-100 dark:border-rose-900/30" // Merge (Hero)
-      case 4: return "md:col-span-1 md:row-span-1 bg-gradient-to-br from-white to-rose-50/50 dark:from-zinc-900 dark:to-rose-950/5 border-rose-50 dark:border-rose-900/20" // Protect (Secondary Hero)
-      default: return "md:col-span-1 bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800" // Others
-    }
-  }
+  const categories: (ToolCategory | 'All')[] = ['All', 'Edit', 'Secure', 'Convert', 'Optimize']
+
+  const filteredTools = useMemo(() => {
+    return tools.filter(tool => {
+      const matchesSearch = tool.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           tool.desc.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesCategory = activeCategory === 'All' || tool.category === activeCategory
+      return matchesSearch && matchesCategory
+    })
+  }, [tools, searchQuery, activeCategory])
 
   // Handle Tool Click
   const handleToolClick = (tool: Tool) => {
@@ -66,21 +70,54 @@ export default function WebView({ tools }: { tools: Tool[] }) {
             Stop Uploading <br/>
             <span className="text-rose-500">Your Privacy.</span>
           </h2>
-          <p className="text-lg md:text-xl text-gray-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-12">
             The professional PDF utility that lives in your browser. <br className="hidden md:block"/>
             No uploads, no servers, just your data staying yours.
           </p>
+
+          {/* Search & Tabs */}
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-gray-400 group-focus-within:text-rose-500 transition-colors">
+                <Search size={20} />
+              </div>
+              <input 
+                type="text"
+                placeholder="Search tools (e.g. merge, compress, protect...)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[2rem] py-5 pl-14 pr-6 shadow-xl shadow-gray-200/50 dark:shadow-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all font-bold text-lg"
+              />
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-6 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-rose-500 text-white shadow-lg shadow-rose-200 dark:shadow-none' : 'bg-white dark:bg-zinc-900 text-gray-400 border border-gray-100 dark:border-zinc-800 hover:border-rose-200'}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
-          {tools.map((tool, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTools.map((tool) => (
             <ToolCard 
-              key={i} 
+              key={tool.title} 
               {...tool} 
-              className={getBentoClass(i)} 
               onClick={() => handleToolClick(tool)}
             />
           ))}
+          {filteredTools.length === 0 && (
+            <div className="col-span-full py-20 text-center">
+              <p className="text-xl font-bold text-gray-400">No tools found matching your search.</p>
+              <button onClick={() => { setSearchQuery(''); setActiveCategory('All'); }} className="mt-4 text-rose-500 font-black uppercase tracking-widest text-xs hover:underline">Clear Filters</button>
+            </div>
+          )}
         </div>
 
         <div className="mt-32 grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-gray-100 dark:border-zinc-800 pt-20">
