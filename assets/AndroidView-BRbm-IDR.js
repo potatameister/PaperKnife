@@ -1,4 +1,4 @@
-import{u as c,j as e,S as n,C as o}from"./index-ap-fldHg.js";import"./utilities-BzjkILRQ.js";import"./pdf-core-CNWTKtlN.js";const d=({title:s,desc:t,icon:a,implemented:r,onClick:i})=>e.jsxs("div",{onClick:r?i:void 0,className:`
+import{u as c,j as e,S as n,C as o}from"./index-CCv36z5u.js";import"./utilities-B3o621IH.js";import"./pdf-core-gCM2Eau9.js";const d=({title:s,desc:t,icon:a,implemented:r,onClick:i})=>e.jsxs("div",{onClick:r?i:void 0,className:`
       bg-white dark:bg-zinc-900 rounded-3xl border transition-all duration-300 flex flex-row items-center p-4 gap-4
       ${r?"border-gray-100 dark:border-zinc-800 shadow-sm active:scale-95":"border-gray-50 dark:border-zinc-900 opacity-50 saturate-0"}
     `,children:[e.jsx("div",{className:`
