@@ -25,10 +25,14 @@ PaperKnife includes 9 professional-grade tools:
 | **Merge PDF** | Combine multiple files into one document. | ✅ Ready |
 | **Split PDF** | Visually extract specific pages or ranges. | ✅ Ready |
 | **Compress PDF** | Optimize file size for sharing (High/Med/Low). | ✅ Ready |
+| **Image to PDF** | Convert images (JPG/PNG) into a professional PDF. | ✅ Ready |
+| **PDF to Image** | Convert pages to high-quality JPG/PNG (ZIP). | ✅ Ready |
 | **Protect PDF** | Encrypt documents with strong passwords. | ✅ Ready |
 | **Unlock PDF** | Remove passwords from protected files. | ✅ Ready |
-| **PDF to Image** | Convert pages to high-quality JPG/PNG (ZIP). | ✅ Ready |
 | **Rotate PDF** | Fix page orientation permanently. | ✅ Ready |
+| **Watermark** | Overlay custom text for branding/security. | ✅ Ready |
+| **Page Numbers** | Automatically add custom numbering. | ✅ Ready |
+| **Metadata** | Edit Title, Author, Keywords for privacy. | ✅ Ready |
 | **Rearrange** | Drag and drop pages to reorder them. | ✅ Ready |
 | **PDF to Text** | Extract plain text for editing. | ✅ Ready |
 

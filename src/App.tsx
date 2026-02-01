@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { FileText, Shield, Zap, Download, Smartphone, Monitor, Grid, Type, Hash, Edit3 } from 'lucide-react'
+import { FileText, Shield, Zap, Download, Smartphone, Monitor, Grid, Type, Hash, Edit3, Image as ImageIcon } from 'lucide-react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { Theme, ViewMode, Tool } from './types'
 import Layout from './components/Layout'
 
@@ -19,12 +20,14 @@ const RearrangeTool = lazy(() => import('./components/tools/RearrangeTool'))
 const WatermarkTool = lazy(() => import('./components/tools/WatermarkTool'))
 const PageNumberTool = lazy(() => import('./components/tools/PageNumberTool'))
 const MetadataTool = lazy(() => import('./components/tools/MetadataTool'))
+const ImageToPdfTool = lazy(() => import('./components/tools/ImageToPdfTool'))
 const About = lazy(() => import('./components/About'))
 
 const tools: Tool[] = [
   { title: 'Merge PDF', desc: 'Combine multiple PDF files into a single document effortlessly.', icon: FileText, implemented: true, path: '/merge' },
   { title: 'Split PDF', desc: 'Extract specific pages or divide your PDF into separate files.', icon: Grid, implemented: true, path: '/split' },
   { title: 'Compress PDF', desc: 'Optimize your file size for sharing without quality loss.', icon: Zap, implemented: true, path: '/compress' },
+  { title: 'Image to PDF', desc: 'Convert multiple images into a single professional PDF document.', icon: ImageIcon, implemented: true, path: '/image-to-pdf' },
   { title: 'PDF to Image', desc: 'Convert document pages into high-quality JPG or PNG images.', icon: Download, implemented: true, path: '/pdf-to-image' },
   { title: 'Protect PDF', desc: 'Secure your documents with strong password encryption.', icon: Shield, implemented: true, path: '/protect' },
   { title: 'Unlock PDF', desc: 'Remove passwords and restrictions from your PDF files.', icon: Shield, implemented: true, path: '/unlock' },
@@ -82,6 +85,7 @@ function App() {
   return (
     <BrowserRouter basename="/PaperKnife/">
       <Layout theme={theme} toggleTheme={toggleTheme} tools={tools} onFileDrop={handleGlobalDrop}>
+        <Toaster position="bottom-center" expand={true} richColors />
         <div className={`${theme} w-full overflow-x-hidden min-h-screen transition-colors duration-300 ease-out`}>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
@@ -104,6 +108,7 @@ function App() {
               <Route path="/watermark" element={<WatermarkTool />} />
               <Route path="/page-numbers" element={<PageNumberTool />} />
               <Route path="/metadata" element={<MetadataTool />} />
+              <Route path="/image-to-pdf" element={<ImageToPdfTool />} />
               <Route path="/about" element={<About theme={theme} toggleTheme={toggleTheme} />} />
             </Routes>
           </Suspense>

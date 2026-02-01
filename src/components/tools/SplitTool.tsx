@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
-import { Download, Loader2, CheckCircle2, Edit2, Scissors, Check, Plus, Eye, Lock } from 'lucide-react'
+import { Loader2, Edit2, Scissors, Check, Plus, Lock } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import JSZip from 'jszip'
+import { toast } from 'sonner'
 
 import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
+import ToolHeader from './shared/ToolHeader'
+import SuccessState from './shared/SuccessState'
+import PrivacyBadge from './shared/PrivacyBadge'
 
 type SplitPdfFile = {
   file: File
@@ -73,7 +77,7 @@ export default function SplitTool() {
       setSelectedPages(all)
       setRangeInput(`1-${result.pageCount}`)
     } else {
-      alert('Incorrect password')
+      toast.error('Incorrect password')
     }
     setIsLoadingMeta(false)
   }
@@ -251,10 +255,10 @@ export default function SplitTool() {
           setIsProcessing(false)
           return
         } catch (retryErr: any) {
-           alert(`Failed even with bypass: ${retryErr.message}`)
+           toast.error(`Failed even with bypass: ${retryErr.message}`)
         }
       }
-      alert(error.message || 'Error splitting PDF.')
+      toast.error(error.message || 'Error splitting PDF.')
     } finally {
       setIsProcessing(false)
     }
@@ -263,10 +267,11 @@ export default function SplitTool() {
   return (
     <div className="flex-1">
       <main className="max-w-6xl mx-auto px-6 py-6 md:py-10">
-        <div className="text-center mb-8 md:mb-12">
-          <h2 className="text-3xl md:text-5xl font-black mb-3 md:mb-4 dark:text-white">Visual <span className="text-rose-500">Splitter.</span></h2>
-          <p className="text-sm md:text-base text-gray-500 dark:text-zinc-400">Select pages visually or by range to extract them. <br className="hidden md:block"/>Everything stays on your device.</p>
-        </div>
+        <ToolHeader 
+          title="Visual" 
+          highlight="Splitter" 
+          description="Select pages visually or by range to extract them. Everything stays on your device." 
+        />
 
         <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
 
@@ -429,27 +434,13 @@ export default function SplitTool() {
                       </button>
                     ) : (
                       <div className="space-y-3">
-                         <div className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-green-100 dark:border-green-900/30">
-                            <CheckCircle2 size={16} /> Ready for Download
-                         </div>
-
-                         {splitMode === 'single' && (
-                           <button 
-                             onClick={() => window.open(downloadUrl, '_blank')}
-                             className="w-full bg-white dark:bg-zinc-800 text-gray-900 dark:text-white p-4 rounded-2xl font-black flex items-center justify-center gap-3 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-all active:scale-95"
-                           >
-                             <Eye size={20} /> Preview PDF
-                           </button>
-                         )}
-
-                         <a 
-                          href={downloadUrl} 
-                          download={`${customFileName || 'split'}.${splitMode === 'single' ? 'pdf' : 'zip'}`}
-                          className="w-full bg-gray-900 dark:bg-white text-white dark:text-black p-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"
-                         >
-                          <Download size={20} /> Download {splitMode === 'single' ? 'PDF' : 'ZIP'}
-                        </a>
-                        <button onClick={() => setDownloadUrl(null)} className="w-full py-2 text-xs font-black uppercase text-gray-400 hover:text-rose-500">Edit Selection</button>
+                        <SuccessState 
+                          message="Ready for Download"
+                          downloadUrl={downloadUrl}
+                          fileName={`${customFileName || 'split'}.${splitMode === 'single' ? 'pdf' : 'zip'}`}
+                          onStartOver={() => setDownloadUrl(null)}
+                          showPreview={splitMode === 'single'}
+                        />
                       </div>
                     )}
                   </div>
@@ -469,6 +460,7 @@ export default function SplitTool() {
             </div>
           </div>
         )}
+        <PrivacyBadge />
       </main>
     </div>
   )

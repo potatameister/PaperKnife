@@ -1,12 +1,16 @@
 import { useState, useRef } from 'react'
-import { Plus, X, Download, Loader2, CheckCircle2, GripVertical, Lock, Eye, Edit2, RotateCw, Upload } from 'lucide-react'
+import { Plus, X, Loader2, GripVertical, Lock, Edit2, RotateCw, Upload } from 'lucide-react'
 import { PDFDocument, degrees } from 'pdf-lib'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { toast } from 'sonner'
 
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
+import ToolHeader from './shared/ToolHeader'
+import SuccessState from './shared/SuccessState'
+import PrivacyBadge from './shared/PrivacyBadge'
 
 // File Item Type
 type PdfFile = {
@@ -178,7 +182,7 @@ export default function MergeTool() {
         password: pass
       } : f))
     } else {
-      alert('Incorrect password for ' + pdfFile.file.name)
+      toast.error('Incorrect password for ' + pdfFile.file.name)
     }
   }
 
@@ -272,7 +276,7 @@ export default function MergeTool() {
       })
     } catch (error: any) {
       console.error('Final Merge Error:', error)
-      alert(error.message || 'An unexpected error occurred during merging.')
+      toast.error(error.message || 'An unexpected error occurred during merging.')
     } finally {
       setIsProcessing(false)
     }
@@ -297,15 +301,11 @@ export default function MergeTool() {
       )}
 
       <main className="max-w-4xl mx-auto px-6 py-6 md:py-10">
-        <div className="text-center mb-8 md:mb-12">
-          <h2 className="text-3xl md:text-5xl font-black mb-3 md:mb-4 dark:text-white">
-            Combine Your <span className="text-rose-500">Files.</span>
-          </h2>
-          <p className="text-sm md:text-base text-gray-500 dark:text-zinc-400">
-            Drag and drop multiple PDFs to merge them into one document. <br className="hidden md:block"/>
-            Processed entirely on your device.
-          </p>
-        </div>
+        <ToolHeader 
+          title="Combine Your" 
+          highlight="Files" 
+          description="Drag and drop multiple PDFs to merge them into one document. Processed entirely on your device." 
+        />
 
         {/* Input (Hidden) */}
         <input 
@@ -425,35 +425,12 @@ export default function MergeTool() {
               </div>
             ) : (
               // Download & Preview State
-              <div className="animate-in slide-in-from-bottom duration-500 fade-in space-y-4">
-                 <div className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-3 md:p-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-xs md:text-sm border border-green-100 dark:border-green-900/30">
-                    <CheckCircle2 size={16} /> Success! Your PDF is ready.
-                 </div>
-                 
-                 <div className="flex flex-col sm:flex-row gap-3">
-                    <button 
-                      onClick={() => window.open(downloadUrl, '_blank')}
-                      className="flex-1 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-800 p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm font-black text-lg md:text-xl tracking-tight transition-all hover:bg-gray-50 active:scale-95 flex items-center justify-center gap-3"
-                    >
-                      <Eye size={24} /> Preview
-                    </button>
-                    
-                    <a 
-                      href={downloadUrl}
-                      download={`${customFileName || 'merged'}.pdf`}
-                      className="flex-[2] bg-gray-900 dark:bg-white text-white dark:text-black p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-xl font-black text-lg md:text-xl tracking-tight transition-all hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-3"
-                    >
-                      <Download size={24} /> Download PDF
-                    </a>
-                 </div>
-
-                <button 
-                  onClick={() => { setFiles([]); setDownloadUrl(null); }}
-                  className="w-full mt-4 py-2 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300 font-bold text-xs uppercase tracking-[0.2em]"
-                >
-                  Start Over
-                </button>
-              </div>
+              <SuccessState 
+                message="Success! Your PDF is ready."
+                downloadUrl={downloadUrl}
+                fileName={`${customFileName || 'merged'}.pdf`}
+                onStartOver={() => { setFiles([]); setDownloadUrl(null); }}
+              />
             )}
           </div>
         </div>
@@ -467,11 +444,7 @@ export default function MergeTool() {
           </div>
         )}
 
-        {/* Privacy Note */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-600">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          100% Client-Side Processing
-        </div>
+        <PrivacyBadge />
       </main>
     </div>
   )
