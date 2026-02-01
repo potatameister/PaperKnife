@@ -8,4 +8,5 @@ export interface Tool {
   desc: string
   icon: LucideIcon
   implemented?: boolean
+  path?: string
 }

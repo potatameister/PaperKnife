@@ -50,16 +50,8 @@ export default function WebView({ tools }: { tools: Tool[] }) {
   // Handle Tool Click
   const handleToolClick = (tool: Tool) => {
     if (!tool.implemented) return;
-    if (tool.title === 'Merge PDF') {
-      navigate('/merge')
-    } else if (tool.title === 'Split PDF') {
-      navigate('/split')
-    } else if (tool.title === 'Protect PDF') {
-      navigate('/protect')
-    } else if (tool.title === 'Unlock PDF') {
-      navigate('/unlock')
-    } else if (tool.title === 'Compress PDF') {
-      navigate('/compress')
+    if (tool.path) {
+      navigate(tool.path)
     }
   }
 

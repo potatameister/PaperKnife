@@ -19,15 +19,15 @@ const RearrangeTool = lazy(() => import('./components/tools/RearrangeTool'))
 const About = lazy(() => import('./components/About'))
 
 const tools: Tool[] = [
-  { title: 'Merge PDF', desc: 'Combine multiple PDF files into a single document effortlessly.', icon: FileText, implemented: true },
-  { title: 'Split PDF', desc: 'Extract specific pages or divide your PDF into separate files.', icon: Grid, implemented: true },
-  { title: 'Compress PDF', desc: 'Optimize your file size for sharing without quality loss.', icon: Zap, implemented: true },
-  { title: 'PDF to Image', desc: 'Convert document pages into high-quality JPG or PNG images.', icon: Download, implemented: true },
-  { title: 'Protect PDF', desc: 'Secure your documents with strong password encryption.', icon: Shield, implemented: true },
-  { title: 'Unlock PDF', desc: 'Remove passwords and restrictions from your PDF files.', icon: Shield, implemented: true },
-  { title: 'Rotate PDF', desc: 'Rotate pages in your PDF document to the correct orientation.', icon: Smartphone, implemented: true },
-  { title: 'PDF to Text', desc: 'Extract plain text from your PDF documents for easy editing.', icon: FileText, implemented: true },
-  { title: 'Rearrange PDF', desc: 'Organize and reorder pages within a single PDF file.', icon: Grid, implemented: true },
+  { title: 'Merge PDF', desc: 'Combine multiple PDF files into a single document effortlessly.', icon: FileText, implemented: true, path: '/merge' },
+  { title: 'Split PDF', desc: 'Extract specific pages or divide your PDF into separate files.', icon: Grid, implemented: true, path: '/split' },
+  { title: 'Compress PDF', desc: 'Optimize your file size for sharing without quality loss.', icon: Zap, implemented: true, path: '/compress' },
+  { title: 'PDF to Image', desc: 'Convert document pages into high-quality JPG or PNG images.', icon: Download, implemented: true, path: '/pdf-to-image' },
+  { title: 'Protect PDF', desc: 'Secure your documents with strong password encryption.', icon: Shield, implemented: true, path: '/protect' },
+  { title: 'Unlock PDF', desc: 'Remove passwords and restrictions from your PDF files.', icon: Shield, implemented: true, path: '/unlock' },
+  { title: 'Rotate PDF', desc: 'Rotate pages in your PDF document to the correct orientation.', icon: Smartphone, implemented: true, path: '/rotate-pdf' },
+  { title: 'PDF to Text', desc: 'Extract plain text from your PDF documents for easy editing.', icon: FileText, implemented: true, path: '/pdf-to-text' },
+  { title: 'Rearrange PDF', desc: 'Organize and reorder pages within a single PDF file.', icon: Grid, implemented: true, path: '/rearrange-pdf' },
 ]
 
 function App() {
