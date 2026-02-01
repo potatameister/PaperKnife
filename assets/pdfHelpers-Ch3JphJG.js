@@ -1,4 +1,4 @@
-import{c as i}from"./index-C7GXwjKo.js";import{g as s,G as u}from"./pdf-viewer-DFtpL4X_.js";/**
+import{c as i}from"./index-BzPALJtm.js";import{g as s,G as u}from"./pdf-viewer-DFtpL4X_.js";/**
  * @license lucide-react v0.446.0 - ISC
  *
  * This source code is licensed under the ISC license.
