@@ -50,13 +50,13 @@ const ToolCard = ({ title, desc, icon: Icon, implemented = false, onClick, categ
       className={`
         rounded-[2.5rem] border transition-all duration-500 group overflow-hidden flex flex-col p-8 relative h-full
         ${implemented 
-          ? `cursor-pointer bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 hover:shadow-2xl ${colors.glow} hover:border-transparent hover:-translate-y-1` 
+          ? `cursor-pointer bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 hover:shadow-xl ${colors.glow} hover:border-transparent hover:-translate-y-0.5` 
           : 'cursor-not-allowed opacity-60 saturate-0 bg-gray-50 dark:bg-zinc-950 border-transparent'}
       `}
     >
       <div className={`
         ${colors.bg} ${colors.text} rounded-2xl flex items-center justify-center transition-all duration-500 mb-6 w-14 h-14
-        ${implemented ? `${colors.hover} group-hover:text-white group-hover:scale-110 group-hover:rotate-3` : ''}
+        ${implemented ? `${colors.hover} group-hover:text-white` : ''}
       `}>
         <Icon size={28} strokeWidth={1.5} />
       </div>
@@ -64,8 +64,8 @@ const ToolCard = ({ title, desc, icon: Icon, implemented = false, onClick, categ
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-black text-gray-900 dark:text-white text-xl tracking-tight">{title}</h3>
           {implemented ? (
-            <div className={`${colors.bg} ${colors.text} p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0`}>
-              <ChevronRight size={16} />
+            <div className={`${colors.text} opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0`}>
+              <ChevronRight size={18} />
             </div>
           ) : (
             <span className="text-[10px] font-black uppercase tracking-tighter bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded-md text-gray-400">Soon</span>
@@ -75,7 +75,7 @@ const ToolCard = ({ title, desc, icon: Icon, implemented = false, onClick, categ
       </div>
       
       {/* Subtle Category Badge */}
-      <div className={`absolute top-8 right-8 text-[8px] font-black uppercase tracking-[0.2em] ${colors.text} opacity-20 group-hover:opacity-100 transition-opacity`}>
+      <div className={`absolute top-8 right-8 text-[8px] font-black uppercase tracking-[0.2em] ${colors.text} opacity-10 group-hover:opacity-40 transition-opacity`}>
         {category}
       </div>
     </div>
