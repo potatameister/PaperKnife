@@ -31,8 +31,15 @@ function SignaturePad({ onSave, onCancel, inkColor }: { onSave: (blob: Blob) => 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // HD Canvas Setup
+    const dpr = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    canvas.width = rect.width * dpr
+    canvas.height = rect.height * dpr
+    ctx.scale(dpr, dpr)
+
     ctx.strokeStyle = inkColor
-    ctx.lineWidth = 2.5
+    ctx.lineWidth = 3
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
   }, [inkColor])
@@ -43,11 +50,9 @@ function SignaturePad({ onSave, onCancel, inkColor }: { onSave: (blob: Blob) => 
     const rect = canvas.getBoundingClientRect()
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
+      x: clientX - rect.left,
+      y: clientY - rect.top
     }
   }
 
@@ -99,11 +104,9 @@ function SignaturePad({ onSave, onCancel, inkColor }: { onSave: (blob: Blob) => 
 
   return (
     <div className="space-y-4 animate-in zoom-in-95 duration-200">
-      <div className="relative aspect-video w-full bg-white border-2 border-gray-200 dark:border-zinc-700 rounded-2xl overflow-hidden touch-none shadow-sm">
+      <div className="relative aspect-video w-full bg-white border-2 border-gray-200 dark:border-zinc-700 rounded-3xl overflow-hidden touch-none shadow-sm">
         <canvas
           ref={canvasRef}
-          width={800}
-          height={400}
           className="w-full h-full cursor-crosshair"
           onMouseDown={startDrawing}
           onMouseMove={draw}
@@ -114,7 +117,7 @@ function SignaturePad({ onSave, onCancel, inkColor }: { onSave: (blob: Blob) => 
           onTouchEnd={stopDrawing}
         />
         <div className="absolute top-4 right-4 flex gap-2">
-          <button onClick={handleClear} className="p-2 bg-gray-100 hover:bg-rose-500 hover:text-white rounded-xl transition-all shadow-sm text-gray-600">
+          <button onClick={handleClear} className="p-2.5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 hover:bg-rose-500 hover:text-white rounded-xl transition-all shadow-sm text-gray-400" title="Clear">
             <Eraser size={18} />
           </button>
         </div>
@@ -161,6 +164,7 @@ export default function SignatureTool() {
   const [sigMode, setSigMode] = useState<'draw' | 'upload' | null>(null)
   const [inkColor, setInkColor] = useState('#000000')
   const [isDraggingSig, setIsDraggingSig] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
 
   const handleUnlock = async () => {
     if (!pdfData || !unlockPassword) return
@@ -215,14 +219,21 @@ export default function SignatureTool() {
     }
   }
 
-  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDraggingSig || !previewRef.current) return
+  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!previewRef.current) return
     const rect = previewRef.current.getBoundingClientRect()
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-    let x = ((clientX - rect.left) / rect.width) * 100
-    let y = ((clientY - rect.top) / rect.height) * 100
-    setPos({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) })
+
+    if (isDraggingSig) {
+      let x = ((clientX - rect.left) / rect.width) * 100
+      let y = ((clientY - rect.top) / rect.height) * 100
+      setPos({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) })
+    } else if (isResizing) {
+      const sigX = (pos.x / 100) * rect.width + rect.left
+      const newWidth = clientX - (sigX - (size / 2))
+      setSize(Math.max(50, Math.min(rect.width, newWidth)))
+    }
   }
 
   const saveSignedPdf = async () => {
@@ -256,7 +267,7 @@ export default function SignatureTool() {
   }
 
   return (
-    <div className="flex-1" onMouseMove={handleMove} onTouchMove={handleMove} onMouseUp={() => setIsDraggingSig(false)} onTouchEnd={() => setIsDraggingSig(false)}>
+    <div className="flex-1" onMouseMove={handleMouseMove} onTouchMove={handleMouseMove} onMouseUp={() => { setIsDraggingSig(false); setIsResizing(false); }} onTouchEnd={() => { setIsDraggingSig(false); setIsResizing(false); }}>
       {loadingMsg && <LoadingOverlay message={loadingMsg} />}
       <main className="max-w-6xl mx-auto px-6 py-6 md:py-10">
         <ToolHeader title="Electronic" highlight="Signature" description="Sign any PDF document securely. Draw your signature or upload a transparent PNG." />
@@ -290,16 +301,17 @@ export default function SignatureTool() {
                     <button disabled={activePage >= pdfData.pageCount} onClick={async () => { const newPage = activePage + 1; setActivePage(newPage); setThumbnail(null); await updateThumbnail(pdfData.pdfDoc, newPage); }} className="px-3 py-1 bg-gray-100 dark:bg-zinc-800 rounded-lg text-[10px] font-bold disabled:opacity-30 dark:text-white">Next</button>
                   </div>
                 </div>
-                <div ref={previewRef} className="relative aspect-[1/1.4] w-full bg-gray-100 dark:bg-black rounded-xl overflow-hidden cursor-crosshair group touch-none" onClick={(e) => { if (!signatureImg || isDraggingSig) return; const rect = e.currentTarget.getBoundingClientRect(); setPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 }); }}>
+                <div ref={previewRef} className="relative aspect-[1/1.4] w-full bg-gray-100 dark:bg-black rounded-xl overflow-hidden cursor-crosshair group touch-none" onClick={(e) => { if (!signatureImg || isDraggingSig || isResizing) return; const rect = e.currentTarget.getBoundingClientRect(); setPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 }); }}>
                   {thumbnail ? <img src={thumbnail} className="w-full h-full object-contain" alt="PDF Page" /> : <div className="w-full h-full flex items-center justify-center animate-pulse"><Loader2 className="animate-spin text-rose-500" /></div>}
                   {signatureImg && (
                     <div onMouseDown={(e) => { e.stopPropagation(); setIsDraggingSig(true); }} onTouchStart={(e) => { e.stopPropagation(); setIsDraggingSig(true); }} style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${size}px`, transform: 'translate(-50%, -50%)' }} className={`absolute cursor-move ring-2 ring-rose-500 ring-offset-2 rounded-sm shadow-2xl transition-shadow ${isDraggingSig ? 'scale-105 shadow-rose-500/20' : 'scale-100'}`}>
-                      <img src={signatureImg} className="w-full h-auto brightness-0 dark:invert" alt="Signature" />
+                      <img src={signatureImg} className="w-full h-auto brightness-0 dark:invert pointer-events-none" alt="Signature" />
+                      <div onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); }} onTouchStart={(e) => { e.stopPropagation(); setIsResizing(true); }} className="absolute bottom-[-10px] right-[-10px] w-6 h-6 bg-rose-500 rounded-full border-2 border-white shadow-lg cursor-nwse-resize flex items-center justify-center text-white"><div className="w-2 h-2 bg-white rounded-full animate-pulse" /></div>
                     </div>
                   )}
                   {!signatureImg && <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><p className="bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-lg text-xs font-bold dark:text-white">Configure signature first</p></div>}
                 </div>
-                <p className="text-[10px] text-center text-gray-400 mt-4 font-medium italic">Drag signature or click to reposition.</p>
+                <p className="text-[10px] text-center text-gray-400 mt-4 font-medium italic">Drag signature to move • Drag handle to resize.</p>
               </div>
             </div>
             <div className="space-y-6">
@@ -330,7 +342,6 @@ export default function SignatureTool() {
                     </div>
                     {signatureImg && (
                       <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
-                        <div><label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 flex justify-between"><span>Signature Size</span><span className="text-rose-500 font-black">{size}px</span></label><input type="range" min="50" max="400" step="5" value={size} onChange={(e) => setSize(parseInt(e.target.value))} className="w-full accent-rose-500" /></div>
                         <button onClick={saveSignedPdf} disabled={isProcessing} className="w-full bg-rose-500 hover:bg-rose-600 text-white p-6 rounded-3xl shadow-xl shadow-rose-200 dark:shadow-none font-black text-xl tracking-tight transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">{isProcessing ? <Loader2 className="animate-spin" /> : <Download />}Save Signed PDF</button>
                       </div>
                     )}
