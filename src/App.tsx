@@ -171,7 +171,7 @@ function App() {
               <Route path="/image-to-pdf" element={<ImageToPdfTool />} />
               <Route path="/signature" element={<SignatureTool />} />
               <Route path="/repair" element={<RepairTool />} />
-              <Route path="/about" element={<About theme={theme} toggleTheme={toggleTheme} />} />
+              <Route path="/about" element={<About />} />
             </Routes>
           </Suspense>
 

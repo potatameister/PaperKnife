@@ -1,11 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Shield, Zap, Github, Globe, Smartphone, Moon, Sun, Heart, Key, Star, Sparkles } from 'lucide-react'
-import { Theme } from '../types'
-import { PaperKnifeLogo } from './Logo'
+import { Shield, Zap, Github, Globe, Smartphone, Moon, Heart, Key, Star, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
 
-export default function About({ theme, toggleTheme }: { theme: Theme, toggleTheme: () => void }) {
-  const navigate = useNavigate()
+export default function About() {
   const [supporterKey, setSupporterKey] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
 
@@ -14,35 +11,12 @@ export default function About({ theme, toggleTheme }: { theme: Theme, toggleThem
     // Simple local validation logic to be implemented later
     setTimeout(() => {
       setIsVerifying(false)
-      alert("This is a preview. In the final version, this will unlock the Rose Gold and OLED Black themes!")
+      toast.info("Supporter keys will be available soon!")
     }, 1500)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] dark:from-zinc-900 dark:via-zinc-950 dark:to-black text-gray-900 dark:text-zinc-100 font-sans transition-colors duration-300 ease-out">
-      
-      {/* Brand Header */}
-      <header className="bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 shrink-0">
-            <button 
-              onClick={() => navigate('/')}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-gray-500 hover:text-rose-500 mr-1"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <PaperKnifeLogo size={28} />
-            <h1 className="text-xl md:text-2xl font-black tracking-tighter text-gray-900 dark:text-white hidden sm:block">PaperKnife</h1>
-          </div>
-          <button 
-            onClick={toggleTheme}
-            className="flex items-center justify-center h-10 w-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-700 hover:border-rose-500 transition-all active:scale-95"
-          >
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
-        </div>
-      </header>
-
+    <div className="min-h-full">
       <main className="max-w-4xl mx-auto px-6 py-12 md:py-20">
         {/* Hero Section */}
         <section className="text-center mb-20">
