@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react'
 import { Plus, X, Loader2, GripVertical, Lock, Edit2, RotateCw, Upload } from 'lucide-react'
-import { PDFDocument, degrees } from 'pdf-lib'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -238,46 +237,59 @@ export default function MergeTool() {
 
     setIsProcessing(true)
     setProgress(0)
+    
     try {
-      const mergedPdf = await PDFDocument.create()
-      for (let i = 0; i < files.length; i++) {
-        const pdfFile = files[i]
-        try {
-          const fileBuffer = await pdfFile.file.arrayBuffer()
-          const pdf = await PDFDocument.load(fileBuffer, { 
-            password: pdfFile.password || undefined,
-            ignoreEncryption: true 
-          } as any)
-          const pageIndices = pdf.getPageIndices()
-          const copiedPages = await mergedPdf.copyPages(pdf, pageIndices)
-          
-          copiedPages.forEach((page) => {
-            const currentRotation = page.getRotation().angle
-            page.setRotation(degrees((currentRotation + pdfFile.rotation) % 360))
-            mergedPdf.addPage(page)
-          })
-        } catch (innerErr: any) {
-          console.error(`Error loading ${pdfFile.file.name}:`, innerErr)
-          throw new Error(`Could not load "${pdfFile.file.name}". ${innerErr.message || 'It might be encrypted or a newer PDF version than 1.7.'}`)
-        }
-        setProgress(Math.round(((i + 1) / files.length) * 100))
+      // Create Worker
+      const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
+      
+      // Prepare buffers
+      const fileDatas = []
+      for (const f of files) {
+        fileDatas.push({
+          buffer: await f.file.arrayBuffer(),
+          rotation: f.rotation,
+          password: f.password
+        })
       }
-      const mergedPdfBytes = await mergedPdf.save()
-      const blob = new Blob([mergedPdfBytes as any], { type: 'application/pdf' })
-      const url = URL.createObjectURL(blob)
-      setDownloadUrl(url)
 
-      // Add to local activity history
-      addActivity({
-        name: `${customFileName || 'merged'}.pdf`,
-        tool: 'Merge',
-        size: blob.size,
-        resultUrl: url
-      })
+      worker.postMessage({ type: 'MERGE_PDFS', payload: { files: fileDatas } })
+
+      worker.onmessage = (e) => {
+        const { type, payload } = e.data
+        if (type === 'PROGRESS') {
+          setProgress(payload)
+        } else if (type === 'SUCCESS') {
+          const blob = new Blob([payload], { type: 'application/pdf' })
+          const url = URL.createObjectURL(blob)
+          setDownloadUrl(url)
+          
+          addActivity({
+            name: `${customFileName || 'merged'}.pdf`,
+            tool: 'Merge',
+            size: blob.size,
+            resultUrl: url
+          })
+          
+          setIsProcessing(false)
+          worker.terminate()
+          toast.success('PDFs merged successfully!')
+        } else if (type === 'ERROR') {
+          toast.error(payload)
+          setIsProcessing(false)
+          worker.terminate()
+        }
+      }
+
+      worker.onerror = (err) => {
+        console.error('Worker global error:', err)
+        toast.error('Processing failed in background.')
+        setIsProcessing(false)
+        worker.terminate()
+      }
+
     } catch (error: any) {
       console.error('Final Merge Error:', error)
       toast.error(error.message || 'An unexpected error occurred during merging.')
-    } finally {
       setIsProcessing(false)
     }
   }

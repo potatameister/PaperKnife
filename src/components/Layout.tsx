@@ -132,33 +132,43 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
 
             {/* Dropdown Menu */}
             {isDropdownOpen && (
-              <div className="absolute top-full left-0 mt-3 w-64 md:w-80 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[2rem] shadow-2xl py-4 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="px-6 py-2 mb-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Switch Tool</span>
-                </div>
-                <div className="grid grid-cols-1 gap-1 px-2">
-                  {tools.filter(t => t.implemented).map((tool, i) => {
-                    const Icon = tool.icon
-                    const isActive = activeTool?.title === tool.title && !isHome
-                    const path = `/${tool.title.split(' ')[0].toLowerCase()}`
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => { navigate(path); setIsDropdownOpen(false); }}
-                        className={`flex items-center gap-4 p-3 rounded-2xl transition-all text-left group ${isActive ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-500 dark:text-gray-400'}`}
-                      >
-                        <div className={`p-2 rounded-lg transition-colors ${isActive ? 'bg-rose-500 text-white' : 'bg-gray-100 dark:bg-zinc-800 text-gray-400 group-hover:bg-rose-100 dark:group-hover:bg-rose-900/30 group-hover:text-rose-500'}`}>
-                          <Icon size={18} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-black uppercase tracking-tight">{tool.title}</p>
-                          <p className="text-[10px] opacity-60 truncate">{tool.desc}</p>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="mt-4 pt-4 border-t border-gray-50 dark:border-zinc-800 px-4">
+              <div className="absolute top-full left-0 mt-3 w-64 md:w-80 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[2rem] shadow-2xl py-4 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 max-h-[80vh] overflow-y-auto scrollbar-hide">
+                {Object.entries(
+                  tools.filter(t => t.implemented).reduce((acc, tool) => {
+                    if (!acc[tool.category]) acc[tool.category] = []
+                    acc[tool.category].push(tool)
+                    return acc
+                  }, {} as Record<string, Tool[]>)
+                ).map(([category, categoryTools]) => (
+                  <div key={category} className="mb-4">
+                    <div className="px-6 py-2">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500/50">{category}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1 px-2">
+                      {categoryTools.map((tool, i) => {
+                        const Icon = tool.icon
+                        const isActive = activeTool?.title === tool.title && !isHome
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => { navigate(tool.path || '/'); setIsDropdownOpen(false); }}
+                            className={`flex items-center gap-4 p-3 rounded-2xl transition-all text-left group ${isActive ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-500 dark:text-gray-400'}`}
+                          >
+                            <div className={`p-2 rounded-lg transition-colors ${isActive ? 'bg-rose-500 text-white' : 'bg-gray-100 dark:bg-zinc-800 text-gray-400 group-hover:bg-rose-100 dark:group-hover:bg-rose-900/30 group-hover:text-rose-500'}`}>
+                              <Icon size={18} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-black uppercase tracking-tight">{tool.title}</p>
+                              <p className="text-[10px] opacity-60 truncate">{tool.desc}</p>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+                
+                <div className="mt-2 pt-4 border-t border-gray-50 dark:border-zinc-800 px-4">
                   <button onClick={() => { navigate('/'); setIsDropdownOpen(false); }} className="w-full flex items-center justify-center gap-2 p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-colors">
                     <Home size={14} /> Back to Dashboard
                   </button>
