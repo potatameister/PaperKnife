@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { 
-  Github, 
+  Github, Heart, 
   ChevronDown, Layers, Lock, 
   Code, Star, Sparkles,
   Terminal, Zap,
   ExternalLink, Award, Palette,
-  Scissors, History, Cpu
+  Scissors, Cpu
 } from 'lucide-react'
 import { toast } from 'sonner'
 
