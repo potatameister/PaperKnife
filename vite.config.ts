@@ -8,7 +8,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['icons/logo.svg'],
+      workbox: {
+        sourcemap: false,
+      },
       manifest: {
         name: 'PaperKnife PDF',
         short_name: 'PaperKnife',
@@ -16,21 +19,12 @@ export default defineConfig({
         theme_color: '#F43F5E',
         background_color: '#ffffff',
         display: 'standalone',
+        start_url: '/PaperKnife/',
         icons: [
           {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: 'icons/logo.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
           }
         ]
@@ -42,12 +36,14 @@ export default defineConfig({
     host: true
   },
   build: {
+    target: 'esnext',
     rollupOptions: {
       output: {
         manualChunks: {
-          'pdf-core': ['pdf-lib'],
-          'pdf-viewer': ['pdfjs-dist'],
-          'utilities': ['jszip', '@dnd-kit/core', '@dnd-kit/sortable']
+          'pdf-lib-core': ['pdf-lib'],
+          'pdfjs-viewer': ['pdfjs-dist'],
+          'vendor-ui': ['react', 'react-dom', 'react-router-dom', 'lucide-react', 'sonner'],
+          'vendor-utils': ['jszip', '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities']
         }
       }
     }

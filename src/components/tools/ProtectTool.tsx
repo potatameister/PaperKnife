@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
+import { useObjectURL } from '../../utils/useObjectURL'
 import ToolHeader from './shared/ToolHeader'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
@@ -20,11 +21,11 @@ type ProtectPdfFile = {
 
 export default function ProtectTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { objectUrl, createUrl, clearUrls } = useObjectURL()
   const [pdfData, setPdfData] = useState<ProtectPdfFile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [unlockPassword, setUnlockPassword] = useState('')
   const [customFileName, setCustomFileName] = useState('paperknife-protected')
 
@@ -57,7 +58,7 @@ export default function ProtectTool() {
       isLocked: meta.isLocked
     })
     setCustomFileName(`${file.name.replace('.pdf', '')}-protected`)
-    setDownloadUrl(null)
+    clearUrls()
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,8 +92,7 @@ export default function ProtectTool() {
       const encryptedBytes = await encryptPDF(pdfBytes, password)
 
       const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' })
-      const url = URL.createObjectURL(blob)
-      setDownloadUrl(url)
+      const url = createUrl(blob)
 
       addActivity({
         name: `${customFileName || 'protected'}.pdf`,
@@ -175,7 +175,7 @@ export default function ProtectTool() {
             </div>
 
             <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-gray-100 dark:border-zinc-800 shadow-sm space-y-6">
-              {!downloadUrl ? (
+              {!objectUrl ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -229,9 +229,9 @@ export default function ProtectTool() {
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                    <SuccessState 
                     message="Encrypted Successfully"
-                    downloadUrl={downloadUrl}
+                    downloadUrl={objectUrl || ''}
                     fileName={`${customFileName || 'protected'}.pdf`}
-                    onStartOver={() => { setDownloadUrl(null); setPassword(''); setConfirmPassword(''); }}
+                    onStartOver={() => { clearUrls(); setPassword(''); setConfirmPassword(''); }}
                    />
                 </div>
               )}

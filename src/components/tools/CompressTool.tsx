@@ -7,6 +7,7 @@ import JSZip from 'jszip'
 import { getPdfMetaData, loadPdfDocument, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
+import { useObjectURL } from '../../utils/useObjectURL'
 import ToolHeader from './shared/ToolHeader'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
@@ -29,11 +30,11 @@ type CompressionQuality = 'low' | 'medium' | 'high'
 export default function CompressTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { consumePipelineFile, setPipelineFile } = usePipeline()
+  const { objectUrl, createUrl, clearUrls } = useObjectURL()
   const [files, setFiles] = useState<CompressPdfFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [globalProgress, setGlobalProgress] = useState(0)
   const [quality, setQuality] = useState<CompressionQuality>('medium')
-  const [zipUrl, setZipUrl] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
 
   // Handle Pipeline File
@@ -67,7 +68,7 @@ export default function CompressTool() {
 
     setFiles(prev => [...prev, ...newFiles])
     setShowSuccess(false)
-    setZipUrl(null)
+    clearUrls()
 
     for (const f of newFiles) {
       try {
@@ -156,7 +157,7 @@ export default function CompressTool() {
 
     const pdfBytes = await newPdf.save()
     const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
+    const url = createUrl(blob)
     return { url, size: blob.size, buffer: pdfBytes }
   }
 
@@ -208,7 +209,7 @@ export default function CompressTool() {
       const zip = new JSZip()
       results.forEach(res => zip.file(res.name, res.buffer))
       const zipBlob = await zip.generateAsync({ type: 'blob' })
-      setZipUrl(URL.createObjectURL(zipBlob))
+      createUrl(zipBlob)
     }
 
     setIsProcessing(false)
@@ -218,6 +219,7 @@ export default function CompressTool() {
   const removeFile = (id: string) => {
     setFiles(prev => prev.filter(f => f.id !== id))
     if (files.length <= 1) setShowSuccess(false)
+    clearUrls()
   }
 
   return (
@@ -309,9 +311,9 @@ export default function CompressTool() {
           </div>
         ) : (
           <div className="space-y-6">
-            {zipUrl && (
+            {objectUrl && files.length > 1 && (
               <a 
-                href={zipUrl} 
+                href={objectUrl} 
                 download="paperknife-compressed-batch.zip"
                 className="block w-full bg-zinc-900 dark:bg-white text-white dark:text-black p-8 rounded-[2.5rem] text-center shadow-2xl transition-all hover:scale-[1.01] active:scale-95 group"
               >
@@ -323,18 +325,18 @@ export default function CompressTool() {
               </a>
             )}
 
-            {!zipUrl && files.length === 1 && (
+            {objectUrl && files.length === 1 && (
                <SuccessState 
                 message="Success! File compressed."
-                downloadUrl={files[0].resultUrl!}
+                downloadUrl={objectUrl}
                 fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')}
-                onStartOver={() => { setFiles([]); setShowSuccess(false); }}
+                onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); }}
                />
             )}
 
-            {zipUrl && (
+            {objectUrl && files.length > 1 && (
                <button 
-                onClick={() => { setFiles([]); setShowSuccess(false); setZipUrl(null); }}
+                onClick={() => { setFiles([]); setShowSuccess(false); clearUrls(); }}
                 className="w-full py-4 text-gray-400 hover:text-rose-500 font-black uppercase tracking-[0.2em] text-xs transition-colors"
                >
                  Start New Batch

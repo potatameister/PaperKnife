@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
+import { useObjectURL } from '../../utils/useObjectURL'
 import ToolHeader from './shared/ToolHeader'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
@@ -49,10 +50,10 @@ const LazyThumbnail = ({ pdfDoc, pageNum }: { pdfDoc: any, pageNum: number }) =>
 
 export default function SplitTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { objectUrl, createUrl, clearUrls } = useObjectURL()
   const [pdfData, setPdfData] = useState<SplitPdfFile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isLoadingMeta, setIsLoadingMeta] = useState(false)
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set())
   const [customFileName, setCustomFileName] = useState('paperknife-split')
   const [rangeInput, setRangeInput] = useState('')
@@ -111,7 +112,7 @@ export default function SplitTool() {
       console.error(err)
     } finally {
       setIsLoadingMeta(false)
-      setDownloadUrl(null)
+      clearUrls()
     }
   }
 
@@ -125,7 +126,7 @@ export default function SplitTool() {
     if (newSelection.has(pageNum)) newSelection.delete(pageNum)
     else newSelection.add(pageNum)
     setSelectedPages(newSelection)
-    setDownloadUrl(null)
+    clearUrls()
   }
 
   // Parse Range Input (e.g. "1, 3-5")
@@ -145,7 +146,7 @@ export default function SplitTool() {
       }
     })
     setSelectedPages(pages)
-    setDownloadUrl(null)
+    clearUrls()
   }
 
   const splitPDF = async () => {
@@ -169,8 +170,7 @@ export default function SplitTool() {
 
         const pdfBytes = await newPdf.save()
         const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
-        const url = URL.createObjectURL(blob)
-        setDownloadUrl(url)
+        const url = createUrl(blob)
 
         addActivity({
           name: `${customFileName || 'split'}.pdf`,
@@ -191,8 +191,7 @@ export default function SplitTool() {
         }
         
         const zipBlob = await zip.generateAsync({ type: 'blob' })
-        const url = URL.createObjectURL(zipBlob)
-        setDownloadUrl(url)
+        const url = createUrl(zipBlob)
 
         addActivity({
           name: `${customFileName || 'split'}.zip`,
@@ -220,8 +219,7 @@ export default function SplitTool() {
 
             const pdfBytes = await newPdf.save()
             const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
-            const url = URL.createObjectURL(blob)
-            setDownloadUrl(url)
+            const url = createUrl(blob)
 
             addActivity({
               name: `${customFileName || 'split'}.pdf`,
@@ -242,8 +240,7 @@ export default function SplitTool() {
             }
             
             const zipBlob = await zip.generateAsync({ type: 'blob' })
-            const url = URL.createObjectURL(zipBlob)
-            setDownloadUrl(url)
+            const url = createUrl(zipBlob)
 
             addActivity({
               name: `${customFileName || 'split'}.zip`,
@@ -380,13 +377,13 @@ export default function SplitTool() {
                     <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2"><Scissors size={12} /> Split Mode</label>
                     <div className="grid grid-cols-2 gap-2 bg-gray-50 dark:bg-black p-1 rounded-2xl border border-gray-100 dark:border-zinc-800">
                       <button 
-                        onClick={() => { setSplitMode('single'); setDownloadUrl(null); }}
+                        onClick={() => { setSplitMode('single'); clearUrls(); }}
                         className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all ${splitMode === 'single' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}
                       >
                         Single File
                       </button>
                       <button 
-                        onClick={() => { setSplitMode('individual'); setDownloadUrl(null); }}
+                        onClick={() => { setSplitMode('individual'); clearUrls(); }}
                         className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all ${splitMode === 'individual' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}
                       >
                         Individual (ZIP)
@@ -424,7 +421,7 @@ export default function SplitTool() {
                       <span className="text-xl font-black text-rose-500">{selectedPages.size} <span className="text-xs text-gray-400">Pages</span></span>
                     </div>
 
-                    {!downloadUrl ? (
+                    {!objectUrl ? (
                       <button 
                         onClick={splitPDF}
                         disabled={isProcessing || selectedPages.size === 0}
@@ -436,16 +433,16 @@ export default function SplitTool() {
                       <div className="space-y-3">
                         <SuccessState 
                           message="Ready for Download"
-                          downloadUrl={downloadUrl}
+                          downloadUrl={objectUrl || ''}
                           fileName={`${customFileName || 'split'}.${splitMode === 'single' ? 'pdf' : 'zip'}`}
-                          onStartOver={() => setDownloadUrl(null)}
+                          onStartOver={() => clearUrls()}
                           showPreview={splitMode === 'single'}
                         />
                       </div>
                     )}
                   </div>
 
-                  <button onClick={() => setPdfData(null)} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors tracking-[0.2em]">Close File</button>
+                  <button onClick={() => { setPdfData(null); clearUrls(); }} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors tracking-[0.2em]">Close File</button>
                 </div>
 
                 {pdfData.password && (

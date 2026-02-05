@@ -13,43 +13,66 @@ export interface PdfMetaData {
 // Optimized: Load the PDF Document once
 export const loadPdfDocument = async (file: File) => {
   const arrayBuffer = await file.arrayBuffer();
-  const loadingTask = pdfjsLib.getDocument({
-    data: arrayBuffer,
-    cMapUrl: `${window.location.origin}/PaperKnife/cmaps/`,
-    cMapPacked: true,
-  });
-  return loadingTask.promise;
+  try {
+    const loadingTask = pdfjsLib.getDocument({
+      data: arrayBuffer,
+      cMapUrl: `${window.location.origin}/PaperKnife/cmaps/`,
+      cMapPacked: true,
+    });
+    return await loadingTask.promise;
+  } catch (error: any) {
+    // If it fails due to password, we'll handle it in the specific tool
+    if (error.name === 'PasswordException') {
+      throw error;
+    }
+    // Fallback for some corrupted/non-standard PDFs
+    const loadingTask = pdfjsLib.getDocument({
+      data: arrayBuffer,
+      cMapUrl: `${window.location.origin}/PaperKnife/cmaps/`,
+      cMapPacked: true,
+      stopAtErrors: false,
+    });
+    return await loadingTask.promise;
+  }
 };
 
 // Optimized: Render a specific page from an already loaded PDF Document
-export const renderPageThumbnail = async (pdf: any, pageNum: number, scale = 1.5): Promise<string> => {
+export const renderPageThumbnail = async (pdf: any, pageNum: number, scale = 1.0): Promise<string> => {
   try {
     const page = await pdf.getPage(pageNum);
-    // Use device pixel ratio for sharper rendering on high-DPI screens
-    const outputScale = window.devicePixelRatio || 1;
-    const viewport = page.getViewport({ scale: scale * outputScale });
+    // Standardize thumbnail size for better memory/performance balance
+    const viewport = page.getViewport({ scale: scale });
     
+    // Use a fixed max dimension for thumbnails to prevent extreme memory usage
+    const maxDimension = 300;
+    const thumbnailScale = Math.min(maxDimension / viewport.width, maxDimension / viewport.height);
+    const thumbViewport = page.getViewport({ scale: scale * thumbnailScale * (window.devicePixelRatio || 1) });
+
     const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext('2d', { alpha: false });
     
     if (!context) throw new Error('Canvas context not available');
     
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
+    canvas.height = thumbViewport.height;
+    canvas.width = thumbViewport.width;
     
-    // Scale context to match outputScale
-    if (outputScale !== 1) {
-      // Not strictly necessary if we just want raw pixels, but helps if we draw overlays
-    }
+    // White background for PDFs with transparency
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
     
     await page.render({ 
       canvasContext: context, 
-      viewport, 
+      viewport: thumbViewport, 
       intent: 'display'
     }).promise;
     
-    // Return high-quality JPEG
-    return canvas.toDataURL('image/jpeg', 0.9);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    
+    // Explicitly clear canvas memory if possible
+    canvas.width = 0;
+    canvas.height = 0;
+    
+    return dataUrl;
   } catch (error) {
     console.error(`Error rendering page ${pageNum}:`, error);
     return '';

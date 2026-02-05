@@ -1,13 +1,37 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { Shield, Zap, Download, ChevronRight, Github, Heart, Search, Clock, Trash2, FileIcon } from 'lucide-react'
+import { 
+  Search, ChevronRight, Clock, Shield, Zap, Download, 
+  Heart, Trash2, File as FileIcon, Github
+} from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Tool, ToolCategory } from '../types'
-import { PaperKnifeLogo } from './Logo'
-import { ActivityEntry, getRecentActivity, clearActivity } from '../utils/recentActivity'
+import { getRecentActivity, clearActivity, ActivityEntry } from '../utils/recentActivity'
+
+const PaperKnifeLogo = ({ size = 32, className = "" }: { size?: number, className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className={`text-rose-500 ${className}`}
+  >
+    <path 
+      d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    />
+  </svg>
+)
 
 const formatSize = (bytes: number) => {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 const categoryColors: Record<ToolCategory, { bg: string, text: string, border: string, hover: string, glow: string }> = {
@@ -120,14 +144,14 @@ export default function WebView({ tools }: { tools: Tool[] }) {
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-black text-gray-900 dark:text-zinc-100 font-sans selection:bg-rose-100 dark:selection:bg-rose-900 selection:text-rose-600 transition-colors duration-300 ease-out">
       <main className="max-w-6xl mx-auto px-6 py-10 md:py-20">
         <div className="text-center mb-10 md:mb-20">
-          <span className="inline-block px-4 py-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-[10px] md:text-xs font-bold rounded-full mb-6 border border-rose-100 dark:border-rose-900/30">
+          <span className="inline-block px-4 py-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-[10px] md:text-xs font-bold rounded-full mb-6 border border-rose-100 dark:border-rose-900/30 uppercase tracking-widest">
             LOCAL PROCESSING • 100% PRIVATE
           </span>
           <h2 className="text-4xl md:text-7xl font-black mb-6 md:mb-8 tracking-tight text-gray-900 dark:text-white">
             Stop Uploading <br/>
             <span className="text-rose-500">Your Privacy.</span>
           </h2>
-          <p className="text-lg md:text-xl text-gray-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-12">
+          <p className="text-lg md:text-xl text-gray-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-12 font-medium">
             The professional PDF utility that lives in your browser. <br className="hidden md:block"/>
             No uploads, no servers, just your data staying yours.
           </p>
@@ -162,7 +186,7 @@ export default function WebView({ tools }: { tools: Tool[] }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3 space-y-8">
+          <div className="lg:col-span-3">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTools.map((tool) => (
                 <ToolCard 
@@ -233,11 +257,11 @@ export default function WebView({ tools }: { tools: Tool[] }) {
               )}
             </div>
 
-            <div className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-rose-200 dark:shadow-none">
-              <Heart className="mb-4 text-rose-200" fill="currentColor" size={24} />
-              <h4 className="font-black text-lg mb-2">PaperKnife Supporter</h4>
-              <p className="text-xs font-medium text-rose-100 leading-relaxed mb-6">Support privacy-first tools. Get exclusive OLED themes and local Supporter Keys.</p>
-              <a href="https://github.com/sponsors/potatameister" target="_blank" rel="noopener noreferrer" className="block w-full py-3 bg-white text-rose-500 rounded-2xl text-center text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all">
+            <div className="bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-900/10 rounded-[2.5rem] p-8 border border-rose-100 dark:border-rose-900/30 shadow-sm shadow-rose-200/20 dark:shadow-none">
+              <Heart className="mb-4 text-rose-500" fill="currentColor" size={24} />
+              <h4 className="font-black text-lg mb-2 text-gray-900 dark:text-white">PaperKnife Supporter</h4>
+              <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 leading-relaxed mb-6">Support privacy-first tools. Your help keeps the engine independent and ad-free.</p>
+              <a href="https://github.com/sponsors/potatameister" target="_blank" rel="noopener noreferrer" className="block w-full py-3 bg-rose-500 text-white rounded-2xl text-center text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-rose-500/20">
                 Sponsor Now
               </a>
             </div>
@@ -259,7 +283,7 @@ export default function WebView({ tools }: { tools: Tool[] }) {
         </div>
       </main>
 
-      <footer className="border-t border-gray-100 dark:border-zinc-800 mt-32 bg-white dark:bg-zinc-950">
+      <footer className="border-t border-gray-100 dark:border-zinc-900 mt-32 bg-white dark:bg-black transition-colors">
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             <div className="md:col-span-2">

@@ -36,4 +36,5 @@
 
 body {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  @apply bg-[#FAFAFA] dark:bg-black text-gray-900 dark:text-zinc-100 transition-colors duration-300;
 }

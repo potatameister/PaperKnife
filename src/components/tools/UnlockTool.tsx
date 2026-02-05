@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
+import { useObjectURL } from '../../utils/useObjectURL'
 import ToolHeader from './shared/ToolHeader'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
@@ -20,9 +21,9 @@ type UnlockPdfFile = {
 
 export default function UnlockTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { objectUrl, createUrl, clearUrls } = useObjectURL()
   const [pdfData, setPdfData] = useState<UnlockPdfFile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [password, setPassword] = useState('')
   const [customFileName, setCustomFileName] = useState('paperknife-unlocked')
 
@@ -36,7 +37,7 @@ export default function UnlockTool() {
       isLocked: meta.isLocked
     })
     setCustomFileName(`${file.name.replace('.pdf', '')}-unlocked`)
-    setDownloadUrl(null)
+    clearUrls()
     setPassword('')
   }
 
@@ -63,8 +64,7 @@ export default function UnlockTool() {
 
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
-      const url = URL.createObjectURL(blob)
-      setDownloadUrl(url)
+      const url = createUrl(blob)
 
       addActivity({
         name: `${customFileName || 'unlocked'}.pdf`,
@@ -113,7 +113,7 @@ export default function UnlockTool() {
             </div>
 
             <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-6">
-              {!downloadUrl ? (
+              {!objectUrl ? (
                 <>
                   {pdfData.isLocked ? (
                     <div>
@@ -159,9 +159,9 @@ export default function UnlockTool() {
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                    <SuccessState 
                     message="Success! Restrictions removed."
-                    downloadUrl={downloadUrl}
+                    downloadUrl={objectUrl || ''}
                     fileName={`${customFileName || 'unlocked'}.pdf`}
-                    onStartOver={() => { setDownloadUrl(null); setPassword(''); }}
+                    onStartOver={() => { clearUrls(); setPassword(''); }}
                    />
                 </div>
               )}

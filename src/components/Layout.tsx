@@ -96,7 +96,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   const isHome = location.pathname === '/' || location.pathname === '/PaperKnife/'
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#FAFAFA] dark:bg-black transition-colors duration-300`}>
+    <div className={`min-h-screen flex flex-col bg-[#FAFAFA] dark:bg-black text-gray-900 dark:text-zinc-100 transition-colors duration-300`}>
       
       {/* Global Drop Overlay */}
       {isDragging && (
@@ -197,7 +197,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             <span className="hidden md:block">About</span>
           </Link>
           
-          <button onClick={toggleTheme} className="p-2 text-gray-400 hover:text-rose-500 transition-colors">
+          <button onClick={toggleTheme} className="p-2 text-gray-400 hover:text-rose-500 transition-colors" title="Toggle Light/Dark">
             {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
           </button>
           
@@ -209,6 +209,11 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             <History size={20} />
             {activity.length > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-black" />}
           </button>
+
+          <div className="hidden lg:flex items-center gap-2 ml-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/10 rounded-full border border-emerald-100 dark:border-emerald-900/20">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Secure Node</span>
+          </div>
         </div>
       </header>
 
@@ -300,7 +305,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             )}
           </div>
 
-          <div className="mt-auto pt-6 border-t border-gray-50 dark:border-zinc-900">
+          <div className="mt-auto pt-6 border-t border-gray-50 dark:border-zinc-800">
             <div className="flex items-center gap-2 text-[10px] font-black uppercase text-rose-500/50 tracking-widest">
               <Shield size={12} />
               100% On-Device History
