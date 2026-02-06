@@ -14,6 +14,7 @@ import { PipelineProvider } from './utils/pipelineContext'
 // Lazy load views
 const WebView = lazy(() => import('./components/WebView'))
 const AndroidView = lazy(() => import('./components/AndroidView'))
+const AndroidToolsView = lazy(() => import('./components/AndroidToolsView'))
 const AndroidHistoryView = lazy(() => import('./components/AndroidHistoryView'))
 const MergeTool = lazy(() => import('./components/tools/MergeTool'))
 const SplitTool = lazy(() => import('./components/tools/SplitTool'))
@@ -151,7 +152,7 @@ function App() {
   return (
     <BrowserRouter basename="/PaperKnife/">
       <PipelineProvider>
-        <Layout theme={theme} toggleTheme={toggleTheme} tools={tools} onFileDrop={handleGlobalDrop}>
+        <Layout theme={theme} toggleTheme={toggleTheme} tools={tools} onFileDrop={handleGlobalDrop} viewMode={viewMode}>
           <Toaster position="bottom-center" expand={true} richColors />
           
           {droppedFile && <QuickDropModal file={droppedFile} onClear={() => setDroppedFile(null)} />}
@@ -166,6 +167,7 @@ function App() {
                     <AndroidView tools={tools} />
                   )
                 } />
+                <Route path="/android-tools" element={<AndroidToolsView tools={tools} />} />
                 <Route path="/android-history" element={<AndroidHistoryView />} />
                 <Route path="/merge" element={<MergeTool />} />
                 <Route path="/split" element={<SplitTool />} />

@@ -4,10 +4,10 @@ import {
   Shield, Download, 
   Moon, Sun, 
   History, Upload, ChevronRight, ChevronDown,
-  Plus, Trash2, CheckCircle2, Home, Info, ArrowLeft
+  Plus, Trash2, CheckCircle2, Home, Info, ArrowLeft, Layers
 } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
-import { Theme, Tool, ToolCategory } from '../types'
+import { Theme, Tool, ToolCategory, ViewMode } from '../types'
 import { PaperKnifeLogo } from './Logo'
 import { ActivityEntry, getRecentActivity, clearActivity } from '../utils/recentActivity'
 
@@ -17,6 +17,7 @@ interface LayoutProps {
   toggleTheme: () => void
   tools: Tool[]
   onFileDrop?: (files: FileList) => void
+  viewMode: ViewMode
 }
 
 const categoryColors: Record<ToolCategory, { bg: string, text: string, hover: string, iconBg: string }> = {
@@ -26,7 +27,7 @@ const categoryColors: Record<ToolCategory, { bg: string, text: string, hover: st
   Optimize: { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-500', hover: 'hover:bg-amber-50 dark:hover:bg-amber-900/10', iconBg: 'bg-amber-100 dark:bg-amber-900/30' }
 }
 
-export default function Layout({ children, theme, toggleTheme, tools, onFileDrop }: LayoutProps) {
+export default function Layout({ children, theme, toggleTheme, tools, onFileDrop, viewMode }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const [isDragging, setIsDragging] = useState(false)
@@ -35,6 +36,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   const [activity, setActivity] = useState<ActivityEntry[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
   const isNative = Capacitor.isNativePlatform()
+  const showMobileNav = isNative || viewMode === 'android'
 
   useEffect(() => {
     if (showHistory) {
@@ -222,51 +224,62 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
         {children}
       </main>
 
-      {/* Native Material 3 Bottom Navigation */}
-      {isNative && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[80px] bg-[#F7F2FA] dark:bg-[#1C1B1F] border-t border-gray-200 dark:border-zinc-800 flex items-center justify-around px-2 z-[100] pb-safe transition-colors">
+      {/* Refined Material 3 Bottom Navigation */}
+      {showMobileNav && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[80px] bg-[#F3EDF7] dark:bg-[#1C1B1F] border-t border-black/5 dark:border-white/5 flex items-center justify-around px-2 z-[100] pb-safe transition-all shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
           {/* Home Tab */}
           <button 
             onClick={() => navigate('/')}
-            className="flex flex-col items-center gap-1 flex-1 relative group"
+            className="flex flex-col items-center gap-1 flex-1 relative group active:scale-90 transition-transform duration-200"
           >
-            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${isHome ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400 group-active:bg-gray-200 dark:group-active:bg-zinc-800'}`}>
-              <Home size={24} strokeWidth={isHome ? 2.5 : 2} />
+            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${isHome ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'text-[#49454F] dark:text-[#CAC4D0]'}`}>
+              <Home size={22} strokeWidth={isHome ? 2.5 : 2} />
             </div>
-            <span className={`text-[11px] font-black tracking-tight transition-colors ${isHome ? 'text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400'}`}>Home</span>
+            <span className={`text-[10px] font-black tracking-tight ${isHome ? 'text-rose-600 dark:text-rose-400' : 'text-[#49454F] dark:text-[#CAC4D0]'}`}>Home</span>
           </button>
 
           {/* Tools Tab */}
           <button 
-            onClick={() => navigate('/')}
-            className="flex flex-col items-center gap-1 flex-1 relative group"
+            onClick={() => navigate('/android-tools')}
+            className="flex flex-col items-center gap-1 flex-1 relative group active:scale-90 transition-transform duration-200"
           >
-            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${location.pathname.includes('/merge') || location.pathname.includes('/compress') ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400 group-active:bg-gray-200 dark:group-active:bg-zinc-800'}`}>
-              <Plus size={24} strokeWidth={2} />
+            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${location.pathname === '/android-tools' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'text-[#49454F] dark:text-[#CAC4D0]'}`}>
+              <Layers size={22} strokeWidth={location.pathname === '/android-tools' ? 2.5 : 2} />
             </div>
-            <span className={`text-[11px] font-black tracking-tight transition-colors ${location.pathname.includes('/merge') ? 'text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400'}`}>Tools</span>
+            <span className={`text-[10px] font-black tracking-tight ${location.pathname === '/android-tools' ? 'text-rose-600 dark:text-rose-400' : 'text-[#49454F] dark:text-[#CAC4D0]'}`}>Tools</span>
           </button>
+
+          {/* Central Process Button (Enhanced FAB) */}
+          <div className="flex-1 flex flex-col items-center -mt-10">
+             <button 
+               onClick={() => navigate('/android-tools')}
+               className="w-14 h-14 bg-rose-500 text-white rounded-[1.25rem] shadow-lg shadow-rose-500/30 flex items-center justify-center active:scale-95 active:rotate-12 transition-all border-[6px] border-[#FDFDFD] dark:border-[#1C1B1F]"
+             >
+               <Plus size={32} strokeWidth={3} />
+             </button>
+             <span className="text-[10px] font-black tracking-tighter text-rose-500 mt-1.5 uppercase">Process</span>
+          </div>
           
           {/* History Tab */}
           <button 
             onClick={() => navigate('/android-history')}
-            className="flex flex-col items-center gap-1 flex-1 relative group"
+            className="flex flex-col items-center gap-1 flex-1 relative group active:scale-90 transition-transform duration-200"
           >
-            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${location.pathname === '/android-history' ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400 group-active:bg-gray-200 dark:group-active:bg-zinc-800'}`}>
-              <History size={24} strokeWidth={location.pathname === '/android-history' ? 2.5 : 2} />
+            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${location.pathname === '/android-history' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'text-[#49454F] dark:text-[#CAC4D0]'}`}>
+              <History size={22} strokeWidth={location.pathname === '/android-history' ? 2.5 : 2} />
             </div>
-            <span className={`text-[11px] font-black tracking-tight transition-colors ${location.pathname === '/android-history' ? 'text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400'}`}>History</span>
+            <span className={`text-[10px] font-black tracking-tight ${location.pathname === '/android-history' ? 'text-rose-600 dark:text-rose-400' : 'text-[#49454F] dark:text-[#CAC4D0]'}`}>History</span>
           </button>
 
-          {/* Privacy/About Tab */}
+          {/* Privacy Tab */}
           <Link 
             to="/about"
-            className="flex flex-col items-center gap-1 flex-1 relative group no-underline"
+            className="flex flex-col items-center gap-1 flex-1 relative group active:scale-90 transition-transform duration-200 no-underline"
           >
-            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${location.pathname.includes('about') ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400 group-active:bg-gray-200 dark:group-active:bg-zinc-800'}`}>
-              <Shield size={24} strokeWidth={location.pathname.includes('about') ? 2.5 : 2} />
+            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${location.pathname.includes('about') ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'text-[#49454F] dark:text-[#CAC4D0]'}`}>
+              <Shield size={22} strokeWidth={location.pathname.includes('about') ? 2.5 : 2} />
             </div>
-            <span className={`text-[11px] font-black tracking-tight transition-colors ${location.pathname.includes('about') ? 'text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400'}`}>Privacy</span>
+            <span className={`text-[10px] font-black tracking-tight ${location.pathname.includes('about') ? 'text-rose-600 dark:text-rose-400' : 'text-[#49454F] dark:text-[#CAC4D0]'}`}>Privacy</span>
           </Link>
         </nav>
       )}
