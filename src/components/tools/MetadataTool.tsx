@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Info, Lock, Edit3, Trash2, Loader2 } from 'lucide-react'
+import { Info, Lock, Edit3, Trash2, Loader2, ShieldAlert, Sparkles } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 
@@ -31,6 +31,7 @@ export default function MetadataTool() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [customFileName, setCustomFileName] = useState('paperknife-metadata')
   const [unlockPassword, setUnlockPassword] = useState('')
+  const [isDeepCleaning, setIsDeepCleaning] = useState(false)
   
   // New Metadata State
   const [meta, setMeta] = useState({
@@ -110,26 +111,39 @@ export default function MetadataTool() {
     }
   }
 
-  const saveMetadata = async () => {
+  const saveMetadata = async (deepClean = false) => {
     if (!pdfData) return
     setIsProcessing(true)
-    await new Promise(resolve => setTimeout(resolve, 100))
+    if (deepClean) setIsDeepCleaning(true)
+    
+    await new Promise(resolve => setTimeout(resolve, 300))
 
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, {
+      const sourcePdf = await PDFDocument.load(arrayBuffer, {
         password: pdfData.password || undefined,
         ignoreEncryption: true
       } as any)
 
-      pdfDoc.setTitle(meta.title)
-      pdfDoc.setAuthor(meta.author)
-      pdfDoc.setSubject(meta.subject)
-      pdfDoc.setKeywords(meta.keywords.split(',').map(k => k.trim()))
-      pdfDoc.setCreator(meta.creator)
-      pdfDoc.setProducer(meta.producer)
+      let targetPdf: PDFDocument
 
-      const pdfBytes = await pdfDoc.save()
+      if (deepClean) {
+        // Deep Clean: Create a fresh PDF and copy ONLY pages (strips XML, hidden metadata, etc)
+        targetPdf = await PDFDocument.create()
+        const copiedPages = await targetPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
+        copiedPages.forEach(page => targetPdf.addPage(page))
+      } else {
+        targetPdf = sourcePdf
+      }
+
+      targetPdf.setTitle(meta.title)
+      targetPdf.setAuthor(meta.author)
+      targetPdf.setSubject(meta.subject)
+      targetPdf.setKeywords(meta.keywords.split(',').map(k => k.trim()))
+      targetPdf.setCreator(meta.creator || 'PaperKnife')
+      targetPdf.setProducer(meta.producer || 'PaperKnife')
+
+      const pdfBytes = await targetPdf.save()
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       setDownloadUrl(url)
@@ -140,10 +154,13 @@ export default function MetadataTool() {
         size: blob.size,
         resultUrl: url
       })
+      
+      if (deepClean) toast.success('Deep Clean complete: All hidden data stripped.')
     } catch (error: any) {
-      toast.error(`Error saving metadata: ${error.message}`)
+      toast.error(`Error processing PDF: ${error.message}`)
     } finally {
       setIsProcessing(false)
+      setIsDeepCleaning(false)
     }
   }
 
@@ -153,9 +170,10 @@ export default function MetadataTool() {
       author: '',
       subject: '',
       keywords: '',
-      creator: '',
-      producer: ''
+      creator: 'PaperKnife',
+      producer: 'PaperKnife'
     })
+    toast.info('Form cleared. Ready for wipe.')
   }
 
   return (
@@ -229,7 +247,7 @@ export default function MetadataTool() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-base truncate dark:text-white">{pdfData.file.name}</h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 italic">Reading existing document properties...</p>
+                <p className="text-xs text-gray-400 uppercase font-black tracking-widest">{pdfData.pageCount} Pages • {(pdfData.file.size / (1024 * 1024)).toFixed(2)} MB</p>
                 <button onClick={() => setPdfData(null)} className="mt-1 text-[10px] font-black uppercase text-rose-500 hover:text-rose-600 transition-colors">Change File</button>
               </div>
             </div>
@@ -296,25 +314,43 @@ export default function MetadataTool() {
 
                   <div className="flex flex-col gap-3">
                     <button 
-                      onClick={saveMetadata}
+                      onClick={() => saveMetadata(false)}
                       disabled={isProcessing}
                       className="w-full bg-rose-500 hover:bg-rose-600 text-white p-6 rounded-3xl shadow-xl shadow-rose-200 dark:shadow-none font-black text-xl tracking-tight transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
                     >
-                      {isProcessing ? <Loader2 className="animate-spin" /> : <Edit3 />}
+                      {isProcessing && !isDeepCleaning ? <Loader2 className="animate-spin" /> : <Edit3 />}
                       Update Metadata
                     </button>
-                    <button 
-                      onClick={clearMetadata}
-                      className="w-full py-2 flex items-center justify-center gap-2 text-xs font-black uppercase text-gray-400 hover:text-rose-500 transition-colors"
-                    >
-                      <Trash2 size={14} /> Wipe All Fields
-                    </button>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                       <button 
+                        onClick={() => saveMetadata(true)}
+                        disabled={isProcessing}
+                        className="flex items-center justify-center gap-2 p-4 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/20 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all group"
+                      >
+                        {isDeepCleaning ? <Loader2 className="animate-spin" /> : <Sparkles size={16} className="group-hover:rotate-12 transition-transform" />}
+                        Privacy Deep Clean
+                      </button>
+                      <button 
+                        onClick={clearMetadata}
+                        className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-zinc-800/50 text-gray-400 hover:text-rose-500 rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                      >
+                        <Trash2 size={16} /> Wipe All Fields
+                      </button>
+                    </div>
+
+                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/20 flex items-start gap-3">
+                       <ShieldAlert size={16} className="text-indigo-500 shrink-0 mt-0.5" />
+                       <p className="text-[10px] text-indigo-700 dark:text-indigo-400 leading-relaxed font-medium">
+                         <strong>Privacy Tip:</strong> Standard "Update" changes visible properties. <strong>"Deep Clean"</strong> creates a fresh file and copies ONLY visual content, stripping all invisible tracking, XML data, and hidden headers.
+                       </p>
+                    </div>
                   </div>
                 </>
               ) : (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                    <SuccessState 
-                    message="Success! Properties updated."
+                    message={isDeepCleaning ? "Deep Clean Successful!" : "Properties Updated!"}
                     downloadUrl={downloadUrl}
                     fileName={`${customFileName}.pdf`}
                     onStartOver={() => setDownloadUrl(null)}

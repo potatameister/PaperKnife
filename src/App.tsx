@@ -2,10 +2,11 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { 
   Layers, Scissors, Zap, Smartphone, Monitor, Lock, Unlock, 
   RotateCw, Type, Hash, Tags, FileText, ArrowUpDown, PenTool, 
-  Wrench, ImagePlus, FileImage
+  Wrench, ImagePlus, FileImage, Shield
 } from 'lucide-react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Toaster, toast } from 'sonner'
+import { Capacitor } from '@capacitor/core'
 import { Theme, ViewMode, Tool } from './types'
 import Layout from './components/Layout'
 import { PipelineProvider } from './utils/pipelineContext'
@@ -13,6 +14,7 @@ import { PipelineProvider } from './utils/pipelineContext'
 // Lazy load views
 const WebView = lazy(() => import('./components/WebView'))
 const AndroidView = lazy(() => import('./components/AndroidView'))
+const AndroidHistoryView = lazy(() => import('./components/AndroidHistoryView'))
 const MergeTool = lazy(() => import('./components/tools/MergeTool'))
 const SplitTool = lazy(() => import('./components/tools/SplitTool'))
 const ProtectTool = lazy(() => import('./components/tools/ProtectTool'))
@@ -98,7 +100,9 @@ function QuickDropModal({ file, onClear }: { file: File, onClear: () => void }) 
 }
 
 function App() {
-  const [viewMode, setViewMode] = useState<ViewMode>('web')
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return Capacitor.isNativePlatform() ? 'android' : 'web'
+  })
   const [droppedFile, setDroppedFile] = useState<File | null>(null)
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
@@ -162,6 +166,7 @@ function App() {
                     <AndroidView tools={tools} />
                   )
                 } />
+                <Route path="/android-history" element={<AndroidHistoryView />} />
                 <Route path="/merge" element={<MergeTool />} />
                 <Route path="/split" element={<SplitTool />} />
                 <Route path="/protect" element={<ProtectTool />} />

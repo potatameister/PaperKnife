@@ -1,5 +1,7 @@
 import { Download, Eye, CheckCircle2, ArrowRight, Zap, Shield, Scissors, Tags } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { usePipeline } from '../../../utils/pipelineContext'
+import { toast } from 'sonner'
 
 interface SuccessStateProps {
   message: string
@@ -11,6 +13,7 @@ interface SuccessStateProps {
 
 export default function SuccessState({ message, downloadUrl, fileName, onStartOver, showPreview = true }: SuccessStateProps) {
   const navigate = useNavigate()
+  const { setPipelineFile } = usePipeline()
 
   const pipelineActions = [
     { name: 'Compress', icon: Zap, path: '/compress', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
@@ -18,6 +21,27 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
     { name: 'Split', icon: Scissors, path: '/split', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
     { name: 'Metadata', icon: Tags, path: '/metadata', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
   ]
+
+  const handlePipelineClick = async (action: typeof pipelineActions[0]) => {
+    try {
+      toast.loading(`Preparing ${fileName} for ${action.name}...`, { id: 'pipeline-load' })
+      
+      const response = await fetch(downloadUrl)
+      const blob = await response.blob()
+      const buffer = await blob.arrayBuffer()
+      
+      setPipelineFile({
+        buffer: new Uint8Array(buffer),
+        name: fileName
+      })
+      
+      toast.success(`Sent to ${action.name}`, { id: 'pipeline-load' })
+      navigate(action.path)
+    } catch (error) {
+      console.error('Pipeline error:', error)
+      toast.error('Failed to pipeline file.', { id: 'pipeline-load' })
+    }
+  }
 
   return (
     <div className="animate-in slide-in-from-bottom duration-500 fade-in space-y-6">
@@ -52,7 +76,7 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
           {pipelineActions.map((action) => (
             <button
               key={action.name}
-              onClick={() => navigate(action.path)}
+              onClick={() => handlePipelineClick(action)}
               className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl hover:border-rose-500 transition-all group"
             >
               <div className={`p-2 rounded-xl ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>

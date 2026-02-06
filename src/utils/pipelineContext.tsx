@@ -3,10 +3,12 @@ import { createContext, useContext, useState, ReactNode } from 'react'
 interface PipelinedFile {
   buffer: Uint8Array
   name: string
+  originalBuffer?: Uint8Array // To store the source before processing (e.g. for comparison)
 }
 
 interface PipelineContextType {
   pipelinedFile: PipelinedFile | null
+  lastPipelinedFile: PipelinedFile | null
   setPipelineFile: (file: PipelinedFile | null) => void
   consumePipelineFile: () => PipelinedFile | null
 }
@@ -15,6 +17,12 @@ const PipelineContext = createContext<PipelineContextType | undefined>(undefined
 
 export function PipelineProvider({ children }: { children: ReactNode }) {
   const [pipelinedFile, setPipelinedFile] = useState<PipelinedFile | null>(null)
+  const [lastPipelinedFile, setLastPipelinedFile] = useState<PipelinedFile | null>(null)
+
+  const setPipelineFile = (file: PipelinedFile | null) => {
+    setPipelinedFile(file)
+    if (file) setLastPipelinedFile(file)
+  }
 
   const consumePipelineFile = () => {
     const file = pipelinedFile
@@ -23,7 +31,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <PipelineContext.Provider value={{ pipelinedFile, setPipelineFile: setPipelinedFile, consumePipelineFile }}>
+    <PipelineContext.Provider value={{ pipelinedFile, lastPipelinedFile, setPipelineFile, consumePipelineFile }}>
       {children}
     </PipelineContext.Provider>
   )

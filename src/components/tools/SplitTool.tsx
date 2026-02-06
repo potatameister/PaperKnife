@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { Loader2, Edit2, Scissors, Check, Plus, Lock } from 'lucide-react'
-import { PDFDocument } from 'pdf-lib'
 import JSZip from 'jszip'
 import { toast } from 'sonner'
 
@@ -152,111 +151,61 @@ export default function SplitTool() {
   const splitPDF = async () => {
     if (!pdfData || selectedPages.size === 0) return
     setIsProcessing(true)
-    // Yield to main thread for UI update
-    await new Promise(resolve => setTimeout(resolve, 100))
-
+    
     try {
-      const originalBuffer = await pdfData.file.arrayBuffer()
-      const originalPdf = await PDFDocument.load(originalBuffer, { 
-        password: pdfData.password || undefined,
-        ignoreEncryption: true
-      } as any)
+      const buffer = await pdfData.file.arrayBuffer()
+      const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
       
-      if (splitMode === 'single') {
-        const newPdf = await PDFDocument.create()
-        const sortedIndices = Array.from(selectedPages).sort((a, b) => a - b).map(p => p - 1)
-        const copiedPages = await newPdf.copyPages(originalPdf, sortedIndices)
-        copiedPages.forEach(page => newPdf.addPage(page))
-
-        const pdfBytes = await newPdf.save()
-        const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
-        const url = createUrl(blob)
-
-        addActivity({
-          name: `${customFileName || 'split'}.pdf`,
-          tool: 'Split',
-          size: blob.size,
-          resultUrl: url
-        })
-      } else {
-        const zip = new JSZip()
-        const sortedPages = Array.from(selectedPages).sort((a, b) => a - b)
-        
-        for (const pageNum of sortedPages) {
-          const newPdf = await PDFDocument.create()
-          const [copiedPage] = await newPdf.copyPages(originalPdf, [pageNum - 1])
-          newPdf.addPage(copiedPage)
-          const pdfBytes = await newPdf.save()
-          zip.file(`${customFileName || 'page'}-${pageNum}.pdf`, pdfBytes)
+      worker.postMessage({
+        type: 'SPLIT_PDF',
+        payload: {
+          buffer,
+          password: pdfData.password,
+          selectedPages: Array.from(selectedPages),
+          mode: splitMode,
+          customFileName
         }
-        
-        const zipBlob = await zip.generateAsync({ type: 'blob' })
-        const url = createUrl(zipBlob)
+      })
 
-        addActivity({
-          name: `${customFileName || 'split'}.zip`,
-          tool: 'Split',
-          size: zipBlob.size,
-          resultUrl: url
-        })
+      worker.onmessage = async (e) => {
+        const { type, payload } = e.data
+        if (type === 'SUCCESS') {
+          const blob = new Blob([payload], { type: 'application/pdf' })
+          const url = createUrl(blob)
+
+          addActivity({
+            name: `${customFileName || 'split'}.pdf`,
+            tool: 'Split',
+            size: blob.size,
+            resultUrl: url
+          })
+          setIsProcessing(false)
+          worker.terminate()
+        } else if (type === 'SUCCESS_BATCH') {
+          const zip = new JSZip()
+          payload.forEach((res: { name: string, buffer: Uint8Array }) => {
+            zip.file(res.name, res.buffer)
+          })
+          
+          const zipBlob = await zip.generateAsync({ type: 'blob' })
+          const url = createUrl(zipBlob)
+
+          addActivity({
+            name: `${customFileName || 'split'}.zip`,
+            tool: 'Split',
+            size: zipBlob.size,
+            resultUrl: url
+          })
+          setIsProcessing(false)
+          worker.terminate()
+        } else if (type === 'ERROR') {
+          toast.error(payload)
+          setIsProcessing(false)
+          worker.terminate()
+        }
       }
     } catch (error: any) {
-      if (error.message.includes('encrypted') && pdfData.password) {
-        // Retry with ignoreEncryption: true as LAST RESORT
-        try {
-          const originalBuffer = await pdfData.file.arrayBuffer()
-          const originalPdf = await PDFDocument.load(originalBuffer, { 
-            password: pdfData.password,
-            ignoreEncryption: true
-          } as any)
-          
-          // Re-run the split logic
-          if (splitMode === 'single') {
-            const newPdf = await PDFDocument.create()
-            const sortedIndices = Array.from(selectedPages).sort((a, b) => a - b).map(p => p - 1)
-            const copiedPages = await newPdf.copyPages(originalPdf, sortedIndices)
-            copiedPages.forEach(page => newPdf.addPage(page))
-
-            const pdfBytes = await newPdf.save()
-            const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
-            const url = createUrl(blob)
-
-            addActivity({
-              name: `${customFileName || 'split'}.pdf`,
-              tool: 'Split',
-              size: blob.size,
-              resultUrl: url
-            })
-          } else {
-            const zip = new JSZip()
-            const sortedPages = Array.from(selectedPages).sort((a, b) => a - b)
-            
-            for (const pageNum of sortedPages) {
-              const newPdf = await PDFDocument.create()
-              const [copiedPage] = await newPdf.copyPages(originalPdf, [pageNum - 1])
-              newPdf.addPage(copiedPage)
-              const pdfBytes = await newPdf.save()
-              zip.file(`${customFileName || 'page'}-${pageNum}.pdf`, pdfBytes)
-            }
-            
-            const zipBlob = await zip.generateAsync({ type: 'blob' })
-            const url = createUrl(zipBlob)
-
-            addActivity({
-              name: `${customFileName || 'split'}.zip`,
-              tool: 'Split',
-              size: zipBlob.size,
-              resultUrl: url
-            })
-          }
-          setIsProcessing(false)
-          return
-        } catch (retryErr: any) {
-           toast.error(`Failed even with bypass: ${retryErr.message}`)
-        }
-      }
       toast.error(error.message || 'Error splitting PDF.')
-    } finally {
       setIsProcessing(false)
     }
   }

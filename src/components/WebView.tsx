@@ -4,8 +4,10 @@ import {
   Heart, Trash2, File as FileIcon, Github
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Tool, ToolCategory } from '../types'
 import { getRecentActivity, clearActivity, ActivityEntry } from '../utils/recentActivity'
+import { usePipeline } from '../utils/pipelineContext'
 
 const PaperKnifeLogo = ({ size = 32, className = "" }: { size?: number, className?: string }) => (
   <svg 
@@ -65,19 +67,51 @@ const categoryColors: Record<ToolCategory, { bg: string, text: string, border: s
   }
 }
 
-const ToolCard = ({ title, desc, icon: Icon, implemented = false, onClick, category }: Tool & { onClick?: () => void }) => {
+const ToolCard = ({ title, desc, icon: Icon, implemented = false, onClick, onFileDrop, category }: Tool & { onClick?: () => void, onFileDrop?: (file: File) => void }) => {
   const colors = categoryColors[category]
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (implemented) setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (implemented && onFileDrop && e.dataTransfer.files?.[0]) {
+      onFileDrop(e.dataTransfer.files[0])
+    }
+  }
   
   return (
     <div 
       onClick={implemented ? onClick : undefined}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       className={`
         rounded-[2.5rem] border transition-all duration-500 group overflow-hidden flex flex-col p-8 relative h-full
         ${implemented 
           ? `cursor-pointer bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 hover:shadow-xl ${colors.glow} hover:border-transparent hover:-translate-y-0.5` 
           : 'cursor-not-allowed opacity-60 saturate-0 bg-gray-50 dark:bg-zinc-950 border-transparent'}
+        ${isDragging ? 'ring-4 ring-rose-500 ring-inset border-transparent scale-[0.98]' : ''}
       `}
     >
+      {isDragging && (
+        <div className="absolute inset-0 bg-rose-500/10 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center pointer-events-none border-4 border-rose-500 rounded-[2.5rem] animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded-full shadow-2xl animate-bounce mb-4">
+            <Icon className="text-rose-500" size={32} />
+          </div>
+          <p className="text-rose-500 font-black uppercase tracking-[0.2em] text-[10px] bg-white dark:bg-zinc-900 px-4 py-2 rounded-full shadow-lg">Drop to start</p>
+        </div>
+      )}
+      
       <div className={`
         ${colors.bg} ${colors.text} rounded-2xl flex items-center justify-center transition-all duration-500 mb-6 w-14 h-14
         ${implemented ? `${colors.hover} group-hover:text-white` : ''}
@@ -108,6 +142,7 @@ const ToolCard = ({ title, desc, icon: Icon, implemented = false, onClick, categ
 
 export default function WebView({ tools }: { tools: Tool[] }) {
   const navigate = useNavigate()
+  const { setPipelineFile } = usePipeline()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<ToolCategory | 'All'>('All')
   const [history, setHistory] = useState<ActivityEntry[]>([])
@@ -138,6 +173,32 @@ export default function WebView({ tools }: { tools: Tool[] }) {
     if (tool.path) {
       navigate(tool.path)
     }
+  }
+
+  // Handle direct file drop on a tool card
+  const handleToolFileDrop = async (tool: Tool, file: File) => {
+    if (!tool.implemented || !tool.path) return
+    
+    if (file.type !== 'application/pdf' && tool.path !== '/image-to-pdf') {
+      toast.error('Only PDF files are supported for this tool.')
+      return
+    }
+
+    if (tool.path === '/image-to-pdf' && !file.type.startsWith('image/')) {
+        toast.error('Only images are supported for this tool.')
+        return
+    }
+
+    toast.loading(`Loading ${file.name} into ${tool.title}...`, { duration: 1000 })
+    
+    // Set in pipeline
+    const buffer = await file.arrayBuffer()
+    setPipelineFile({
+      buffer: new Uint8Array(buffer),
+      name: file.name
+    })
+
+    navigate(tool.path)
   }
 
   return (
@@ -193,6 +254,7 @@ export default function WebView({ tools }: { tools: Tool[] }) {
                   key={tool.title} 
                   {...tool} 
                   onClick={() => handleToolClick(tool)}
+                  onFileDrop={(file) => handleToolFileDrop(tool, file)}
                 />
               ))}
               {filteredTools.length === 0 && (
@@ -325,6 +387,13 @@ export default function WebView({ tools }: { tools: Tool[] }) {
               <p className="hidden md:block">•</p>
               <p>Built with ❤️ by <a href="https://github.com/potatameister" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">potatameister</a></p>
             </div>
+            
+            {/* Offline Indicator */}
+            <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-full border border-emerald-100 dark:border-emerald-900/20">
+               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+               <span className="text-[10px] text-emerald-600 dark:text-emerald-400">100% Offline • Privacy Node</span>
+            </div>
+
             <div className="flex gap-8">
               <a href="#" className="hover:text-rose-500 transition">Terms</a>
               <a href="#" className="hover:text-rose-500 transition">License</a>

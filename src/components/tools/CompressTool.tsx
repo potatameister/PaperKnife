@@ -1,16 +1,105 @@
 import { useState, useRef, useEffect } from 'react'
-import { Zap, Loader2, Plus, X, FileIcon, Download } from 'lucide-react'
-import { PDFDocument } from 'pdf-lib'
+import { Zap, Loader2, Plus, X, FileIcon, Download, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
 import { toast } from 'sonner'
 import JSZip from 'jszip'
 
-import { getPdfMetaData, loadPdfDocument, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
 import ToolHeader from './shared/ToolHeader'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
+
+// Compare Slider Component
+const QualityCompare = ({ originalBuffer, compressedBuffer }: { originalBuffer: Uint8Array, compressedBuffer: Uint8Array }) => {
+  const [originalThumb, setOriginalThumb] = useState<string>('')
+  const [compressedThumb, setCompressedThumb] = useState<string>('')
+  const [sliderPos, setSliderPos] = useState(50)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const loadThumbs = async () => {
+      try {
+        // High quality thumbnails for comparison
+        const origPdf = await loadPdfDocument(new File([originalBuffer as any], 'orig.pdf', { type: 'application/pdf' }))
+        const compPdf = await loadPdfDocument(new File([compressedBuffer as any], 'comp.pdf', { type: 'application/pdf' }))
+        
+        const t1 = await renderPageThumbnail(origPdf, 1, 2.0)
+        const t2 = await renderPageThumbnail(compPdf, 1, 2.0)
+        
+        setOriginalThumb(t1)
+        setCompressedThumb(t2)
+      } catch (e) {
+        console.error("Comparison thumb load failed", e)
+      }
+    }
+    loadThumbs()
+  }, [originalBuffer, compressedBuffer])
+
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX
+    const position = ((x - rect.left) / rect.width) * 100
+    setSliderPos(Math.max(0, Math.min(100, position)))
+  }
+
+  if (!originalThumb || !compressedThumb) return (
+    <div className="h-64 flex flex-col items-center justify-center bg-gray-50 dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 animate-pulse">
+       <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mb-4" />
+       <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Rendering Comparison...</p>
+    </div>
+  )
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center px-2">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+          <Maximize2 size={12} /> Quality Inspection
+        </h4>
+        <div className="flex gap-4">
+          <span className="text-[10px] font-black uppercase tracking-tighter text-gray-400">Original</span>
+          <span className="text-[10px] font-black uppercase tracking-tighter text-rose-500">Compressed</span>
+        </div>
+      </div>
+      
+      <div 
+        ref={containerRef}
+        className="relative h-80 md:h-[400px] rounded-[2rem] overflow-hidden cursor-ew-resize select-none border border-gray-100 dark:border-zinc-800 shadow-inner group"
+        onMouseMove={handleMove}
+        onTouchMove={handleMove}
+      >
+        {/* Compressed (Background) */}
+        <img src={compressedThumb} className="absolute inset-0 w-full h-full object-contain bg-white" alt="Compressed" />
+        
+        {/* Original (Foreground with Clip) */}
+        <div 
+          className="absolute inset-0 w-full h-full overflow-hidden"
+          style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+        >
+          <img src={originalThumb} className="absolute inset-0 w-full h-full object-contain bg-white" alt="Original" />
+        </div>
+
+        {/* Divider Line */}
+        <div 
+          className="absolute top-0 bottom-0 w-1 bg-white shadow-xl z-10 flex items-center justify-center"
+          style={{ left: `${sliderPos}%` }}
+        >
+          <div className="w-8 h-8 bg-white dark:bg-zinc-900 rounded-full shadow-2xl border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-rose-500">
+             <ChevronLeft size={14} className="-mr-0.5" />
+             <ChevronRight size={14} className="-ml-0.5" />
+          </div>
+        </div>
+
+        {/* Labels */}
+        <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest pointer-events-none">Original</div>
+        <div className="absolute bottom-4 right-4 bg-rose-500/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest pointer-events-none">Compressed</div>
+      </div>
+      <p className="text-[9px] text-center text-gray-400 font-bold uppercase tracking-wider">Drag the slider to compare pixels (First page shown)</p>
+    </div>
+  )
+}
 
 type CompressPdfFile = {
   id: string
@@ -29,7 +118,7 @@ type CompressionQuality = 'low' | 'medium' | 'high'
 
 export default function CompressTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { consumePipelineFile, setPipelineFile } = usePipeline()
+  const { consumePipelineFile, setPipelineFile, lastPipelinedFile } = usePipeline()
   const { objectUrl, createUrl, clearUrls } = useObjectURL()
   const [files, setFiles] = useState<CompressPdfFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -42,17 +131,11 @@ export default function CompressTool() {
     const pipelined = consumePipelineFile()
     if (pipelined) {
       try {
-        // Use a Blob first as it's more universally compatible for constructor usage
-        const blob = new Blob([pipelined.buffer as any], { type: 'application/pdf' });
-        const file = new File([blob], pipelined.name, { type: 'application/pdf' });
-        handleFiles([file]);
-        toast.info(`Received ${file.name} from pipeline`);
+        const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
+        handleFiles([file])
+        toast.info(`Received ${file.name} from pipeline`)
       } catch (e) {
-        console.error("Pipeline file conversion failed", e);
-        // Use a more robust fallback
-        const blob = new Blob([pipelined.buffer as any], { type: 'application/pdf' });
-        const file = new File([blob], pipelined.name, { type: 'application/pdf' });
-        handleFiles([file]);
+        console.error("Pipeline file conversion failed", e)
       }
     }
   }, [])
@@ -115,12 +198,13 @@ export default function CompressTool() {
       pdfDoc = await loadPdfDocument(item.file)
     }
 
-    const newPdf = await PDFDocument.create()
     const scaleMap = { high: 1.0, medium: 1.5, low: 2.0 }
     const qualityMap = { high: 0.3, medium: 0.5, low: 0.7 }
     
     const scale = scaleMap[quality]
     const jpegQuality = qualityMap[quality]
+
+    const pagesData: { imageBytes: Uint8Array, width: number, height: number }[] = []
 
     for (let i = 1; i <= item.pageCount; i++) {
       const page = await pdfDoc.getPage(i)
@@ -137,28 +221,47 @@ export default function CompressTool() {
       
       const imgData = canvas.toDataURL('image/jpeg', jpegQuality)
       
-      // Cleaner way to get buffer from dataURL without fetch
       const base64 = imgData.split(',')[1]
       const binaryString = window.atob(base64)
       const bytes = new Uint8Array(binaryString.length)
       for (let j = 0; j < binaryString.length; j++) {
         bytes[j] = binaryString.charCodeAt(j)
       }
-      
-      const pdfImg = await newPdf.embedJpg(bytes)
-      const pdfPage = newPdf.addPage([viewport.width, viewport.height])
-      pdfPage.drawImage(pdfImg, {
-        x: 0,
-        y: 0,
+
+      pagesData.push({
+        imageBytes: bytes,
         width: viewport.width,
-        height: viewport.height,
+        height: viewport.height
       })
+      
+      // Clear canvas
+      canvas.width = 0
+      canvas.height = 0
     }
 
-    const pdfBytes = await newPdf.save()
-    const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
-    const url = createUrl(blob)
-    return { url, size: blob.size, buffer: pdfBytes }
+    // Move PDF Assembly to Worker
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
+      
+      const transferables = pagesData.map(p => p.imageBytes.buffer)
+      worker.postMessage({
+        type: 'COMPRESS_PDF_ASSEMBLY',
+        payload: { pages: pagesData, quality }
+      }, transferables as any)
+
+      worker.onmessage = (e) => {
+        const { type, payload } = e.data
+        if (type === 'SUCCESS') {
+          const blob = new Blob([payload as any], { type: 'application/pdf' })
+          const url = createUrl(blob)
+          resolve({ url, size: blob.size, buffer: payload })
+          worker.terminate()
+        } else if (type === 'ERROR') {
+          reject(new Error(payload))
+          worker.terminate()
+        }
+      }
+    })
   }
 
   const startBatchCompression = async () => {
@@ -194,7 +297,12 @@ export default function CompressTool() {
         })
 
         if (pendingFiles.length === 1) {
-           setPipelineFile({ buffer, name: item.file.name.replace('.pdf', '-compressed.pdf') })
+           const originalBuffer = await pendingFiles[0].file.arrayBuffer()
+           setPipelineFile({ 
+             buffer, 
+             name: item.file.name.replace('.pdf', '-compressed.pdf'),
+             originalBuffer: new Uint8Array(originalBuffer)
+           })
         }
 
       } catch (err) {
@@ -326,12 +434,23 @@ export default function CompressTool() {
             )}
 
             {objectUrl && files.length === 1 && (
-               <SuccessState 
-                message="Success! File compressed."
-                downloadUrl={objectUrl}
-                fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')}
-                onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); }}
-               />
+              <div className="space-y-8">
+                {lastPipelinedFile?.originalBuffer && lastPipelinedFile?.buffer && (
+                  <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-zinc-800 shadow-sm">
+                    <QualityCompare 
+                      originalBuffer={lastPipelinedFile.originalBuffer} 
+                      compressedBuffer={lastPipelinedFile.buffer} 
+                    />
+                  </div>
+                )}
+
+                <SuccessState 
+                  message={`Compressed successfully! Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`}
+                  downloadUrl={objectUrl}
+                  fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')}
+                  onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); }}
+                />
+              </div>
             )}
 
             {objectUrl && files.length > 1 && (

@@ -222,31 +222,51 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
         {children}
       </main>
 
-      {/* Mobile Bottom Navigation (APK ONLY) */}
+      {/* Native Material 3 Bottom Navigation */}
       {isNative && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800 flex items-center justify-around px-4 z-50 pb-safe">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[80px] bg-[#F7F2FA] dark:bg-[#1C1B1F] border-t border-gray-200 dark:border-zinc-800 flex items-center justify-around px-2 z-[100] pb-safe transition-colors">
+          {/* Home Tab */}
           <button 
             onClick={() => navigate('/')}
-            className={`flex flex-col items-center gap-1 ${isHome ? 'text-rose-500' : 'text-gray-400'}`}
+            className="flex flex-col items-center gap-1 flex-1 relative group"
           >
-            <Home size={20} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Home</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowHistory(true)}
-            className={`flex flex-col items-center gap-1 ${showHistory ? 'text-rose-500' : 'text-gray-400'}`}
-          >
-            <History size={20} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">History</span>
+            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${isHome ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400 group-active:bg-gray-200 dark:group-active:bg-zinc-800'}`}>
+              <Home size={24} strokeWidth={isHome ? 2.5 : 2} />
+            </div>
+            <span className={`text-[11px] font-black tracking-tight transition-colors ${isHome ? 'text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400'}`}>Home</span>
           </button>
 
+          {/* Tools Tab */}
+          <button 
+            onClick={() => navigate('/')}
+            className="flex flex-col items-center gap-1 flex-1 relative group"
+          >
+            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${location.pathname.includes('/merge') || location.pathname.includes('/compress') ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400 group-active:bg-gray-200 dark:group-active:bg-zinc-800'}`}>
+              <Plus size={24} strokeWidth={2} />
+            </div>
+            <span className={`text-[11px] font-black tracking-tight transition-colors ${location.pathname.includes('/merge') ? 'text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400'}`}>Tools</span>
+          </button>
+          
+          {/* History Tab */}
+          <button 
+            onClick={() => navigate('/android-history')}
+            className="flex flex-col items-center gap-1 flex-1 relative group"
+          >
+            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${location.pathname === '/android-history' ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400 group-active:bg-gray-200 dark:group-active:bg-zinc-800'}`}>
+              <History size={24} strokeWidth={location.pathname === '/android-history' ? 2.5 : 2} />
+            </div>
+            <span className={`text-[11px] font-black tracking-tight transition-colors ${location.pathname === '/android-history' ? 'text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400'}`}>History</span>
+          </button>
+
+          {/* Privacy/About Tab */}
           <Link 
             to="/about"
-            className={`flex flex-col items-center gap-1 ${location.pathname.includes('about') ? 'text-rose-500' : 'text-gray-400'}`}
+            className="flex flex-col items-center gap-1 flex-1 relative group no-underline"
           >
-            <Shield size={20} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Privacy</span>
+            <div className={`px-5 py-1 rounded-full transition-all duration-300 ${location.pathname.includes('about') ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400 group-active:bg-gray-200 dark:group-active:bg-zinc-800'}`}>
+              <Shield size={24} strokeWidth={location.pathname.includes('about') ? 2.5 : 2} />
+            </div>
+            <span className={`text-[11px] font-black tracking-tight transition-colors ${location.pathname.includes('about') ? 'text-rose-900 dark:text-rose-100' : 'text-gray-500 dark:text-gray-400'}`}>Privacy</span>
           </Link>
         </nav>
       )}
