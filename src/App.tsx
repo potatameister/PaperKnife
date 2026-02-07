@@ -151,7 +151,7 @@ function App() {
   }
 
   return (
-    <BrowserRouter basename="/PaperKnife/">
+    <BrowserRouter basename={import.meta.env.MODE === 'production' && !Capacitor.isNativePlatform() ? '/PaperKnife/' : '/'}>
       <PipelineProvider>
         <Layout theme={theme} toggleTheme={toggleTheme} tools={tools} onFileDrop={handleGlobalDrop} viewMode={viewMode}>
           <Toaster position="bottom-center" expand={true} richColors />

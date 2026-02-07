@@ -23,6 +23,12 @@ jobs:
 
       - name: Build Web Assets (Vite)
         run: npm run build
+        env:
+          CAPACITOR_BUILD: 'true'
+
+      - name: Generate Android Assets (Icon/Splash)
+        run: |
+          npx @capacitor/assets generate --android --iconSource public/icons/logo.svg --splashSource public/icons/logo.svg
 
       - name: Setup Java
         uses: actions/setup-java@v4

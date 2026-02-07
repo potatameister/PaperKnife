@@ -22,7 +22,7 @@ export default defineConfig({
         theme_color: '#F43F5E',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/PaperKnife/',
+        start_url: './',
         icons: [
           {
             src: 'icons/logo.svg',
@@ -44,7 +44,7 @@ export default defineConfig({
       }
     })
   ],
-  base: '/PaperKnife/',
+  base: process.env.CAPACITOR_BUILD === 'true' ? './' : '/PaperKnife/',
   server: {
     host: true
   },
