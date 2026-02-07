@@ -5,7 +5,7 @@ import {
   Moon, Sun, 
   History, Upload, ChevronRight, ChevronDown,
   Plus, Trash2, CheckCircle2, Home, Info, ArrowLeft,
-  Layers, LayoutGrid
+  LayoutGrid
 } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { Theme, Tool, ToolCategory, ViewMode } from '../types'
