@@ -55,10 +55,12 @@ jobs:
           BUILD_TOOLS_VERSION: "34.0.0"
 
       - name: Rename APK
-        run: mv ${{ steps.sign_app.outputs.signedReleaseFile }} paperknife-v0.5.0-beta.apk
+        run: cp ${{ steps.sign_app.outputs.signedReleaseFile }} paperknife-v0.5.0-beta.apk
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: PaperKnife-Release-v0.5.0-beta
+          name: PaperKnife-Android-v0.5.0-beta
           path: paperknife-v0.5.0-beta.apk
+          if-no-files-found: error
+          compression-level: 0 # APK is already compressed, no need to zip-in-zip
