@@ -31,10 +31,7 @@ export const NativeToolLayout = ({
           >
             <ArrowLeft size={24} className="dark:text-white" />
           </button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-bold tracking-tight dark:text-white leading-none">{title}</h1>
-            <span className="text-[10px] font-black uppercase tracking-widest text-rose-500 mt-1">PaperKnife Node</span>
-          </div>
+          <h1 className="text-lg font-bold tracking-tight dark:text-white">{title}</h1>
         </div>
         <div className="flex items-center gap-1">
           <button className="p-2 rounded-full active:bg-gray-100 dark:active:bg-white/10 transition-colors">

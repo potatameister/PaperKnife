@@ -48,8 +48,8 @@ export default function AndroidView({ theme, toggleTheme }: AndroidViewProps) {
                <PaperKnifeLogo size={20} />
              </div>
              <div>
-               <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-rose-500">Secure Local Node</span>
-               <span className="block text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">v0.5.0-beta • Offline</span>
+               <span className="block text-xs font-black tracking-tighter text-gray-900 dark:text-white">PaperKnife</span>
+               <span className="block text-[8px] font-bold text-rose-500 uppercase tracking-widest">v0.5.0-beta • Offline Node</span>
              </div>
           </div>
           <div className="flex gap-1">
