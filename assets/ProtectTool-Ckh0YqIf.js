@@ -1,4 +1,4 @@
-import{j as e,a as W}from"./index-BJRrUnzj.js";import{a2 as L,r as j,a3 as Y,l as z,_ as J,E as T}from"./vendor-ui-D1EBEKOk.js";import{e as Q,P as I}from"./pdf-lib-core-BHS29GFZ.js";import{u as X,g as Z}from"./pdfHelpers-DLNmFKBe.js";import{u as K}from"./useObjectURL-CZGgftbZ.js";import{T as ee,P as te}from"./PrivacyBadge-DqID6SbD.js";import{S as se}from"./SuccessState-CL6p7WFv.js";import"./pdfjs-viewer-BENO9Ct1.js";const re=L(Q);/**
+import{j as e,a as W}from"./index-B6cJ0uzj.js";import{a2 as L,r as j,a3 as Y,l as z,_ as J,E as T}from"./vendor-ui-D1EBEKOk.js";import{e as Q,P as I}from"./pdf-lib-core-BHS29GFZ.js";import{u as X,g as Z}from"./pdfHelpers-DLNmFKBe.js";import{u as K}from"./useObjectURL-CZGgftbZ.js";import{T as ee,P as te}from"./PrivacyBadge-Wo8Xzpg5.js";import{S as se}from"./SuccessState--U3S_iRb.js";import"./pdfjs-viewer-BENO9Ct1.js";const re=L(Q);/**
  * pdf-encrypt-lite - Ultra-lightweight PDF encryption library
  * Powers PDFSmaller.com's PDF encryption tool
  * 
