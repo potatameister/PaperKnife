@@ -92,7 +92,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   const isHome = location.pathname === '/' || location.pathname === '/PaperKnife/'
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#F8F9FA] dark:bg-black text-gray-900 dark:text-zinc-100 transition-colors duration-300`}>
+    <div className={`min-h-screen flex flex-col bg-[#FAFAFA] dark:bg-black text-gray-900 dark:text-zinc-100 transition-colors duration-300`}>
       
       {isDragging && (
         <div className="fixed inset-0 z-[200] bg-rose-500/10 backdrop-blur-sm flex items-center justify-center pointer-events-none">
