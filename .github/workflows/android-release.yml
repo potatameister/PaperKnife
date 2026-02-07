@@ -28,7 +28,7 @@ jobs:
 
       - name: Generate Android Assets (Icon/Splash)
         run: |
-          npx @capacitor/assets generate --android --icon public/icons/logo.svg --splash public/icons/logo.svg
+          npx @capacitor/assets generate --android
 
       - name: Setup Java
         uses: actions/setup-java@v4
