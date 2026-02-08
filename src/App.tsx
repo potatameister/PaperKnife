@@ -7,6 +7,7 @@ import {
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Toaster, toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
+import { Filesystem } from '@capacitor/filesystem'
 import { Theme, ViewMode, Tool } from './types'
 import Layout from './components/Layout'
 import { PipelineProvider } from './utils/pipelineContext'
@@ -172,6 +173,42 @@ function App() {
       return () => media.removeEventListener('change', listener)
     }
   }, [theme])
+
+  // Handle Intent Files (Android "Open With" / "Share to")
+  useEffect(() => {
+    const handleIntentFile = async (uri: string) => {
+      try {
+        toast.loading('Importing file...', { id: 'intent-load' })
+        
+        // Read file from URI
+        const fileContent = await Filesystem.readFile({
+          path: uri
+        })
+
+        // Convert base64 to Blob
+        const blob = await (await fetch(`data:application/pdf;base64,${fileContent.data}`)).blob()
+        
+        // Create File object
+        const fileName = uri.split('/').pop() || 'imported-file.pdf'
+        const file = new File([blob], fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`, { type: 'application/pdf' })
+
+        setDroppedFile(file)
+        toast.success('File imported successfully!', { id: 'intent-load' })
+      } catch (error) {
+        console.error('Intent load error:', error)
+        toast.error('Failed to import file.', { id: 'intent-load' })
+      }
+    }
+
+    const onFileIntent = (e: any) => {
+      if (e.detail?.uri) {
+        handleIntentFile(e.detail.uri)
+      }
+    }
+
+    window.addEventListener('fileIntent', onFileIntent)
+    return () => window.removeEventListener('fileIntent', onFileIntent)
+  }, [])
 
   const LoadingSpinner = () => (
     <div className="h-full w-full flex items-center justify-center bg-[#FAFAFA] dark:bg-black min-h-[60vh]">

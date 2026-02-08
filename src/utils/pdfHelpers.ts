@@ -1,6 +1,7 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 // Explicitly import the worker as a URL so Vite handles it correctly
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
@@ -30,7 +31,6 @@ export const downloadFile = async (data: Uint8Array | string, fileName: string, 
         recursive: true
       });
       
-      // Notify user where the file went
       return true;
     } catch (e) {
       console.error('Download error:', e);
@@ -50,6 +50,62 @@ export const downloadFile = async (data: Uint8Array | string, fileName: string, 
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     return true;
+  }
+};
+
+/**
+ * Universal file sharer
+ */
+export const shareFile = async (data: Uint8Array | string, fileName: string, mimeType: string) => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      // For Android, we save to Cache directory first, then share
+      const base64Data = typeof data === 'string' 
+        ? data.split(',')[1] 
+        : btoa(data.reduce((acc, byte) => acc + String.fromCharCode(byte), ''));
+
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: base64Data,
+        directory: Directory.Cache, // Use Cache for temporary sharing
+        recursive: true
+      });
+
+      await Share.share({
+        title: fileName,
+        text: `Shared via PaperKnife`,
+        url: result.uri,
+        dialogTitle: 'Share PDF'
+      });
+      
+      return true;
+    } catch (e) {
+      console.error('Share error:', e);
+      throw e;
+    }
+  } else {
+    // Web Share API
+    const blob = typeof data === 'string' 
+      ? await (await fetch(data)).blob() 
+      : new Blob([data as BlobPart], { type: mimeType });
+    
+    const file = new File([blob], fileName, { type: mimeType });
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: fileName,
+          text: 'Shared via PaperKnife'
+        });
+        return true;
+      } catch (e) {
+        console.error('Web share failed, falling back to download');
+      }
+    }
+    
+    // Fallback to download if sharing is not supported
+    return downloadFile(data, fileName, mimeType);
   }
 };
 

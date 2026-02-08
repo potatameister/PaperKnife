@@ -16,6 +16,7 @@
     "@capacitor/core": "^8.0.2",
     "@capacitor/filesystem": "^8.1.0",
     "@capacitor/haptics": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",

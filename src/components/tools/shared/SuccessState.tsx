@@ -1,9 +1,9 @@
-import { Download, Eye, CheckCircle2, ArrowRight, Zap, Shield, Scissors, Tags } from 'lucide-react'
+import { Download, Eye, CheckCircle2, ArrowRight, Zap, Shield, Scissors, Tags, Share2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { usePipeline } from '../../../utils/pipelineContext'
 import { toast } from 'sonner'
-import { downloadFile } from '../../../utils/pdfHelpers'
+import { downloadFile, shareFile } from '../../../utils/pdfHelpers'
 import { Capacitor } from '@capacitor/core'
 import { hapticSuccess } from '../../../utils/haptics'
 
@@ -27,15 +27,30 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault()
     try {
-      toast.loading('Saving file...', { id: 'download' })
+      toast.loading('Saving file...', { id: 'save-action' })
       const response = await fetch(downloadUrl)
       const blob = await response.blob()
       const buffer = await blob.arrayBuffer()
       
       await downloadFile(new Uint8Array(buffer), fileName, 'application/pdf')
-      toast.success(isNative ? 'File saved to Documents' : 'Download started', { id: 'download' })
+      toast.success(isNative ? 'File saved to Documents' : 'Download started', { id: 'save-action' })
     } catch (err) {
-      toast.error('Failed to save file', { id: 'download' })
+      toast.error('Failed to save file', { id: 'save-action' })
+    }
+  }
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    try {
+      toast.loading('Preparing to share...', { id: 'share-action' })
+      const response = await fetch(downloadUrl)
+      const blob = await response.blob()
+      const buffer = await blob.arrayBuffer()
+      
+      await shareFile(new Uint8Array(buffer), fileName, 'application/pdf')
+      toast.dismiss('share-action')
+    } catch (err) {
+      toast.error('Failed to share file', { id: 'share-action' })
     }
   }
 
@@ -73,19 +88,28 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
         <CheckCircle2 size={16} /> {message}
       </div>
       
-      <div className="flex flex-col sm:flex-row gap-3">
-        {showPreview && (
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-3">
+          {showPreview && (
+            <button 
+              onClick={() => window.open(downloadUrl, '_blank')}
+              className="flex-1 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-800 p-4 rounded-2xl md:rounded-3xl shadow-sm font-black text-sm md:text-xl tracking-tight transition-all hover:bg-gray-50 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <Eye size={20} /> Preview
+            </button>
+          )}
+          
           <button 
-            onClick={() => window.open(downloadUrl, '_blank')}
-            className="flex-1 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-800 p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm font-black text-lg md:text-xl tracking-tight transition-all hover:bg-gray-50 active:scale-95 flex items-center justify-center gap-3"
+            onClick={handleShare}
+            className="flex-1 bg-rose-50 dark:bg-rose-900/20 text-rose-500 border border-rose-100 dark:border-rose-900/30 p-4 rounded-2xl md:rounded-3xl shadow-sm font-black text-sm md:text-xl tracking-tight transition-all active:scale-95 flex items-center justify-center gap-2"
           >
-            <Eye size={24} /> Preview
+            <Share2 size={20} /> Share
           </button>
-        )}
+        </div>
         
         <button 
           onClick={handleDownload}
-          className={`flex-[2] bg-gray-900 dark:bg-white text-white dark:text-black p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-xl font-black text-lg md:text-xl tracking-tight transition-all hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-3 ${!showPreview ? 'w-full' : ''}`}
+          className="w-full bg-gray-900 dark:bg-white text-white dark:text-black p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-xl font-black text-lg md:text-xl tracking-tight transition-all hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-3"
         >
           <Download size={24} /> {isNative ? 'Save to Device' : 'Download'}
         </button>
