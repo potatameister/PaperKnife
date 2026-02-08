@@ -4,19 +4,24 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.JSObject;
 
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        handleIntent(getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent);
         handleIntent(intent);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        handleIntent(getIntent());
     }
 
     private void handleIntent(Intent intent) {
@@ -33,9 +38,19 @@ public class MainActivity extends BridgeActivity {
                 }
 
                 if (fileUri != null) {
-                    JSObject ret = new JSObject();
-                    ret.put("uri", fileUri.toString());
-                    bridge.triggerWindowExecution("window.dispatchEvent(new CustomEvent('fileIntent', { detail: { uri: '" + fileUri.toString() + "' } }));");
+                    final String uriString = fileUri.toString();
+                    // Ensure we run on the UI thread for WebView access
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (getBridge() != null && getBridge().getWebView() != null) {
+                                getBridge().getWebView().evaluateJavascript(
+                                    "window.dispatchEvent(new CustomEvent('fileIntent', { detail: { uri: '" + uriString + "' } }));",
+                                    null
+                                );
+                            }
+                        }
+                    });
                 }
             }
         }

@@ -3,7 +3,7 @@ name: Build & Sign Android APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Allows manual trigger
+  workflow_dispatch:
 
 jobs:
   build:
@@ -27,18 +27,18 @@ jobs:
           CAPACITOR_BUILD: 'true'
 
       - name: Generate Android Assets (Icon/Splash)
-        run: |
-          npx -y @capacitor/assets generate --android
+        run: npx -y @capacitor/assets generate --android
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '21'
-          cache: 'gradle'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -77,4 +77,4 @@ jobs:
           name: PaperKnife-Android-v0.5.0-beta
           path: paperknife-v0.5.0-beta.apk
           if-no-files-found: error
-          compression-level: 0 # APK is already compressed, no need to zip-in-zip
+          compression-level: 0
