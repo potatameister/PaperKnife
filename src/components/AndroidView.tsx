@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { 
   Shield, 
   ChevronRight,
-  FileText,
+  FileText, Sparkles,
   Layers, Zap, Scissors, Lock,
   Moon, Sun, LayoutGrid, Clock
 } from 'lucide-react'
