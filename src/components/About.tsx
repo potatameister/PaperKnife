@@ -143,7 +143,7 @@ export default function About() {
 
   if (isNative) {
     return (
-      <NativeToolLayout title="About" description="Information about PaperKnife">
+      <NativeToolLayout title="About" description="Information about PaperKnife" actions={null}>
         <div className="pb-32">
           {content}
         </div>

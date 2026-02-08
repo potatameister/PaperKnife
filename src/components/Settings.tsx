@@ -92,7 +92,7 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
   }
 
   return (
-    <NativeToolLayout title="Settings" description="Application configuration">
+    <NativeToolLayout title="Settings" description="Application configuration" actions={null}>
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 pb-32 -mx-4 md:mx-0">
         
         {/* Appearance */}
