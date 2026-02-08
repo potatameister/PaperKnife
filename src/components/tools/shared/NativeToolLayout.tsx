@@ -22,22 +22,20 @@ export const NativeToolLayout = ({
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FAFAFA] dark:bg-black transition-colors">
-      {/* Minimal Native AppBar */}
-      <header className="px-4 pt-safe pb-3 flex items-center justify-between sticky top-0 z-50 bg-[#FAFAFA]/90 dark:bg-black/90 backdrop-blur-xl md:hidden">
-        <div className="flex items-center gap-2 h-12">
+      {/* Ultra-Compact Native AppBar */}
+      <header className="px-4 pt-safe pb-1 flex items-center justify-between sticky top-0 z-50 bg-[#FAFAFA]/95 dark:bg-black/95 backdrop-blur-xl md:hidden">
+        <div className="flex items-center gap-2 h-14">
           <button 
             onClick={onBack || (() => navigate(-1))}
-            className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100 dark:active:bg-zinc-900 transition-colors -ml-2"
+            className="w-10 h-10 flex items-center justify-center rounded-full active:bg-zinc-100 dark:active:bg-zinc-900 transition-colors -ml-1"
           >
             <ArrowLeft size={24} className="text-gray-900 dark:text-white" />
           </button>
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white leading-none ml-1">{title}</h1>
+          <h1 className="text-lg font-black tracking-tight text-gray-900 dark:text-white ml-1">{title}</h1>
         </div>
-        <div className="flex items-center gap-1">
-          <button className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100 dark:active:bg-zinc-900 transition-colors">
-            <MoreVertical size={20} className="text-gray-500 dark:text-gray-400" />
-          </button>
-        </div>
+        <button className="w-10 h-10 flex items-center justify-center rounded-full active:bg-zinc-100 dark:active:bg-zinc-900 transition-colors">
+          <MoreVertical size={20} className="text-zinc-400" />
+        </button>
       </header>
 
       {/* Main Content Area */}
@@ -48,12 +46,12 @@ export const NativeToolLayout = ({
         </div>
 
         {/* Content Wrapper */}
-        <div className="flex-1 pb-32">
+        <div className="flex-1">
           {children}
         </div>
       </main>
 
-      {/* Persistent Bottom Action Bar (Native Only) */}
+      {/* Grounded Bottom Action Bar (Native Only) */}
       {actions && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-black/95 backdrop-blur-xl border-t border-gray-100 dark:border-white/5 z-[100] pb-[calc(env(safe-area-inset-bottom)+1rem)]">
            <div className="max-w-md mx-auto">
