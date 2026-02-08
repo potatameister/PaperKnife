@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Hash, Lock, Loader2, Eye } from 'lucide-react'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { toast } from 'sonner'
-import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, unlockPdf, loadPdfDocument } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'

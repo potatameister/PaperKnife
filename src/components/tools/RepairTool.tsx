@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Loader2, ShieldAlert, Upload, X, FileCheck } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
-import { Capacitor } from '@capacitor/core'
 
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'

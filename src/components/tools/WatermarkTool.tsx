@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Type, Lock, Loader2, Palette, Eye } from 'lucide-react'
 import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib'
 import { toast } from 'sonner'
-import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, unlockPdf, loadPdfDocument } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
@@ -26,7 +25,6 @@ export default function WatermarkTool() {
   const [fontSize] = useState(50)
   const [rotation, setRotation] = useState(-45)
   const [color, setColor] = useState('#F43F5E')
-  const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
     const pipelined = consumePipelineFile()

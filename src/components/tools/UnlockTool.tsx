@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Lock, Unlock, Loader2, X } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
-import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
@@ -29,7 +28,6 @@ export default function UnlockTool() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [password, setPassword] = useState('')
   const [customFileName, setCustomFileName] = useState('paperknife-unlocked')
-  const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
     const pipelined = consumePipelineFile()

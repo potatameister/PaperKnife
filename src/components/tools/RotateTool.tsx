@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { RotateCw, Lock, RefreshCcw, Loader2, X } from 'lucide-react'
 import { PDFDocument, degrees } from 'pdf-lib'
 import { toast } from 'sonner'
-import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'

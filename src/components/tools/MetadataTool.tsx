@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Info, Lock, Edit3, Loader2, Sparkles, X } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
-import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'

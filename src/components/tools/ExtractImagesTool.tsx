@@ -23,6 +23,7 @@ export default function ExtractImagesTool() {
   const [extractedCount, setExtractedCount] = useState(0)
   const [customFileName, setCustomFileName] = useState('extracted-images')
   const [unlockPassword, setUnlockPassword] = useState('')
+  const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
     const pipelined = consumePipelineFile()
@@ -107,7 +108,6 @@ export default function ExtractImagesTool() {
         }
         
         setProgress(Math.round((i / pdfData.pageCount) * 100))
-        setFoundCount(imageCounter)
       }
       
       if (imageCounter === 0) {

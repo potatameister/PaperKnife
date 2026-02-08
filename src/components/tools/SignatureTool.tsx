@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Loader2, Lock, Image as ImageIcon, ArrowRight, X, PenTool } from 'lucide-react'
+import { Loader2, Lock, Image as ImageIcon, ArrowRight } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'

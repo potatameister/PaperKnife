@@ -31,6 +31,7 @@ export default function ProtectTool() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [unlockPassword, setUnlockPassword] = useState('')
   const [customFileName, setCustomFileName] = useState('paperknife-protected')
+  const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
     const pipelined = consumePipelineFile()

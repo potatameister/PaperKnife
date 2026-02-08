@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Loader2, Scissors, Check, Plus, Lock, ArrowRight, X } from 'lucide-react'
 import JSZip from 'jszip'
 import { toast } from 'sonner'
-import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
@@ -57,7 +56,6 @@ export default function SplitTool() {
   const [rangeInput, setRangeInput] = useState('')
   const [splitMode, setSplitMode] = useState<'single' | 'individual'>('single')
   const [unlockPassword, setUnlockPassword] = useState('')
-  const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
     const pipelined = consumePipelineFile()
