@@ -1,18 +1,19 @@
 import { useState } from 'react'
 import { 
   Github, Heart, 
-  ChevronDown, Lock, 
+  ChevronDown, 
   Code, 
   Terminal, Zap,
   ExternalLink,
   Cpu, ShieldCheck, Shield,
-  Sparkles, Trash2, Clock
+  Sparkles, Trash2, Clock, Moon, Sun, Monitor
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'
 import { NativeToolLayout } from './tools/shared/NativeToolLayout'
 import { clearActivity } from '../utils/recentActivity'
 import { toast } from 'sonner'
+import { Theme } from '../types'
 
 const TechSpec = ({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -39,7 +40,12 @@ const TechSpec = ({ title, icon: Icon, children }: { title: string, icon: any, c
   )
 }
 
-export default function About() {
+interface AboutProps {
+  theme?: Theme
+  setTheme?: (theme: Theme) => void
+}
+
+export default function About({ theme, setTheme }: AboutProps) {
   const isNative = Capacitor.isNativePlatform()
   const [autoWipe, setAutoWipe] = useState(() => localStorage.getItem('autoWipe') === 'true')
 
@@ -62,20 +68,34 @@ export default function About() {
         title="Settings" 
         description="Configuration and Privacy Protocol"
       >
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
           
-          {/* Header Branding */}
-          <section className="flex flex-col items-center text-center py-4">
-             <div className="w-20 h-20 bg-zinc-900 dark:bg-white rounded-[2rem] flex items-center justify-center shadow-2xl mb-4">
-                <ShieldCheck size={40} className="text-rose-500" />
-             </div>
-             <h2 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">PaperKnife Node</h2>
-             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-500 mt-1">v0.5.0-beta • Zero Server</p>
+          {/* Appearance Section */}
+          <section>
+            <h3 className="px-2 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Appearance</h3>
+            <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 p-2 shadow-sm">
+               <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'light', icon: Sun, label: 'Light' },
+                    { id: 'dark', icon: Moon, label: 'Dark' },
+                    { id: 'system', icon: Monitor, label: 'System' }
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setTheme?.(t.id as Theme)}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${theme === t.id ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'bg-gray-50 dark:bg-black text-gray-400'}`}
+                    >
+                      <t.icon size={20} />
+                      <span className="text-[10px] font-bold uppercase">{t.label}</span>
+                    </button>
+                  ))}
+               </div>
+            </div>
           </section>
 
           {/* Privacy Controls */}
           <section>
-            <h3 className="px-2 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Security Management</h3>
+            <h3 className="px-2 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Security</h3>
             <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 overflow-hidden shadow-sm">
               <div className="p-5 flex items-center justify-between border-b border-gray-50 dark:border-white/5">
                 <div className="flex items-center gap-4">
@@ -84,7 +104,7 @@ export default function About() {
                   </div>
                   <div>
                     <h4 className="font-bold text-sm text-gray-900 dark:text-white leading-none">Auto-Wipe</h4>
-                    <p className="text-[10px] text-gray-500 dark:text-zinc-500 mt-1.5 font-medium">Scrub history on every app launch</p>
+                    <p className="text-[10px] text-gray-500 dark:text-zinc-500 mt-1.5 font-medium">Scrub history on launch</p>
                   </div>
                 </div>
                 <button 
@@ -104,13 +124,13 @@ export default function About() {
                 </div>
                 <div>
                   <h4 className="font-bold text-sm text-gray-900 dark:text-white leading-none">Wipe All Data</h4>
-                  <p className="text-[10px] text-gray-500 dark:text-zinc-500 mt-1.5 font-medium">Instantly clear all local activity logs</p>
+                  <p className="text-[10px] text-gray-500 dark:text-zinc-500 mt-1.5 font-medium">Instant local reset</p>
                 </div>
               </button>
             </div>
           </section>
 
-          {/* Privacy Protocol (How it works) */}
+          {/* Protocol Section */}
           <section>
             <h3 className="px-2 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Technical Protocol</h3>
             <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 p-2 shadow-sm">
@@ -120,25 +140,22 @@ export default function About() {
                <TechSpec title="Local-First Logic" icon={Zap}>
                   <p>By leveraging Web Workers and pdf-lib, we execute complex PDF manipulation directly on your CPU. This ensures 100% privacy and offline capability.</p>
                </TechSpec>
-               <TechSpec title="Secure Encryption" icon={Lock}>
-                  <p>Protect PDF uses AES-256 bit encryption. Your passwords are used only as cryptographic seeds and are never stored or logged.</p>
-               </TechSpec>
                <TechSpec title="Open Source Integrity" icon={Code}>
                   <p>PaperKnife is fully open source. You can audit the entire source code on GitHub to verify our privacy claims.</p>
                </TechSpec>
             </div>
           </section>
 
-          {/* Support & Credits */}
+          {/* Support Section */}
           <section>
-            <h3 className="px-2 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Project Support</h3>
+            <h3 className="px-2 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Support</h3>
             <div className="bg-zinc-900 dark:bg-zinc-100 rounded-[2rem] p-6 text-white dark:text-black shadow-xl relative overflow-hidden">
                <div className="absolute top-0 right-0 p-8 text-rose-500/10 pointer-events-none">
                   <Heart size={80} fill="currentColor" />
                </div>
                <div className="relative z-10">
-                  <h4 className="font-black text-xl mb-2">Support the Engine</h4>
-                  <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 leading-relaxed mb-6">PaperKnife is a free, independent project. Your support keeps it ad-free and private forever.</p>
+                  <h4 className="font-black text-xl mb-2 tracking-tight">Help keep it private</h4>
+                  <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 leading-relaxed mb-6">Your support keeps PaperKnife independent and ad-free forever.</p>
                   <div className="flex gap-2">
                     <a 
                       href="https://github.com/sponsors/potatameister" 
@@ -158,10 +175,12 @@ export default function About() {
             </div>
           </section>
 
-          {/* Legal / Policy Footer */}
-          <section className="text-center py-10 opacity-40">
+          <section className="text-center opacity-40 pb-10">
+             <div className="w-12 h-12 bg-gray-100 dark:bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Terminal size={24} className="text-gray-400" />
+             </div>
              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500">
-                Precision • Privacy • Performance <br/>
+                PaperKnife Node v0.5.0-beta <br/>
                 Open Source 2026
              </p>
           </section>

@@ -111,13 +111,8 @@ function App() {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as Theme
       if (savedTheme) return savedTheme
-      
-      // Default to system preference
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark'
-      }
     }
-    return 'light'
+    return 'system'
   })
 
   const toggleTheme = () => {
@@ -136,14 +131,31 @@ function App() {
 
   useEffect(() => {
     const root = window.document.documentElement
-    if (theme === 'dark') {
-      root.classList.add('dark')
-      root.style.colorScheme = 'dark'
-    } else {
-      root.classList.remove('dark')
-      root.style.colorScheme = 'light'
+    
+    const applyTheme = (t: Theme) => {
+      let resolvedTheme = t
+      if (t === 'system') {
+        resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      }
+      
+      if (resolvedTheme === 'dark') {
+        root.classList.add('dark')
+        root.style.colorScheme = 'dark'
+      } else {
+        root.classList.remove('dark')
+        root.style.colorScheme = 'light'
+      }
     }
+
+    applyTheme(theme)
     localStorage.setItem('theme', theme)
+
+    if (theme === 'system') {
+      const media = window.matchMedia('(prefers-color-scheme: dark)')
+      const listener = () => applyTheme('system')
+      media.addEventListener('change', listener)
+      return () => media.removeEventListener('change', listener)
+    }
   }, [theme])
 
   const LoadingSpinner = () => (
@@ -167,7 +179,7 @@ function App() {
   return (
     <BrowserRouter basename={isCapacitor ? '/' : '/PaperKnife/'}>
       <PipelineProvider>
-        <Layout theme={theme} toggleTheme={toggleTheme} tools={tools} onFileDrop={handleGlobalDrop} viewMode={viewMode}>
+        <Layout theme={theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme} toggleTheme={toggleTheme} tools={tools} onFileDrop={handleGlobalDrop} viewMode={viewMode}>
           <Toaster position="bottom-center" expand={true} richColors />
           
           {droppedFile && <QuickDropModal file={droppedFile} onClear={() => setDroppedFile(null)} />}
@@ -178,7 +190,7 @@ function App() {
                 viewMode === 'web' ? (
                   <WebView tools={tools} />
                 ) : (
-                  <AndroidView toggleTheme={toggleTheme} theme={theme} />
+                  <AndroidView toggleTheme={toggleTheme} theme={theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme} />
                 )
               } />
               <Route path="/android-tools" element={<AndroidToolsView tools={tools} />} />
@@ -198,7 +210,7 @@ function App() {
               <Route path="/image-to-pdf" element={<ImageToPdfTool />} />
               <Route path="/signature" element={<SignatureTool />} />
               <Route path="/repair" element={<RepairTool />} />
-              <Route path="/about" element={<About />} />
+              <Route path="/about" element={<About theme={theme} setTheme={setTheme} />} />
               <Route path="/thanks" element={<Thanks />} />
             </Routes>
           </Suspense>

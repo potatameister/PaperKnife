@@ -1,6 +1,6 @@
 import { LucideIcon } from 'lucide-react'
 
-export type Theme = 'light' | 'dark'
+export type Theme = 'light' | 'dark' | 'system'
 export type ViewMode = 'web' | 'android'
 
 export type ToolCategory = 'Edit' | 'Secure' | 'Convert' | 'Optimize'
