@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { 
-  Shield, Download, 
+  Download, 
   Moon, Sun, 
   History, Upload, ChevronRight, ChevronDown,
   Plus, Trash2, CheckCircle2, Home, Info, ArrowLeft,
-  LayoutGrid
+  LayoutGrid, Settings
 } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { Theme, Tool, ToolCategory, ViewMode } from '../types'
@@ -207,8 +207,8 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             to="/about"
             className={`flex flex-col items-center gap-1.5 flex-1 transition-all no-underline ${location.pathname.includes('about') ? 'text-rose-500' : 'text-gray-400 dark:text-zinc-600'}`}
           >
-            <Shield size={24} strokeWidth={location.pathname.includes('about') ? 2.5 : 2} />
-            <span className="text-[10px] font-bold">Privacy</span>
+            <Settings size={24} strokeWidth={location.pathname.includes('about') ? 2.5 : 2} />
+            <span className="text-[10px] font-bold">Settings</span>
           </Link>
         </nav>
       )}
