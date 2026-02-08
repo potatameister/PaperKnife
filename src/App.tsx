@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { 
   Layers, Scissors, Zap, Smartphone, Monitor, Lock, Unlock, 
   RotateCw, Type, Hash, Tags, FileText, ArrowUpDown, PenTool, 
-  Wrench, ImagePlus, FileImage
+  Wrench, ImagePlus, FileImage, Palette
 } from 'lucide-react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Toaster, toast } from 'sonner'
@@ -34,6 +34,7 @@ const ImageToPdfTool = lazy(() => import('./components/tools/ImageToPdfTool'))
 const SignatureTool = lazy(() => import('./components/tools/SignatureTool'))
 const RepairTool = lazy(() => import('./components/tools/RepairTool'))
 const ExtractImagesTool = lazy(() => import('./components/tools/ExtractImagesTool'))
+const GrayscaleTool = lazy(() => import('./components/tools/GrayscaleTool'))
 const About = lazy(() => import('./components/About'))
 const Thanks = lazy(() => import('./components/Thanks'))
 const SettingsView = lazy(() => import('./components/Settings'))
@@ -44,6 +45,7 @@ const tools: Tool[] = [
   { title: 'Compress PDF', desc: 'Optimize your file size for easier sharing.', icon: Zap, implemented: true, path: '/compress', category: 'Optimize' },
   { title: 'Protect PDF', desc: 'Secure your documents with strong encryption.', icon: Lock, implemented: true, path: '/protect', category: 'Secure' },
   { title: 'Extract Images', desc: 'Pull out all original images embedded in a PDF.', icon: FileImage, implemented: true, path: '/extract-images', category: 'Convert' },
+  { title: 'Grayscale', desc: 'Convert all document pages to black and white.', icon: Palette, implemented: true, path: '/grayscale', category: 'Optimize' },
   { title: 'Signature', desc: 'Add your electronic signature to any document.', icon: PenTool, implemented: true, path: '/signature', category: 'Edit' },
   { title: 'Unlock PDF', desc: 'Remove passwords from your protected files.', icon: Unlock, implemented: true, path: '/unlock', category: 'Secure' },
   { title: 'Image to PDF', desc: 'Convert JPG, PNG, and WebP into a professional PDF.', icon: ImagePlus, implemented: true, path: '/image-to-pdf', category: 'Convert' },
@@ -265,6 +267,7 @@ function App() {
               <Route path="/signature" element={<SignatureTool />} />
               <Route path="/repair" element={<RepairTool />} />
               <Route path="/extract-images" element={<ExtractImagesTool />} />
+              <Route path="/grayscale" element={<GrayscaleTool />} />
               <Route path="/about" element={<About />} />
               <Route path="/settings" element={<SettingsView theme={theme} setTheme={setTheme} />} />
               <Route path="/thanks" element={<Thanks />} />
