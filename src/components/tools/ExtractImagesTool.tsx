@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Image as ImageIcon, Lock, Loader2, X, Sparkles } from 'lucide-react'
 import JSZip from 'jszip'
 import { toast } from 'sonner'
-import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, loadPdfDocument, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
@@ -23,7 +22,6 @@ export default function ExtractImagesTool() {
   const [extractedCount, setExtractedCount] = useState(0)
   const [customFileName, setCustomFileName] = useState('extracted-images')
   const [unlockPassword, setUnlockPassword] = useState('')
-  const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
     const pipelined = consumePipelineFile()
@@ -60,7 +58,7 @@ export default function ExtractImagesTool() {
 
   const extractImages = async () => {
     if (!pdfData || !pdfData.pdfDoc) return
-    setIsProcessing(true); setProgress(0); setFoundCount(0)
+    setIsProcessing(true); setProgress(0); setExtractedCount(0)
     await new Promise(resolve => setTimeout(resolve, 100))
     
     try {
