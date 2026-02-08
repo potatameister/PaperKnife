@@ -49,11 +49,11 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease
         env:
-          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          ANDROID_VERSION_CODE: ${{ github.run_number + 100 }}
 
       - name: Sign APK
         id: sign_app
-        uses: r0adkll/sign-android-release@v1.0.4
+        uses: ilharp/sign-android-release@v2
         with:
           releaseDirectory: android/app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
