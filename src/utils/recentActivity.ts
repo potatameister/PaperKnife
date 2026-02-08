@@ -66,3 +66,11 @@ export const clearActivity = async () => {
   const store = tx.objectStore(STORE_NAME)
   await store.clear()
 }
+
+export const updateLastSeen = () => {
+  localStorage.setItem('lastSeen', String(Date.now()))
+}
+
+export const getLastSeen = () => {
+  return Number(localStorage.getItem('lastSeen') || '0')
+}

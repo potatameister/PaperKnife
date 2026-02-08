@@ -1,9 +1,11 @@
 import { Download, Eye, CheckCircle2, ArrowRight, Zap, Shield, Scissors, Tags } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { usePipeline } from '../../../utils/pipelineContext'
 import { toast } from 'sonner'
 import { downloadFile } from '../../../utils/pdfHelpers'
 import { Capacitor } from '@capacitor/core'
+import { hapticSuccess } from '../../../utils/haptics'
 
 interface SuccessStateProps {
   message: string
@@ -17,6 +19,10 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
   const navigate = useNavigate()
   const { setPipelineFile } = usePipeline()
   const isNative = Capacitor.isNativePlatform()
+
+  useEffect(() => {
+    hapticSuccess()
+  }, [])
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault()

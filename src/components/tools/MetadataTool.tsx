@@ -26,7 +26,14 @@ export default function MetadataTool() {
   const [customFileName, setCustomFileName] = useState('paperknife-metadata')
   const [unlockPassword, setUnlockPassword] = useState('')
   const [isDeepCleaning, setIsDeepCleaning] = useState(false)
-  const [meta, setMeta] = useState({ title: '', author: '', subject: '', keywords: '', creator: 'PaperKnife', producer: 'PaperKnife' })
+  const [meta, setMeta] = useState({ 
+    title: '', 
+    author: localStorage.getItem('defaultAuthor') || '', 
+    subject: '', 
+    keywords: '', 
+    creator: localStorage.getItem('defaultAuthor') || 'PaperKnife', 
+    producer: localStorage.getItem('defaultAuthor') || 'PaperKnife' 
+  })
   const isNative = Capacitor.isNativePlatform()
 
   const handleUnlock = async () => {

@@ -11,6 +11,7 @@ import { Capacitor } from '@capacitor/core'
 import { Theme, Tool, ToolCategory, ViewMode } from '../types'
 import { PaperKnifeLogo } from './Logo'
 import { ActivityEntry, getRecentActivity, clearActivity } from '../utils/recentActivity'
+import { hapticImpact } from '../utils/haptics'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -180,6 +181,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
           <div className="relative -top-8">
              <button 
                onClick={() => {
+                 hapticImpact()
                  const input = document.createElement('input')
                  input.type = 'file'
                  input.accept = '.pdf'

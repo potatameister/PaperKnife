@@ -10,7 +10,7 @@ import { Capacitor } from '@capacitor/core'
 import { Theme, ViewMode, Tool } from './types'
 import Layout from './components/Layout'
 import { PipelineProvider } from './utils/pipelineContext'
-import { clearActivity } from './utils/recentActivity'
+import { clearActivity, updateLastSeen, getLastSeen } from './utils/recentActivity'
 
 // Lazy load views
 const WebView = lazy(() => import('./components/WebView'))
@@ -120,14 +120,28 @@ function App() {
     setTheme(prev => prev === 'light' ? 'dark' : 'light')
   }
 
-  // Auto-Wipe Logic
+  // Improved Auto-Wipe Logic
   useEffect(() => {
-    const shouldWipe = localStorage.getItem('autoWipe') === 'true'
-    if (shouldWipe) {
-      clearActivity().then(() => {
-        console.log('Auto-Wipe executed: Activity cleared.')
-      })
+    const isAutoWipeEnabled = localStorage.getItem('autoWipe') === 'true'
+    const timerMinutes = parseInt(localStorage.getItem('autoWipeTimer') || '15')
+    const lastSeen = getLastSeen()
+    const now = Date.now()
+
+    if (isAutoWipeEnabled) {
+      const elapsedMinutes = (now - lastSeen) / (1000 * 60)
+      
+      // If timer is 0 (Immediate) or elapsed time is greater than timer
+      if (timerMinutes === 0 || (lastSeen > 0 && elapsedMinutes >= timerMinutes)) {
+        clearActivity().then(() => {
+          console.log(`Auto-Wipe triggered (${elapsedMinutes.toFixed(1)}m inactivity).`)
+        })
+      }
     }
+
+    // Update last seen now and on interval
+    updateLastSeen()
+    const interval = setInterval(updateLastSeen, 30000) // Every 30s
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -210,11 +224,12 @@ function App() {
               <Route path="/metadata" element={<MetadataTool />} />
               <Route path="/image-to-pdf" element={<ImageToPdfTool />} />
               <Route path="/signature" element={<SignatureTool />} />
-                              <Route path="/repair" element={<RepairTool />} />
-                              <Route path="/about" element={<About />} />
-                              <Route path="/settings" element={<SettingsView theme={theme} setTheme={setTheme} />} />
-                              <Route path="/thanks" element={<Thanks />} />
-                            </Routes>          </Suspense>
+              <Route path="/repair" element={<RepairTool />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/settings" element={<SettingsView theme={theme} setTheme={setTheme} />} />
+              <Route path="/thanks" element={<Thanks />} />
+            </Routes>
+          </Suspense>
 
           {/* Chameleon Toggle (Dev Only) */}
           {import.meta.env.DEV && (

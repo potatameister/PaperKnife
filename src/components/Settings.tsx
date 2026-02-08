@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { 
   Trash2, Clock, Moon, Sun, Monitor,
-  ChevronRight, Info
+  ChevronRight, Info, Zap, User
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { clearActivity } from '../utils/recentActivity'
 import { toast } from 'sonner'
 import { Theme } from '../types'
 import { NativeToolLayout } from './tools/shared/NativeToolLayout'
+import { hapticImpact, hapticSuccess } from '../utils/haptics'
 
 const SettingItem = ({ 
   icon: Icon, 
@@ -58,12 +59,28 @@ export default function Settings({ theme, setTheme }: { theme?: Theme, setTheme?
   const navigate = useNavigate()
   const [autoWipe, setAutoWipe] = useState(() => localStorage.getItem('autoWipe') === 'true')
   const [wipeTimer, setWipeTimer] = useState(() => localStorage.getItem('autoWipeTimer') || '15')
+  const [haptics, setHaptics] = useState(() => localStorage.getItem('hapticsEnabled') !== 'false')
+  const [defaultAuthor, setDefaultAuthor] = useState(() => localStorage.getItem('defaultAuthor') || '')
 
   const toggleAutoWipe = () => {
     const newValue = !autoWipe
     setAutoWipe(newValue)
     localStorage.setItem('autoWipe', String(newValue))
+    hapticImpact()
     toast.success(newValue ? 'Auto-Wipe Enabled' : 'Auto-Wipe Disabled')
+  }
+
+  const toggleHaptics = () => {
+    const newValue = !haptics
+    setHaptics(newValue)
+    localStorage.setItem('hapticsEnabled', String(newValue))
+    if (newValue) hapticSuccess()
+    toast.success(newValue ? 'Haptics Enabled' : 'Haptics Disabled')
+  }
+
+  const handleAuthorChange = (val: string) => {
+    setDefaultAuthor(val)
+    localStorage.setItem('defaultAuthor', val)
   }
 
   return (
@@ -80,13 +97,51 @@ export default function Settings({ theme, setTheme }: { theme?: Theme, setTheme?
             ].map((t) => (
               <button
                 key={t.id}
-                onClick={() => setTheme?.(t.id as Theme)}
+                onClick={() => {
+                  setTheme?.(t.id as Theme)
+                  hapticImpact()
+                }}
                 className={`flex flex-col items-center gap-2 py-3 rounded-xl transition-all ${theme === t.id ? 'bg-rose-500 text-white shadow-lg' : 'bg-gray-50 dark:bg-zinc-900 text-gray-400'}`}
               >
                 <t.icon size={18} />
                 <span className="text-[10px] font-bold uppercase">{t.label}</span>
               </button>
             ))}
+          </div>
+          <SettingItem 
+            icon={Zap} 
+            title="Haptic Feedback" 
+            subtitle="Vibrate on actions and success"
+            action={
+              <button 
+                onClick={toggleHaptics}
+                className={`w-11 h-6 rounded-full p-1 transition-colors ${haptics ? 'bg-rose-500' : 'bg-gray-200 dark:bg-zinc-700'}`}
+              >
+                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${haptics ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            }
+          />
+        </SettingGroup>
+
+        {/* Defaults */}
+        <SettingGroup title="Tool Defaults">
+          <div className="p-5 bg-white dark:bg-zinc-950 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-gray-100 dark:bg-zinc-800 rounded-full flex items-center justify-center text-gray-500">
+                <User size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white leading-none">Default Author</h4>
+                <p className="text-[10px] text-gray-500 mt-1">Pre-fill metadata fields</p>
+                <input 
+                  type="text"
+                  value={defaultAuthor}
+                  onChange={(e) => handleAuthorChange(e.target.value)}
+                  placeholder="Your name or company"
+                  className="w-full mt-3 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-white/5 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-rose-500 transition-colors dark:text-white"
+                />
+              </div>
+            </div>
           </div>
         </SettingGroup>
 
@@ -114,7 +169,7 @@ export default function Settings({ theme, setTheme }: { theme?: Theme, setTheme?
                   const val = e.target.value
                   setWipeTimer(val)
                   localStorage.setItem('autoWipeTimer', val)
-                  toast.success(`Wipe timer set to ${val}m`)
+                  toast.success(`Timer set to ${val}m`)
                 }}
                 className="bg-transparent text-xs font-black text-gray-900 dark:text-white outline-none appearance-none cursor-pointer"
                >
