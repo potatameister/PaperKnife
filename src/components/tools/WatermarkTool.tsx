@@ -22,7 +22,7 @@ export default function WatermarkTool() {
   const [unlockPassword, setUnlockPassword] = useState('')
   const [text, setText] = useState('CONFIDENTIAL')
   const [opacity, setOpacity] = useState(0.3)
-  const [fontSize] = useState(50)
+  const [fontSize, setFontSize] = useState(50)
   const [rotation, setRotation] = useState(-45)
   const [color, setColor] = useState('#F43F5E')
 
@@ -192,6 +192,10 @@ export default function WatermarkTool() {
                        <div>
                           <label className="block text-[8px] font-black uppercase text-gray-400 mb-2">Opacity ({Math.round(opacity * 100)}%)</label>
                           <input type="range" min="0.1" max="1" step="0.1" value={opacity} onChange={(e) => setOpacity(parseFloat(e.target.value))} className="w-full accent-rose-500" />
+                       </div>
+                       <div>
+                          <label className="block text-[8px] font-black uppercase text-gray-400 mb-2">Size ({fontSize}px)</label>
+                          <input type="range" min="10" max="200" step="1" value={fontSize} onChange={(e) => setFontSize(parseInt(e.target.value))} className="w-full accent-rose-500" />
                        </div>
                        <div>
                           <label className="block text-[8px] font-black uppercase text-gray-400 mb-2">Rotation ({rotation}°)</label>

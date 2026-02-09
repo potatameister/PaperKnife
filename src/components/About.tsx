@@ -143,9 +143,62 @@ export default function About() {
 
   if (isNative) {
     return (
-      <NativeToolLayout title="About" description="Information about PaperKnife" actions={null}>
-        <div className="pb-32">
-          {content}
+      <NativeToolLayout title="About" description="Technical Specification" actions={null}>
+        <div className="animate-in fade-in duration-500 pb-32">
+          {/* Hero section for Native */}
+          <section className="text-center py-8">
+            <div className="w-20 h-20 bg-rose-500 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-rose-500/20">
+              <PaperKnifeLogo size={40} iconColor="#FFFFFF" />
+            </div>
+            <h1 className="text-4xl font-black tracking-tighter dark:text-white mb-2">PaperKnife</h1>
+            <p className="text-xs font-black uppercase tracking-[0.4em] text-rose-500 mb-6">Privacy Engine v0.5.0</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium px-4">
+              A high-integrity PDF utility that executes entirely within your device's private runtime.
+            </p>
+          </section>
+
+          {/* Native Protocol List */}
+          <section className="mb-8">
+            <h3 className="px-6 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Security Protocol</h3>
+            <div className="bg-white dark:bg-zinc-900 border-y border-gray-100 dark:border-white/5 divide-y divide-gray-50 dark:divide-white/5">
+              <div className="p-5 flex gap-4">
+                <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-xl flex items-center justify-center shrink-0"><ShieldCheck size={20} /></div>
+                <div><h4 className="text-sm font-bold dark:text-white">Zero-Server Logic</h4><p className="text-xs text-gray-500 dark:text-zinc-500 mt-1 leading-relaxed">Files are loaded into volatile RAM. No part of your document is ever uploaded or cached.</p></div>
+              </div>
+              <div className="p-5 flex gap-4">
+                <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-xl flex items-center justify-center shrink-0"><Zap size={20} /></div>
+                <div><h4 className="text-sm font-bold dark:text-white">Local Compute</h4><p className="text-xs text-gray-500 dark:text-zinc-500 mt-1 leading-relaxed">PDF manipulation happens on your device CPU. Full offline capability guaranteed.</p></div>
+              </div>
+              <div className="p-5 flex gap-4">
+                <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 rounded-xl flex items-center justify-center shrink-0"><Code size={20} /></div>
+                <div><h4 className="text-sm font-bold dark:text-white">GPL v3 Compliance</h4><p className="text-xs text-gray-500 dark:text-zinc-500 mt-1 leading-relaxed">Open-source cryptographic implementations. Passwords are destroyed after use.</p></div>
+              </div>
+            </div>
+          </section>
+
+          {/* Native Links */}
+          <section className="px-4 grid grid-cols-2 gap-3 mb-8">
+             <a href="https://github.com/potatameister/PaperKnife" target="_blank" className="p-6 bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 flex flex-col items-center text-center shadow-sm">
+                <Github size={24} className="mb-3 dark:text-white" />
+                <span className="text-[10px] font-black uppercase tracking-widest dark:text-white">Source Code</span>
+             </a>
+             <Link to="/thanks" className="p-6 bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 flex flex-col items-center text-center shadow-sm">
+                <Heart size={24} className="mb-3 text-rose-500" />
+                <span className="text-[10px] font-black uppercase tracking-widest dark:text-white">Credits</span>
+             </Link>
+          </section>
+
+          <div className="px-4">
+             <a href="https://github.com/sponsors/potatameister" target="_blank" className="w-full bg-zinc-900 dark:bg-white text-white dark:text-black p-5 rounded-[2rem] flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-transform">
+                <Sparkles size={18} className="text-rose-500" />
+                <span className="font-black uppercase tracking-widest text-xs">Sponsor Project</span>
+             </a>
+          </div>
+
+          <footer className="text-center py-12 opacity-20">
+             <PaperKnifeLogo size={24} iconColor="#F43F5E" className="mx-auto mb-4" />
+             <p className="text-[9px] font-black uppercase tracking-[0.5em]">PaperKnife Node v0.5.0-beta</p>
+          </footer>
         </div>
       </NativeToolLayout>
     )

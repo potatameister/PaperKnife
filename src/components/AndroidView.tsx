@@ -4,7 +4,8 @@ import {
   ChevronRight,
   FileText,
   Layers, Zap, Scissors, Lock,
-  Moon, Sun, Upload
+  Moon, Sun, Upload, Cpu, ShieldCheck, Database,
+  Palette, FileImage, LayoutGrid
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { getRecentActivity, ActivityEntry } from '../utils/recentActivity'
@@ -30,6 +31,13 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
     { title: 'Compress', icon: Zap, path: '/compress', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
     { title: 'Split', icon: Scissors, path: '/split', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { title: 'Protect', icon: Lock, path: '/protect', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
+  ]
+
+  const categories = [
+    { name: 'Edit', icon: Palette, color: 'bg-rose-500' },
+    { name: 'Convert', icon: FileImage, color: 'bg-emerald-500' },
+    { name: 'Optimize', icon: Zap, color: 'bg-amber-500' },
+    { name: 'Secure', icon: Lock, color: 'bg-indigo-500' },
   ]
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,7 +78,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
         {/* Hero: Quick Action Card */}
         <button 
           onClick={() => fileInputRef.current?.click()}
-          className="w-full aspect-[2/1] bg-zinc-900 dark:bg-zinc-100 rounded-[2rem] relative overflow-hidden shadow-2xl group active:scale-[0.98] transition-all flex flex-col justify-between p-6"
+          className="w-full aspect-[2/1] bg-zinc-900 dark:bg-zinc-100 rounded-[2.5rem] relative overflow-hidden shadow-2xl group active:scale-[0.98] transition-all flex flex-col justify-between p-6"
         >
            <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500 rounded-full blur-[80px] -mr-20 -mt-20 opacity-40 dark:opacity-30 group-active:opacity-50 transition-opacity" />
            
@@ -89,10 +97,40 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
            </div>
         </button>
 
+        {/* Categories Scroller */}
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1">
+           {categories.map(cat => (
+             <button 
+              key={cat.name}
+              onClick={() => navigate('/android-tools')}
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 rounded-full border border-gray-100 dark:border-zinc-800 shadow-sm shrink-0 active:scale-95 transition-transform"
+             >
+                <div className={`w-2 h-2 rounded-full ${cat.color}`} />
+                <span className="text-xs font-bold dark:text-white">{cat.name}</span>
+             </button>
+           ))}
+        </div>
+
+        {/* Engine Status Card */}
+        <section className="bg-emerald-500 rounded-[2rem] p-6 text-white relative overflow-hidden shadow-lg shadow-emerald-500/20">
+           <div className="absolute top-0 right-0 p-8 text-white/10 -mr-4 -mt-4">
+              <ShieldCheck size={100} />
+           </div>
+           <div className="relative z-10">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-4 opacity-80">
+                 <Cpu size={14} /> Privacy Engine Active
+              </div>
+              <h3 className="text-xl font-black mb-2 uppercase tracking-tight">Zero-Server Node</h3>
+              <p className="text-xs font-medium text-emerald-100 leading-relaxed max-w-[200px]">
+                 All processing is happening locally on your device. No data is being transmitted.
+              </p>
+           </div>
+        </section>
+
         {/* Essentials Grid */}
         <section>
           <div className="flex items-center justify-between px-2 mb-3">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Essentials</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Essentials</h3>
             <button onClick={() => navigate('/android-tools')} className="text-xs font-bold text-rose-500">View All</button>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -100,7 +138,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
               <button
                 key={action.title}
                 onClick={() => navigate(action.path)}
-                className="p-4 bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 flex flex-col gap-3 shadow-sm active:scale-95 transition-all"
+                className="p-4 bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-zinc-800 flex flex-col gap-3 shadow-sm active:scale-95 transition-all"
               >
                 <div className={`w-10 h-10 ${action.bg} ${action.color} rounded-2xl flex items-center justify-center`}>
                   <action.icon size={20} strokeWidth={2.5} />
@@ -114,7 +152,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
         {/* Recent Activity List */}
         {history.length > 0 && (
           <section>
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 px-2 mb-3">Recent</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 px-2 mb-3">Recent Activity</h3>
             <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-zinc-800 p-2 shadow-sm">
               {history.map((item) => (
                 <button 

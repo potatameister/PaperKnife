@@ -33,7 +33,7 @@ export default function AndroidToolsView({ tools }: { tools: Tool[] }) {
   }, [filteredTools])
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#1C1B1F] pb-32 transition-colors">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-black pb-32 transition-colors">
       <header className="px-6 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-6">
         <h1 className="text-4xl font-black tracking-tighter dark:text-white mb-8">All Tools</h1>
         

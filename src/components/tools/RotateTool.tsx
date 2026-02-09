@@ -128,9 +128,19 @@ export default function RotateTool() {
             <button onClick={() => setPdfData(null)} className="p-2 text-gray-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
           </div>
 
+          <div className="bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex items-center gap-4 animate-pulse">
+            <div className="w-10 h-10 bg-rose-500 text-white rounded-full flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/20">
+              <RotateCw size={20} />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-black text-rose-500 uppercase tracking-tight leading-none mb-1">Visual Editor</h4>
+              <p className="text-xs text-rose-500/70 font-bold">Tap any page thumbnail below to rotate it 90° clockwise.</p>
+            </div>
+          </div>
+
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
             <div className="flex justify-between items-center mb-6">
-              <h4 className="font-black uppercase tracking-widest text-[10px] text-gray-400">Tap pages to rotate</h4>
+              <h4 className="font-black uppercase tracking-widest text-[10px] text-gray-400">Page Preview</h4>
               <div className="flex gap-2">
                 <button onClick={rotateAll} className="text-[10px] font-black uppercase text-rose-500 flex items-center gap-1 font-bold"><RotateCw size={12}/> All</button>
                 <button onClick={() => setRotations({})} className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-1 font-bold"><RefreshCcw size={12}/> Reset</button>

@@ -255,9 +255,7 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
             icon={ShieldCheck} 
             title="Privacy Policy" 
             subtitle="Zero-data collection commitment"
-            onClick={() => {
-              alert("PRIVACY POLICY:\n\n1. NO SERVER: PaperKnife is 100% client-side.\n2. NO TRACKING: We do not use cookies or analytics.\n3. VOLATILE MEMORY: Data exists only in RAM.\n4. LOCAL STORAGE: Only settings are stored.")
-            }}
+            onClick={() => navigate('/privacy')}
           />
         </SettingGroup>
 

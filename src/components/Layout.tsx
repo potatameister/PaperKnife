@@ -91,6 +91,8 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   })
 
   const isHome = location.pathname === '/' || location.pathname === '/PaperKnife/'
+  const isMainView = isHome || ['/android-tools', '/android-history', '/settings'].includes(location.pathname)
+  const shouldShowNav = showMobileNav && isMainView
 
   return (
     <div className={`min-h-screen flex flex-col bg-[#FAFAFA] dark:bg-black text-gray-900 dark:text-zinc-100 transition-colors duration-300`}>
@@ -162,12 +164,12 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
         </header>
       )}
 
-      <main className={`flex-1 min-w-0 ${showMobileNav ? 'pb-32' : ''}`}>
+      <main className={`flex-1 min-w-0 ${shouldShowNav ? 'pb-32' : ''}`}>
         {children}
       </main>
 
       {/* Titan Bottom Navigation (Solid, Grounded) */}
-      {showMobileNav && (
+      {shouldShowNav && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-100 dark:border-zinc-800 flex items-end justify-between px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 z-[100] shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
           <button 
             onClick={() => navigate('/')}

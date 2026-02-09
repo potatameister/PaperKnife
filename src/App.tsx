@@ -38,6 +38,7 @@ const ExtractImagesTool = lazy(() => import('./components/tools/ExtractImagesToo
 const GrayscaleTool = lazy(() => import('./components/tools/GrayscaleTool'))
 const About = lazy(() => import('./components/About'))
 const Thanks = lazy(() => import('./components/Thanks'))
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'))
 const SettingsView = lazy(() => import('./components/Settings'))
 
 const tools: Tool[] = [
@@ -66,7 +67,7 @@ function QuickDropModal({ file, onClear }: { file: File, onClear: () => void }) 
   
   const categories = [
     { 
-      name: 'Essentials',
+      name: 'Essential Tools',
       tools: [
         { title: 'Merge', icon: Layers, path: '/merge', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
         { title: 'Compress', icon: Zap, path: '/compress', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
@@ -75,21 +76,12 @@ function QuickDropModal({ file, onClear }: { file: File, onClear: () => void }) 
       ]
     },
     {
-      name: 'Content & Layout',
+      name: 'Utility & Layout',
       tools: [
         { title: 'Rotate', icon: RotateCw, path: '/rotate-pdf' },
         { title: 'Rearrange', icon: ArrowUpDown, path: '/rearrange-pdf' },
         { title: 'Metadata', icon: Tags, path: '/metadata' },
         { title: 'Watermark', icon: Type, path: '/watermark' },
-      ]
-    },
-    {
-      name: 'Conversion & Tools',
-      tools: [
-        { title: 'Text', icon: FileText, path: '/pdf-to-text' },
-        { title: 'Images', icon: FileImage, path: '/pdf-to-image' },
-        { title: 'Grayscale', icon: Palette, path: '/grayscale' },
-        { title: 'Repair', icon: Wrench, path: '/repair' },
       ]
     }
   ]
@@ -114,33 +106,39 @@ function QuickDropModal({ file, onClear }: { file: File, onClear: () => void }) 
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="w-full max-w-md bg-[#FAFAFA] dark:bg-zinc-950 rounded-t-[3rem] sm:rounded-[3rem] shadow-2xl overflow-hidden border-t border-x border-white/10 sm:border animate-in slide-in-from-bottom-full duration-500 ease-out">
+      <div className="w-full max-w-md bg-[#FAFAFA] dark:bg-zinc-950 rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden border-t border-x border-white/10 sm:border animate-in slide-in-from-bottom-full duration-500 ease-out">
         
         {/* Header */}
-        <div className="p-8 pb-6 text-center relative">
-          <button onClick={onClear} className="absolute top-6 right-6 p-2 bg-gray-100 dark:bg-zinc-900 rounded-full text-gray-400 hover:text-rose-500 transition-colors"><X size={18}/></button>
-          <div className="w-20 h-20 bg-white dark:bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl border border-gray-100 dark:border-white/5">
-            <FileText size={40} className="text-rose-500" />
+        <div className="p-6 pb-2">
+          <div className="flex items-center justify-between mb-6">
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-rose-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/20">
+                   <FileText size={20} />
+                </div>
+                <div className="min-w-0">
+                   <h3 className="text-lg font-black dark:text-white truncate max-w-[200px] leading-none mb-1">{file.name}</h3>
+                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{(file.size / (1024*1024)).toFixed(2)} MB • PDF Document</p>
+                </div>
+             </div>
+             <button onClick={onClear} className="p-2 bg-gray-100 dark:bg-zinc-900 rounded-full text-gray-400 hover:text-rose-500 transition-colors"><X size={18}/></button>
           </div>
-          <h3 className="text-xl font-black truncate dark:text-white px-8 leading-tight">{file.name}</h3>
-          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-2">{(file.size / (1024*1024)).toFixed(2)} MB • Ready to Process</p>
         </div>
         
         <div className="px-6 pb-6 max-h-[60vh] overflow-y-auto scrollbar-hide space-y-6">
            {categories.map(cat => (
              <div key={cat.name}>
-               <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2">{cat.name}</h4>
-               <div className="grid grid-cols-2 gap-3">
+               <h4 className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3 ml-1">{cat.name}</h4>
+               <div className="grid grid-cols-2 gap-2.5">
                   {cat.tools.map(tool => (
                     <button
                       key={tool.title}
                       onClick={() => handleAction(tool.path, tool.title)}
-                      className="flex items-center gap-4 p-4 bg-white dark:bg-zinc-900 rounded-[1.5rem] border border-gray-100 dark:border-white/5 active:scale-95 transition-all shadow-sm group"
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-zinc-800 active:scale-95 transition-all shadow-sm group"
                     >
-                      <div className={`p-2.5 rounded-xl ${'bg' in tool ? tool.bg : 'bg-gray-100 dark:bg-white/5'} ${'color' in tool ? tool.color : 'text-gray-500 dark:text-gray-400'} group-active:scale-110 transition-transform`}>
-                        <tool.icon size={20} strokeWidth={2.5} />
+                      <div className={`p-2 rounded-xl ${'bg' in tool ? tool.bg : 'bg-gray-100 dark:bg-white/5'} ${'color' in tool ? tool.color : 'text-gray-500 dark:text-gray-400'} group-active:scale-110 transition-transform`}>
+                        <tool.icon size={18} strokeWidth={2.5} />
                       </div>
-                      <span className="text-sm font-bold text-gray-900 dark:text-zinc-200">{tool.title}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-zinc-200">{tool.title}</span>
                     </button>
                   ))}
                </div>
@@ -148,12 +146,12 @@ function QuickDropModal({ file, onClear }: { file: File, onClear: () => void }) 
            ))}
         </div>
 
-        <div className="p-6 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-white/5">
+        <div className="p-6 pt-0">
            <button 
             onClick={() => { onClear(); navigate('/android-tools'); }}
-            className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+            className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-xl"
            >
-             <LayoutGrid size={18} /> Browse All Tools
+             <LayoutGrid size={16} /> Explore All Capabilities
            </button>
         </div>
       </div>
@@ -310,6 +308,7 @@ function App() {
               <Route path="/extract-images" element={<ExtractImagesTool />} />
               <Route path="/grayscale" element={<GrayscaleTool />} />
               <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/settings" element={<SettingsView theme={theme} setTheme={setTheme} />} />
               <Route path="/thanks" element={<Thanks />} />
             </Routes>
