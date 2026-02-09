@@ -1,6 +1,6 @@
 import { 
-  Heart, ShieldCheck, Code, Github, Scale, 
-  Globe, Cpu, Smartphone, Layers
+  Heart, ShieldCheck, Zap, Code, Github, Scale, 
+  Terminal, Globe, Cpu, Smartphone, Layers
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'
@@ -15,7 +15,7 @@ export default function About() {
       {/* Hero Section */}
       <section className="text-center py-12 px-6">
         <div className="inline-flex flex-col items-center mb-8">
-          <div className="w-24 h-24 bg-rose-500 text-white rounded-[2rem] flex items-center justify-center mb-6 shadow-2xl shadow-rose-500/30">
+          <div className="w-24 h-24 bg-rose-500 text-white rounded-[2.5rem] flex items-center justify-center mb-6 shadow-2xl shadow-rose-500/30">
             <PaperKnifeLogo size={48} iconColor="#FFFFFF" />
           </div>
           <h1 className="text-5xl font-black tracking-tighter dark:text-white mb-2 leading-none">PaperKnife</h1>
@@ -81,7 +81,7 @@ export default function About() {
             <p className="text-xs text-zinc-400 leading-relaxed mb-6 font-medium">Verified privacy claims via public audit. The entire engine is open for inspection.</p>
           </div>
           <a href="https://github.com/potatameister/PaperKnife" target="_blank" className="relative z-10 text-[10px] font-black uppercase tracking-widest text-rose-500 flex items-center gap-2 hover:translate-x-1 transition-transform">
-            View Source Code <Github size={12} />
+            View Source Code <Terminal size={12} />
           </a>
         </div>
 

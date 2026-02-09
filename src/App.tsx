@@ -117,7 +117,7 @@ function QuickDropModal({ file, onClear }: { file: File, onClear: () => void }) 
                  {essentials.map(tool => (
                    <button
                      key={tool.title}
-                     onClick={() => handleAction(tool.path, tool.title)}
+                     onClick={() => tool.path && handleAction(tool.path, tool.title)}
                      className="flex items-center gap-3 p-3 bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-zinc-800 active:scale-95 transition-all shadow-sm group"
                    >
                      <div className={`p-2 rounded-xl ${tool.bg} ${tool.color} group-active:scale-110 transition-transform`}>
