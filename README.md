@@ -3,7 +3,7 @@
 **The Swiss Army Knife for PDFs.**  
 *100% Client-Side. Zero Servers. Absolute Privacy.*
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![License](https://img.shields.io/badge/license-AGPL--3.0-rose.svg)
 ![Privacy](https://img.shields.io/badge/Privacy-100%25-green.svg)
 ![Status](https://img.shields.io/badge/status-Active-success.svg)
 
@@ -102,7 +102,9 @@ npx cap open android
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU Affero General Public License v3 (AGPL v3)**. 
+
+PaperKnife is a privacy-first utility. To ensure the integrity and transparency of all versions of this software, any modified versions hosted on a network must provide a link to their source code.
 
 ---
 *Built with ❤️ by [potatameister](https://github.com/potatameister)*

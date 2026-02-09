@@ -1,3 +1,13 @@
+/**
+ * PaperKnife - The Swiss Army Knife for PDFs
+ * Copyright (C) 2026 potatameister
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 import { 
   Heart, ShieldCheck, Code, Scale, 
   Globe, Cpu, Layers, Terminal
@@ -54,7 +64,7 @@ export default function About() {
           {[
             { title: 'Zero-Server Logic', icon: ShieldCheck, desc: 'Files are loaded into volatile RAM as ArrayBuffers. No part of your document is ever uploaded or cached on any network infrastructure.', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
             { title: 'Direct DOM Rendering', icon: Layers, desc: 'PDF previews are generated using PDF.js workers, rendering directly to HTML5 Canvas without intermediary server-side rasterization.', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-            { title: 'OpenLink Encryption', icon: Code, desc: 'Security tools utilize standard cryptographic primitives compliant with GPL v3. Passwords are destroyed immediately after session termination.', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20' }
+            { title: 'OpenLink Encryption', icon: Code, desc: 'Security tools utilize standard cryptographic primitives compliant with AGPL v3. Passwords are destroyed immediately after session termination.', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20' }
           ].map((spec, i) => (
             <div key={i} className="p-6 flex gap-5">
               <div className={`w-12 h-12 ${spec.bg} ${spec.color} rounded-[1.25rem] flex items-center justify-center shrink-0`}>
@@ -77,7 +87,7 @@ export default function About() {
           </div>
           <div className="relative z-10">
             <Scale className="text-rose-500 mb-4" size={32} />
-            <h4 className="text-xl font-black mb-2 leading-tight">GPL v3 <br/>Open Source</h4>
+            <h4 className="text-xl font-black mb-2 leading-tight">AGPL v3 <br/>Open Source</h4>
             <p className="text-xs text-zinc-400 leading-relaxed mb-6 font-medium">Verified privacy claims via public audit. The entire engine is open for inspection.</p>
           </div>
           <a href="https://github.com/potatameister/PaperKnife" target="_blank" className="relative z-10 text-[10px] font-black uppercase tracking-widest text-rose-500 flex items-center gap-2 hover:translate-x-1 transition-transform">

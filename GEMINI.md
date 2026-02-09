@@ -54,6 +54,7 @@
 - **[2026-02-08]:** Integrated Capacitor Haptics for tactile feedback and implemented a native Pro-Grade Settings Dashboard with system theme and auto-wipe persistence.
 - **[2026-02-08]:** Comprehensive "Titan" UI refinement: Fixed settings toggles, history UI, drag-and-drop, global pipeline handoff, and resolved multiple Android layout overlaps. Resolved 10+ build-time TypeScript errors regarding unused variables and structural integrity.
 - **[2026-02-09]:** Major Milestone: v1.0.0-beta. Overhauled Home and About pages for professional-grade "Titan" aesthetic. Migrated to static imports for all core tools and views to eliminate "Failed to fetch" dynamic import errors on Android. Implemented pipeline file-type validation (PDF vs ZIP) and enhanced the Quick-Pick FAB with full colorized catalog access.
+- **[2026-02-09]:** Upgraded to **GNU AGPL v3** license to close the "Web Loophole" and ensure absolute transparency for both Web and Android versions.
 
 ## 🏗️ 5. Architectural Notes
 *   **Chameleon Engine:** Uses `viewMode` state in `App.tsx` to hot-swap between `WebView.tsx` and `AndroidView.tsx`.
