@@ -105,13 +105,10 @@ export default function MetadataTool() {
       let targetPdf: PDFDocument
       
       if (deepClean) {
-        // Deep Clean: Reconstruct the PDF to strip hidden layers/metadata/scripts
         targetPdf = await PDFDocument.create()
         const copiedPages = await targetPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
         copiedPages.forEach(page => targetPdf.addPage(page))
         
-        // Explicitly clear all standard and producer fields
-        // We use a non-breaking space or very small string to try and "win" over pdf-lib defaults if '' fails
         targetPdf.setTitle('')
         targetPdf.setAuthor('')
         targetPdf.setSubject('')
@@ -119,22 +116,17 @@ export default function MetadataTool() {
         targetPdf.setCreator(' ')
         targetPdf.setProducer(' ')
         
-        // Wipe more specific attributes
         targetPdf.setModificationDate(new Date())
         targetPdf.setCreationDate(new Date())
         
-        // Remove the XMP metadata stream if it exists
         const dict = targetPdf.catalog.get(targetPdf.context.obj('Metadata'))
         if (dict) targetPdf.catalog.delete(targetPdf.context.obj('Metadata'))
       } else { 
         targetPdf = sourcePdf 
-        // Only set if field is not empty, otherwise we leave it or clear it
         targetPdf.setTitle(meta.title || '')
         targetPdf.setAuthor(meta.author || '')
         targetPdf.setSubject(meta.subject || '')
         targetPdf.setKeywords(meta.keywords ? meta.keywords.split(',').map(k => k.trim()) : [])
-        
-        // If they are literally empty, we set a space to prevent pdf-lib signature injection
         targetPdf.setCreator(meta.creator || ' ')
         targetPdf.setProducer(meta.producer || ' ')
       }
@@ -144,7 +136,12 @@ export default function MetadataTool() {
       const url = URL.createObjectURL(blob);
       setDownloadUrl(url)
       addActivity({ name: `${customFileName}.pdf`, tool: 'Metadata', size: blob.size, resultUrl: url })
-    } catch (error: any) { toast.error(`Error: ${error.message}`) } finally { setIsProcessing(false); setIsDeepCleaning(false) }
+    } catch (error: any) { 
+      toast.error(`Error: ${error.message}`) 
+    } finally { 
+      setIsProcessing(false); 
+      setIsDeepCleaning(false) 
+    }
   }
 
   const ActionButtons = () => (

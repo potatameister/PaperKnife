@@ -59,7 +59,7 @@ export default function About() {
           </div>
           <h4 className="text-xl font-black dark:text-white mb-3">Absolute Privacy</h4>
           <p className="text-sm text-gray-500 dark:text-zinc-400 leading-relaxed font-medium">
-            We don't have a database. We don't have a backend. We don't have tracking scripts. Your files are loaded into your device's temporary memory (RAM), processed, and wiped the second you close the session.
+            We don't have a database. We don't have a backend. We don't have tracking scripts. Your files are loaded into your device's temporary memory (RAM), processed, and wiped the second you close the app.
           </p>
         </div>
 
