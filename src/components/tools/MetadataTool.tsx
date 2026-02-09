@@ -100,13 +100,17 @@ export default function MetadataTool() {
         const copiedPages = await targetPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
         copiedPages.forEach(page => targetPdf.addPage(page))
         
-        // Explicitly clear standard metadata fields
+        // Explicitly clear all standard and producer fields
         targetPdf.setTitle('')
         targetPdf.setAuthor('')
         targetPdf.setSubject('')
         targetPdf.setKeywords([])
         targetPdf.setCreator('')
         targetPdf.setProducer('')
+        
+        // Wipe more specific attributes
+        targetPdf.setModificationDate(new Date())
+        targetPdf.setCreationDate(new Date())
         
         // Remove the XMP metadata stream if it exists
         const dict = targetPdf.catalog.get(targetPdf.context.obj('Metadata'))

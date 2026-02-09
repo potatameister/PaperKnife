@@ -57,6 +57,9 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   }, [])
 
   useEffect(() => {
+    // Disable global drop on mobile to prevent accidental triggers/bugs
+    if (Capacitor.isNativePlatform()) return
+
     const handleDragOver = (e: DragEvent) => {
       e.preventDefault()
       if (onFileDrop) setIsDragging(true)

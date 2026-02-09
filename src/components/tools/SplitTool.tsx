@@ -262,22 +262,29 @@ export default function SplitTool() {
             <div className="space-y-6">
               <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm sticky top-24">
                 <div className="space-y-6">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Split Mode</label>
-                    <div className="grid grid-cols-2 gap-2 bg-gray-50 dark:bg-black p-1 rounded-2xl">
-                      <button onClick={() => { setSplitMode('single'); clearUrls(); }} className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all ${splitMode === 'single' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}>Single</button>
-                      <button onClick={() => { setSplitMode('individual'); clearUrls(); }} className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all ${splitMode === 'individual' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}>ZIP</button>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Split Mode</label>
+                      <div className="grid grid-cols-2 gap-2 bg-gray-50 dark:bg-black p-1 rounded-2xl">
+                        <button onClick={() => { setSplitMode('single'); clearUrls(); }} className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all ${splitMode === 'single' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}>Single</button>
+                        <button onClick={() => { setSplitMode('individual'); clearUrls(); }} className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all ${splitMode === 'individual' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}>ZIP</button>
+                      </div>
+                      <p className="text-[8px] text-gray-400 mt-2 px-1 leading-relaxed">
+                        <b>Single:</b> Combines all selected pages into one new PDF file.<br/>
+                        <b>ZIP:</b> Saves each selected page as its own separate PDF inside a ZIP archive.
+                      </p>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Output Filename</label>
-                    <input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Range Selection</label>
-                    <div className="flex gap-2">
-                      <input type="text" value={rangeInput} onChange={(e) => setRangeInput(e.target.value)} placeholder="e.g. 1, 3-5" className="flex-1 bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
-                      <button onClick={() => parseRange(rangeInput)} className="px-4 bg-rose-500 text-white rounded-xl font-black text-[10px] uppercase active:scale-95 transition-transform">Apply</button>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Output Filename</label>
+                      <input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Range Selection</label>
+                      <div className="flex gap-2">
+                        <input type="text" value={rangeInput} onChange={(e) => setRangeInput(e.target.value)} placeholder="e.g. 1, 3-5" className="flex-1 bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
+                        <button onClick={() => parseRange(rangeInput)} className="px-4 bg-rose-500 text-white rounded-xl font-black text-[10px] uppercase active:scale-95 transition-transform">Apply</button>
+                      </div>
+                      <p className="text-[8px] text-gray-400 mt-2 px-1">Use commas for separate pages and dashes for ranges.</p>
                     </div>
                   </div>
                   <div className="pt-6 border-t border-gray-100 dark:border-white/5">

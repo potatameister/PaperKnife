@@ -66,7 +66,10 @@ export default function ProtectTool() {
 
   const protectPDF = async () => {
     if (!pdfData || !password || password !== confirmPassword) return
-    setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
+    setIsProcessing(true); 
+    // Small delay to let the UI show the loader
+    await new Promise(resolve => setTimeout(resolve, 150))
+    
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
       const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.sourcePassword || undefined, ignoreEncryption: true } as any)
@@ -74,11 +77,19 @@ export default function ProtectTool() {
       const pages = await newPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
       pages.forEach(page => newPdf.addPage(page))
       const pdfBytes = await newPdf.save()
+      
+      // Heavy task: encryption
       const encryptedBytes = await encryptPDF(pdfBytes, password)
+      
       const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' })
       const url = createUrl(blob)
       addActivity({ name: `${customFileName || 'protected'}.pdf`, tool: 'Protect', size: blob.size, resultUrl: url })
-    } catch (error: any) { toast.error(`Failed: ${error.message}`) } finally { setIsProcessing(false) }
+    } catch (error: any) { 
+      console.error('Encryption error:', error)
+      toast.error(`Encryption failed: ${error.message}`) 
+    } finally { 
+      setIsProcessing(false) 
+    }
   }
 
   const ActionButton = () => (
