@@ -190,7 +190,7 @@ export default function CompressTool() {
              originalBuffer: new Uint8Array(originalBuffer) 
            })
         }
-      } catch (err) { setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error' } : f)) }
+      } catch { setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error' } : f)) }
       setGlobalProgress(Math.round(((i + 1) / pendingFiles.length) * 100))
     }
     if (results.length > 1) {

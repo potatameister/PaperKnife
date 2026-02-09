@@ -16,7 +16,7 @@ type PdfData = { file: File, thumbnail?: string, pageCount: number, isLocked: bo
 
 export default function PdfToImageTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { consumePipelineFile } = usePipeline()
+  const { consumePipelineFile, setPipelineFile } = usePipeline()
   const [pdfData, setPdfData] = useState<PdfData | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
