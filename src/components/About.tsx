@@ -1,6 +1,6 @@
 import { 
-  Heart, ShieldCheck, Zap, Code, Github, Scale, 
-  Terminal, Globe, Cpu, Smartphone, Layers
+  Heart, ShieldCheck, Code, Scale, 
+  Globe, Cpu, Smartphone, Layers
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'

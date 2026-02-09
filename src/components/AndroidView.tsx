@@ -4,7 +4,7 @@ import {
   ChevronRight,
   FileText,
   Layers, Zap, Scissors, Lock,
-  Moon, Sun, Upload, Cpu, ShieldCheck,
+  Moon, Sun, Upload, ShieldCheck,
   LayoutGrid, Sparkles, Clock
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
