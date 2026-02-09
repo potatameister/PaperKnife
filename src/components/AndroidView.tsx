@@ -5,7 +5,7 @@ import {
   FileText,
   Layers, Zap, Scissors, Lock,
   Moon, Sun, Upload, Cpu, ShieldCheck,
-  Palette, FileImage
+  Palette, FileImage, LayoutGrid
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { getRecentActivity, ActivityEntry } from '../utils/recentActivity'
