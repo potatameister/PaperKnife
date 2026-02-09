@@ -159,7 +159,7 @@ export default function CompressTool() {
           }
         }
 
-        worker.onerror = (err) => {
+        worker.onerror = () => {
           reject(new Error('Worker failed to start or execution error.')); worker.terminate()
         }
       } catch (e: any) {
