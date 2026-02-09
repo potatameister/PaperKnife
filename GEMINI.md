@@ -55,6 +55,7 @@
 - **[2026-02-08]:** Comprehensive "Titan" UI refinement: Fixed settings toggles, history UI, drag-and-drop, global pipeline handoff, and resolved multiple Android layout overlaps. Resolved 10+ build-time TypeScript errors regarding unused variables and structural integrity.
 - **[2026-02-09]:** Major Milestone: v1.0.0-beta. Overhauled Home and About pages for professional-grade "Titan" aesthetic. Migrated to static imports for all core tools and views to eliminate "Failed to fetch" dynamic import errors on Android. Implemented pipeline file-type validation (PDF vs ZIP) and enhanced the Quick-Pick FAB with full colorized catalog access.
 - **[2026-02-09]:** Upgraded to **GNU AGPL v3** license to close the "Web Loophole" and ensure absolute transparency for both Web and Android versions.
+- **[2026-02-09]:** Finalized v1.0.0-beta: Overhauled Home/About UI for maximum density. Integrated high-performance scrolling PDF Preview system. Perfected Metadata Deep Clean privacy protocol. Solidified AGPL v3 source headers across core files.
 
 ## 🏗️ 5. Architectural Notes
 *   **Chameleon Engine:** Uses `viewMode` state in `App.tsx` to hot-swap between `WebView.tsx` and `AndroidView.tsx`.
@@ -83,4 +84,4 @@
 *   **Worker URL:** Always use `new URL('../../utils/pdfWorker.ts', import.meta.url)` for worker instantiation in Vite.
 
 ---
-**Current Goal:** Stabilize v1.0.0-beta release and implement the improved PDF Preview Plan.
+**Current Goal:** Maintenance of v1.0.0-beta and gathering community feedback for the final v1.0 stable release.
