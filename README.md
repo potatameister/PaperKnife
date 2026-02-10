@@ -1,84 +1,53 @@
 # ✈️ PaperKnife
 
-**The Privacy-First PDF Engine.**  
-*Android First. Zero-Server Web. Absolute Sovereignty.*
+**A simple, privacy-first PDF utility.**  
+*Runs in your browser. Stays on your device.*
 
 ![License](https://img.shields.io/badge/license-AGPL--3.0-rose.svg)
 ![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20Android-blue.svg)
-![Status](https://img.shields.io/badge/Titan%20Engine-v1.0.0-success.svg)
 
 ---
 
-## 🛡️ The "Titan" Protocol
+## 🛡️ Why use this?
 
-PaperKnife is not just another PDF tool. It is a **Zero-Server Document Engine** built for the era of surveillance.
+Most online PDF tools upload your files to their servers. That means your bank statements, contracts, or IDs are being sent to someone else's computer.
 
-Most free PDF tools upload your bank statements and contracts to a cloud server. **PaperKnife rejects this trade-off.**
-We have engineered a high-performance manipulation engine that runs 100% on your device's CPU (via WebAssembly).
+**PaperKnife is different.** Everything happens right on your device. Whether you're using the website or the Android app, your PDF files never leave your memory. You can even use it while offline.
 
-*   **Android First:** A native-feeling, touch-optimized experience available as a high-performance APK.
-*   **Zero-Server Web:** A fully functional PWA that runs offline in any modern browser.
-*   **Deep Privacy:** Your files **never** leave your device's RAM. We don't even have a database.
+### Key Features
+*   **Merge & Split:** Combine documents or pick specific pages.
+*   **Compress:** Shrink file sizes without sending them to the cloud.
+*   **Security:** Password protect or unlock your PDFs locally.
+*   **Convert:** Turn PDFs into images or text, and vice versa.
+*   **Edit:** Add page numbers, watermarks, or rotate pages.
 
-## ⚡ Titan UI Engine
+## 📱 How to use it
 
-PaperKnife v1.0 features the **"Titan" Design System**—a high-density, professional interface that adapts to your environment:
+### On Android
+You can download the latest APK from the [Releases](https://github.com/potatameister/PaperKnife/releases/latest) page. It's built to be fast, thumb-friendly, and works completely offline.
 
-*   **Command Center (Android):** A thumb-friendly, bottom-heavy interface with "History Clipboard" and "Smart Quick-Pick" for rapid mobile workflows.
-*   **Bento Dashboard (Web):** A spacious, grid-based layout optimized for desktop productivity and drag-and-drop actions.
-*   **Immersion Preview:** A high-fidelity, distortion-free PDF viewer with "Night Vision" and auto-hiding controls.
-
-## 🛠️ Core Capabilities
-
-| Engine Module | Description |
-| :--- | :--- |
-| **Modification** | Merge, Split, Rotate, Rearrange, Page Numbers. |
-| **Optimization** | Intelligent Compression (High/Standard/Smallest), Repair. |
-| **Security** | AES-256 Encryption (Protect), Password Removal (Unlock). |
-| **Conversion** | PDF to Image (High-Res), Image to PDF, PDF to Text. |
-| **Studio** | Watermarking, Metadata Editing, Digital Signatures. |
-
-## 🚀 Getting Started
-
-### Download for Android
-Get the latest **Titan APK** from the [Releases Page](https://github.com/potatameister/PaperKnife/releases/latest).
-
-### Run on Web
-Visit the official instance (or self-host it):
-[**Launch PaperKnife Web**](https://potatameister.github.io/PaperKnife/)
-
-### Local Development
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/potatameister/PaperKnife.git
-    cd PaperKnife
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-
-3.  **Ignite the Engine:**
-    ```bash
-    npm run dev
-    ```
-    Open `http://localhost:5173/PaperKnife/` to see the Chameleon engine in action.
-
-## 🏗️ Tech Stack
-
-*   **Core:** React 18, Vite, TypeScript
-*   **Engine:** `pdf-lib` (WASM), `pdfjs-dist` (Rendering)
-*   **Native Wrapper:** Capacitor (Android)
-*   **Architecture:** Zero-Server, 100% Client-Side
-
-## 📄 License
-
-This project is protected by the **GNU Affero General Public License v3 (AGPL v3)**. 
-
-### The "Web Loophole" is Closed.
-We chose AGPL v3 to guarantee user freedom. If you deploy a modified version of PaperKnife over a network (e.g., as a website), you **must** provide the source code to your users. This ensures PaperKnife can never be turned into a proprietary, privacy-invading "black box" service.
+### On the Web
+Just visit the [live site](https://potatameister.github.io/PaperKnife/). It works in any modern browser and can be installed as a PWA (web app).
 
 ---
-*Handcrafted with ❤️ by [potatameister](https://github.com/potatameister)*
+
+## ❤️ Support the project
+
+I'm building PaperKnife as an open-source tool because I believe privacy shouldn't be a premium feature. It's self-funded and has no ads or tracking.
+
+If you find it useful, please consider:
+*   **Sponsoring:** You can support the development via [GitHub Sponsors](https://github.com/sponsors/potatameister).
+*   **Sharing:** Tell your friends about a safer way to handle their PDFs.
+*   **Contributing:** If you're a developer, feel free to report bugs or submit improvements.
+
+---
+
+## 🛠️ How it's built
+
+PaperKnife uses **React** and **TypeScript**. The heavy lifting is done by **pdf-lib** and **pdfjs-dist**, which run in your browser using WebAssembly. For the Android version, we use **Capacitor** to bring the same local engine to your phone.
+
+### License
+This project is licensed under the **GNU AGPL v3**. This ensures the project remains transparent and open. If you host a version of this tool, you must share the code with your users.
+
+---
+*Made with care by [potatameister](https://github.com/potatameister)*
