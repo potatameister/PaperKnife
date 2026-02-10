@@ -6,26 +6,17 @@
 import { useState } from 'react'
 import { 
   Heart as HeartIcon, 
-  ShieldCheck as ShieldCheckIcon, 
   Code as CodeIcon, 
   Cpu as CpuIcon, 
   Github as GHIcon, 
   Shield as ShieldIcon, 
   ChevronDown as ChevronDownIcon,
-  Globe as GlobeIcon,
-  Scale as ScaleIcon,
-  Zap as ZapIcon,
   ServerOff as ServerOffIcon,
   ExternalLink as ExternalLinkIcon,
   ChevronRight as ChevronRightIcon,
-  Layers as LayersIcon,
-  Lock as LockIcon,
-  Search as SearchIcon,
-  Upload as UploadIcon,
   Sparkles as SparklesIcon,
   HardDrive as DiskIcon,
-  EyeOff as PrivacyIcon,
-  Info as InfoIcon
+  EyeOff as PrivacyIcon
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'

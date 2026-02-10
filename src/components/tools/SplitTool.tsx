@@ -3,7 +3,7 @@ import { Loader2, Scissors, Check, Plus, Lock, ArrowRight, X, Zap } from 'lucide
 import JSZip from 'jszip'
 import { toast } from 'sonner'
 
-import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, renderGridThumbnail, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, renderGridThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'

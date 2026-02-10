@@ -7,7 +7,6 @@ import { useState, useEffect, useRef } from 'react'
 import { X, Plus, Loader2, Lock, Share2 } from 'lucide-react'
 import { loadPdfDocument, renderPageThumbnail, shareFile } from '../utils/pdfHelpers'
 import { PaperKnifeLogo } from './Logo'
-import { Capacitor } from '@capacitor/core'
 
 interface PdfPreviewProps {
   file: File
@@ -26,14 +25,13 @@ const LazyPage = ({ pdfDoc, pageNum, totalPages }: { pdfDoc: any, pageNum: numbe
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
         setIsRendering(true)
-        // High fidelity rendering only when visible
         renderPageThumbnail(pdfDoc, pageNum, 2.0).then(data => {
           setImg(data)
           setIsRendering(false)
         })
         observer.disconnect()
       }
-    }, { rootMargin: '600px' }) // Wide margin for smoother scrolling
+    }, { rootMargin: '600px' })
 
     if (containerRef.current) observer.observe(containerRef.current)
     return () => observer.disconnect()
@@ -42,9 +40,10 @@ const LazyPage = ({ pdfDoc, pageNum, totalPages }: { pdfDoc: any, pageNum: numbe
   return (
     <div 
       ref={containerRef}
-      className="relative flex flex-col items-center gap-4 animate-in fade-in duration-700 min-h-[400px] justify-center"
+      data-page-num={pageNum}
+      className="relative flex flex-col items-center gap-4 animate-in fade-in duration-700 min-h-[400px] justify-center snap-center"
     >
-      <div className="bg-white p-1 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.4)] group relative overflow-hidden transition-transform duration-500 hover:scale-[1.01] w-full max-w-[90%] md:max-w-full flex items-center justify-center min-h-[300px]">
+      <div className="bg-white p-1 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.4)] group relative overflow-hidden transition-all duration-500 w-full max-w-[90%] md:max-w-full flex items-center justify-center min-h-[300px]">
         {img ? (
           <img 
             src={img} 
@@ -72,7 +71,12 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
   const [isLoading, setIsLoading] = useState(true)
   const [pdfDoc, setPdfDoc] = useState<any>(null)
   const [isLocked, setIsLocked] = useState(false)
+  const [showControls, setShowControls] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
   
+  const lastScrollTop = useRef(0)
+  const mainRef = useRef<HTMLElement>(null)
+
   useEffect(() => {
     const load = async () => {
       setIsLoading(true)
@@ -92,16 +96,39 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
     load()
   }, [file])
 
+  // Immersion Mode Logic
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+    const st = e.currentTarget.scrollTop
+    if (st > lastScrollTop.current && st > 100) {
+      setShowControls(false)
+    } else {
+      setShowControls(true)
+    }
+    lastScrollTop.current = st <= 0 ? 0 : st
+
+    // Update current page based on intersection
+    const pages = e.currentTarget.querySelectorAll('[data-page-num]')
+    pages.forEach(page => {
+      const rect = page.getBoundingClientRect()
+      if (rect.top < window.innerHeight / 2 && rect.bottom > window.innerHeight / 2) {
+        setCurrentPage(Number(page.getAttribute('data-page-num')))
+      }
+    })
+  }
+
   const handleShare = async () => {
     const buffer = await file.arrayBuffer()
     await shareFile(new Uint8Array(buffer), file.name, file.type)
   }
 
   return (
-    <div className="fixed inset-0 z-[200] bg-zinc-950 flex flex-col animate-in fade-in duration-300 overflow-hidden overscroll-none">
+    <div 
+      className="fixed inset-0 z-[200] bg-zinc-950 flex flex-col animate-in fade-in duration-300 overflow-hidden overscroll-none"
+      onClick={() => setShowControls(prev => !prev)}
+    >
       
       {/* Lightened Titan Header */}
-      <header className="px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-4 bg-zinc-900 backdrop-blur-xl border-b border-white/5 flex items-center justify-between z-50 shadow-lg shrink-0">
+      <header className={`fixed top-0 inset-x-0 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-4 bg-zinc-900/90 backdrop-blur-xl border-b border-white/5 flex items-center justify-between z-50 shadow-lg transition-transform duration-500 ${showControls ? 'translate-y-0' : '-translate-y-full'}`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
@@ -117,7 +144,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
                 <h2 className="text-sm font-black text-white truncate max-w-[140px] leading-tight">{file.name}</h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                   <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Live Engine</p>
+                   <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Secure View</p>
                 </div>
              </div>
           </div>
@@ -134,15 +161,23 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
           <button 
             onClick={onProcess}
             className="w-10 h-10 flex items-center justify-center bg-rose-500 text-white rounded-2xl shadow-lg shadow-rose-500/20 active:scale-95 active:bg-rose-600 transition-all border border-rose-400/20"
-            title="Process Document"
           >
             <Plus size={22} strokeWidth={3} />
           </button>
         </div>
       </header>
 
+      {/* Floating Page Indicator (Visible in Immersion) */}
+      <div className={`fixed top-[calc(env(safe-area-inset-top)+6rem)] right-6 z-[60] bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-2xl transition-all duration-500 ${!showControls ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
+         <span className="text-[10px] font-black text-white uppercase tracking-widest">{currentPage} / {totalPages}</span>
+      </div>
+
       {/* Main Content - Scrollable List of Pages */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-10 bg-zinc-950 scrollbar-hide overscroll-none">
+      <main 
+        ref={mainRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 pt-32 space-y-10 bg-zinc-950 scrollbar-hide overscroll-none snap-y"
+      >
         {isLoading && (
           <div className="h-full flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-10 h-10 text-rose-500 animate-spin" />
@@ -165,7 +200,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
             </button>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto space-y-12 pb-20">
+          <div className="max-w-3xl mx-auto space-y-12 pb-40">
             {Array.from({ length: totalPages }).map((_, idx) => (
               <LazyPage 
                 key={idx} 
@@ -179,7 +214,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
       </main>
 
       {/* Lightened Status Bar */}
-      <footer className="px-6 py-4 bg-zinc-900/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-between text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 shrink-0">
+      <footer className={`fixed bottom-0 inset-x-0 px-6 py-4 bg-zinc-900/90 backdrop-blur-xl border-t border-white/5 flex items-center justify-between text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 z-50 transition-transform duration-500 ${showControls ? 'translate-y-0' : 'translate-y-full'}`} onClick={(e) => e.stopPropagation()}>
          <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded-md border border-emerald-500/20">
                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />

@@ -17,7 +17,8 @@ import {
   LayoutGrid as LayoutGridIcon, 
   Settings as SettingsIcon,
   Github as GHIcon,
-  Heart as HeartIcon
+  Heart as HeartIcon,
+  Download
 } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { Theme, Tool, ToolCategory, ViewMode } from '../types'
@@ -51,6 +52,8 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   const dropdownRef = useRef<HTMLDivElement>(null)
   const isNative = Capacitor.isNativePlatform()
   const showMobileNav = isNative || viewMode === 'android'
+  
+  const isMobileBrowser = !isNative && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
   useEffect(() => {
     if (showHistory) {
@@ -168,6 +171,16 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-3 shrink-0">
+            {isMobileBrowser && (
+              <a 
+                href="https://github.com/potatameister/PaperKnife/releases/latest" 
+                target="_blank"
+                className="hidden xs:flex items-center gap-2 px-3 py-1.5 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+              >
+                <Download size={14} strokeWidth={3} />
+                Get APK
+              </a>
+            )}
             <Link to="/about" className={`p-2 md:px-4 md:py-2 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${location.pathname.includes('about') ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-900'}`}>
               <InfoIcon size={18} />
               <span className="hidden sm:block">About</span>
@@ -187,64 +200,60 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
         {children}
       </main>
 
-      {/* Web Footer - Hidden in Android/Native mode */}
+      {/* Web Footer - Modern Compact Design */}
       {!showMobileNav && (
-        <footer className="border-t border-gray-100 dark:border-zinc-900 mt-20 bg-white dark:bg-black transition-colors relative z-10">
-          <div className="max-w-7xl mx-auto px-6 py-20">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-              <div className="md:col-span-2">
-                <div className="flex items-center gap-2 text-gray-900 dark:text-white mb-6">
-                  <PaperKnifeLogo size={24} iconColor="#F43F5E" partColor="currentColor" />
-                  <span className="font-black tracking-tighter text-xl">PaperKnife</span>
-                </div>
-                <h3 className="text-2xl font-black tracking-tighter dark:text-white mb-4 leading-tight">
-                  Stop Uploading <br/>
-                  <span className="text-rose-500">Your Privacy.</span>
-                </h3>
-                <p className="text-gray-500 dark:text-zinc-400 text-sm max-w-sm leading-relaxed mb-8 font-medium">
-                  Professional PDF tools that live entirely on your device. Zero servers, zero surveillance, absolute sovereignty.
+        <footer className="border-t border-gray-100 dark:border-white/5 mt-20 bg-white dark:bg-black relative z-10">
+          <div className="max-w-7xl mx-auto px-6 md:px-8 py-10 md:py-12">
+            
+            <div className="grid grid-cols-2 md:grid-cols-12 gap-8 mb-12">
+              
+              {/* Brand Column (Span 6) */}
+              <div className="col-span-2 md:col-span-6 space-y-4">
+                <Link to="/" className="flex items-center gap-2.5 text-gray-900 dark:text-white group w-fit">
+                  <PaperKnifeLogo size={22} iconColor="#F43F5E" partColor="currentColor" />
+                  <span className="font-bold tracking-tight text-lg group-hover:text-rose-500 transition-colors">PaperKnife</span>
+                </Link>
+                <p className="text-gray-500 dark:text-zinc-500 text-xs leading-relaxed max-w-sm">
+                  The privacy-first PDF toolkit. 100% client-side logic. <br/>
+                  Zero servers. Open source and forever free.
                 </p>
-                <div className="flex gap-4">
-                  <a href="https://github.com/potatameister/PaperKnife" target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-50 dark:bg-zinc-900 rounded-2xl hover:bg-rose-500 hover:text-white transition-all text-gray-600 dark:text-zinc-400 group">
-                    <GHIcon size={20} className="group-hover:scale-110 transition-transform" />
-                  </a>
+                <div className="flex items-center gap-2 pt-1">
+                   <div className="flex items-center gap-2 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 rounded-full text-[9px] font-bold uppercase tracking-wide border border-emerald-100 dark:border-emerald-900/20">
+                      <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Engine
+                   </div>
+                   <a href="https://github.com/potatameister/PaperKnife" target="_blank" className="p-2 bg-gray-50 dark:bg-zinc-900 rounded-xl hover:bg-rose-500 hover:text-white transition-all text-gray-500 dark:text-zinc-500">
+                     <GHIcon size={14} />
+                   </a>
                 </div>
               </div>
-              
-              <div>
-                <h4 className="font-bold text-[10px] uppercase tracking-[0.2em] text-gray-400 dark:text-zinc-500 mb-6">Resources</h4>
-                <ul className="space-y-4 text-sm font-bold text-gray-600 dark:text-zinc-400">
-                  <li><Link to="/" className="hover:text-rose-500 transition-colors">All Tools</Link></li>
-                  <li><Link to="/about" className="hover:text-rose-500 transition-colors">Privacy Protocol</Link></li>
-                  <li><Link to="/thanks" className="hover:text-rose-500 transition-colors">Special Thanks</Link></li>
+
+              {/* Legal Column */}
+              <div className="col-span-1 md:col-span-3">
+                <h4 className="font-bold text-[10px] uppercase tracking-widest text-gray-900 dark:text-white mb-4">Protocol</h4>
+                <ul className="space-y-2.5 text-xs text-gray-500 dark:text-zinc-500">
+                  <li><Link to="/about" className="hover:text-rose-500 transition-colors">About</Link></li>
+                  <li><Link to="/privacy" className="hover:text-rose-500 transition-colors">Privacy Spec</Link></li>
+                  <li><a href="https://github.com/potatameister/PaperKnife/blob/main/LICENSE" target="_blank" className="hover:text-rose-500 transition-colors">License</a></li>
                 </ul>
               </div>
 
-              <div>
-                <h4 className="font-bold text-[10px] uppercase tracking-[0.2em] text-gray-400 dark:text-zinc-500 mb-6">Support</h4>
-                <ul className="space-y-4 text-sm font-bold text-gray-600 dark:text-zinc-400">
-                  <li><a href="https://github.com/sponsors/potatameister" target="_blank" className="flex items-center gap-2 hover:text-rose-500 transition-colors"><HeartIcon size={14} className="text-rose-500" /> Sponsor Project</a></li>
-                  <li><a href="https://github.com/potatameister/PaperKnife/issues" target="_blank" className="flex items-center gap-2 hover:text-rose-500 transition-colors">Report an Issue</a></li>
+              {/* Community Column */}
+              <div className="col-span-1 md:col-span-3">
+                <h4 className="font-bold text-[10px] uppercase tracking-widest text-gray-900 dark:text-white mb-4">Ecosystem</h4>
+                <ul className="space-y-2.5 text-xs text-gray-500 dark:text-zinc-500">
+                  <li><a href="https://github.com/sponsors/potatameister" target="_blank" className="flex items-center gap-2 hover:text-rose-500 transition-colors">Sponsor <HeartIcon size={10} className="text-rose-500" /></a></li>
+                  <li><a href="https://github.com/potatameister/PaperKnife/issues" target="_blank" className="hover:text-rose-500 transition-colors">Report Bug</a></li>
+                  <li><Link to="/thanks" className="hover:text-rose-500 transition-colors">Hall of Fame</Link></li>
                 </ul>
               </div>
+
             </div>
             
-            <div className="pt-8 border-t border-gray-100 dark:border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-zinc-600">
-              <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-center md:text-left">
-                <p>© 2026 PaperKnife.</p>
-                <p className="hidden md:block opacity-30">•</p>
-                <p>Made by <a href="https://github.com/potatameister" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline underline-offset-4">potatameister</a></p>
-              </div>
-              
-              {/* Offline Indicator */}
-              <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-full border border-emerald-100 dark:border-emerald-900/20">
-                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                 <span className="text-[9px] text-emerald-600 dark:text-emerald-400">100% Offline • Privacy Protection</span>
-              </div>
-
-              <div className="flex gap-8">
-                <Link to="/privacy" className="hover:text-rose-500 transition-colors">Privacy</Link>
-                <a href="https://github.com/potatameister/PaperKnife/blob/main/LICENSE" target="_blank" className="hover:text-rose-500 transition-colors">License</a>
+            <div className="pt-6 border-t border-gray-100 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-gray-400 dark:text-zinc-600 font-medium">
+              <p>© 2026 PaperKnife Project. No cookies used.</p>
+              <div className="flex gap-6 items-center">
+                 <a href="https://github.com/potatameister" target="_blank" className="hover:text-gray-900 dark:hover:text-white transition-colors">@potatameister</a>
               </div>
             </div>
           </div>

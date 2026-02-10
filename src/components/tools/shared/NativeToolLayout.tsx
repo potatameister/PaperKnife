@@ -1,6 +1,6 @@
 import React from 'react'
 import { ArrowLeft } from 'lucide-react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'
 import ToolHeader from './ToolHeader'
 
@@ -20,7 +20,6 @@ export const NativeToolLayout = ({
   onBack 
 }: NativeToolLayoutProps) => {
   const navigate = useNavigate()
-  const location = useLocation()
   
   // Determine if we should show the native-style header
   // It should only show if we are in Android/APK mode

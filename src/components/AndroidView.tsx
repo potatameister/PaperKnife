@@ -20,15 +20,11 @@ import {
   Sun as SunIcon, 
   Upload as UploadIcon,
   LayoutGrid as LayoutGridIcon, 
-  Sparkles as SparklesIcon, 
-  Clock as ClockIcon,
-  ClipboardList,
-  Download
+  ClipboardList
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { getRecentActivity, ActivityEntry } from '../utils/recentActivity'
 import { PaperKnifeLogo } from './Logo'
-import { Capacitor } from '@capacitor/core'
 
 interface AndroidViewProps {
   theme: 'light' | 'dark'
@@ -40,7 +36,6 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
   const navigate = useNavigate()
   const [history, setHistory] = useState<ActivityEntry[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
     getRecentActivity(3).then(setHistory)
@@ -84,24 +79,12 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
              </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            {!isNative && (
-              <a 
-                href="https://github.com/potatameister/PaperKnife/releases/latest" 
-                target="_blank"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-black/10 active:scale-95 transition-transform border border-white/10 dark:border-black/10"
-              >
-                <Download size={12} strokeWidth={3} />
-                Get APK
-              </a>
-            )}
-            <button 
-              onClick={toggleTheme}
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-zinc-800 transition-colors"
-            >
-              {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}
-            </button>
-          </div>
+          <button 
+            onClick={toggleTheme}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-zinc-800 transition-colors"
+          >
+            {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+          </button>
         </div>
       </header>
 

@@ -6,7 +6,6 @@
 import { Shield, EyeOff, ServerOff, Database as DatabaseIcon, History as HistoryIcon, ExternalLink, Lock, Trash2, Cpu } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { NativeToolLayout } from './tools/shared/NativeToolLayout'
-import { useNavigate } from 'react-router-dom'
 import { PaperKnifeLogo } from './Logo'
 
 // --- WEB VERSION (TITAN HIGH-DENSITY) ---

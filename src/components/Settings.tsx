@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { 
   Trash2, Clock, Moon, Sun, Monitor,
   ChevronRight, Info, Zap, User, DownloadCloud, ListFilter,
-  RotateCcw, ShieldCheck, Bug, Heart as HeartIcon, Settings2,
-  Lock, RefreshCcw, Layout
+  RotateCcw, ShieldCheck, Bug, Heart as HeartIcon, Settings2
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { clearActivity } from '../utils/recentActivity'
