@@ -65,115 +65,112 @@ const SpecItem = ({ title, icon: Icon, children, defaultOpen = false }: { title:
 const AboutWeb = () => {
   const navigate = useNavigate()
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-black text-gray-900 dark:text-zinc-100 selection:bg-rose-500 selection:text-white pb-40">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-black text-gray-900 dark:text-zinc-100 selection:bg-rose-500 selection:text-white pb-24">
       
-      {/* 1. Impact Hero */}
-      <section className="relative pt-32 pb-24 px-6 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(244,63,94,0.08),transparent_60%)] pointer-events-none" />
+      {/* 1. Impact Hero - Compact */}
+      <section className="relative pt-20 pb-12 px-6 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(244,63,94,0.05),transparent_60%)] pointer-events-none" />
         <div className="max-w-5xl mx-auto text-center relative z-10">
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter dark:text-white mb-10 leading-[0.85] animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter dark:text-white mb-6 leading-[0.9] animate-in fade-in slide-in-from-bottom-4 duration-700">
             Privacy is a <br/>
             <span className="text-rose-500 font-black">Human Right.</span>
           </h1>
-          <p className="text-xl md:text-2xl text-gray-500 dark:text-zinc-400 max-w-3xl mx-auto leading-relaxed font-medium animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
+          <p className="text-lg md:text-xl text-gray-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed font-medium animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
             PaperKnife is an absolute document engine. No servers, no tracking, no compromises. We transform your browser into a self-contained document laboratory.
           </p>
         </div>
       </section>
 
-      {/* 2. Sustainability Card (Imminent Support) */}
-      <section className="max-w-6xl mx-auto px-6 mb-32">
-        <div className="bg-rose-500 text-white rounded-[3.5rem] p-12 md:p-16 flex flex-col md:flex-row items-center gap-12 relative overflow-hidden shadow-2xl shadow-rose-500/20">
-           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_60%)] pointer-events-none" />
-           <div className="w-24 h-24 bg-white/20 rounded-[2rem] flex items-center justify-center shrink-0 backdrop-blur-md animate-pulse border border-white/20">
-              <HeartIcon size={40} fill="currentColor" />
+      {/* 2. Sustainability Card - Condensed */}
+      <section className="max-w-5xl mx-auto px-6 mb-20">
+        <div className="bg-rose-500 text-white rounded-[2.5rem] p-8 md:p-12 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden shadow-xl shadow-rose-500/20">
+           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_60%)] pointer-events-none" />
+           <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center shrink-0 backdrop-blur-md border border-white/20">
+              <HeartIcon size={32} fill="currentColor" />
            </div>
            <div className="flex-1 text-center md:text-left relative z-10">
-              <h3 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 leading-tight">Fuel the Engine.</h3>
-              <p className="text-rose-100 font-medium text-lg md:text-xl mb-8 max-w-2xl leading-relaxed">
-                 PaperKnife is 100% self-funded and completely ad-free. Your support ensures the project stays alive and free for everyone.
+              <h3 className="text-3xl font-black tracking-tighter mb-3 leading-tight">Fuel the Engine.</h3>
+              <p className="text-rose-100 font-medium text-base mb-6 max-w-xl leading-relaxed">
+                 PaperKnife is self-funded and ad-free. Your support ensures the project stays alive and free for everyone.
               </p>
-              <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                 <a href="https://github.com/sponsors/potatameister" target="_blank" className="px-10 py-5 bg-white text-rose-600 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:scale-105 transition-transform shadow-xl flex items-center gap-3">
-                    <HeartIcon size={18} fill="currentColor" /> Sponsor Project
+              <div className="flex flex-wrap justify-center md:justify-start gap-3">
+                 <a href="https://github.com/sponsors/potatameister" target="_blank" className="px-8 py-3.5 bg-white text-rose-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-transform shadow-lg flex items-center gap-2">
+                    <HeartIcon size={14} fill="currentColor" /> Sponsor
                  </a>
-                 <button onClick={() => navigate('/thanks')} className="px-10 py-5 bg-rose-600 text-white border-2 border-rose-400 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-rose-700 transition-colors flex items-center gap-3">
-                    <SparklesIcon size={18} /> View Hall of Fame
+                 <button onClick={() => navigate('/thanks')} className="px-8 py-3.5 bg-rose-600 text-white border border-rose-400/50 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-rose-700 transition-colors flex items-center gap-2">
+                    <SparklesIcon size={14} /> Hall of Fame
                  </button>
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-200 mt-10 opacity-80">
-                 Sponsors receive a permanent shout-out in our credits.
-              </p>
            </div>
         </div>
       </section>
 
-      {/* 3. Deep Specification (Explanatory Section) */}
-      <section className="max-w-6xl mx-auto px-6 mb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+      {/* 3. Deep Specification - Tighter Layout */}
+      <section className="max-w-6xl mx-auto px-6 mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
           {/* Narrative Column */}
-          <div className="lg:col-span-5 space-y-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-100 dark:bg-white/5 rounded-lg text-[9px] font-black uppercase tracking-widest text-gray-400">
+          <div className="lg:col-span-5 space-y-8">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-zinc-100 dark:bg-white/5 rounded-md text-[9px] font-black uppercase tracking-widest text-gray-400 border border-gray-200/50 dark:border-white/5">
                Technical Manifesto
             </div>
-            <h2 className="text-4xl font-black tracking-tighter dark:text-white leading-[1.1]">
+            <h2 className="text-3xl font-black tracking-tighter dark:text-white leading-[1.1]">
               Architecture of <br/>
               <span className="text-rose-500">Absolute Sovereignty.</span>
             </h2>
-            <p className="text-gray-500 dark:text-zinc-400 font-medium leading-relaxed">
-              Modern web tools are often a trade-off: convenience for privacy. PaperKnife rejects this premise. We've built an engine that runs where the user is, ensuring your sensitive data never crosses a network boundary.
+            <p className="text-gray-500 dark:text-zinc-400 text-sm font-medium leading-relaxed">
+              PaperKnife rejects the trade-off between convenience and privacy. We've built an engine that runs where the user is, ensuring your sensitive data never crosses a network boundary.
             </p>
-            <div className="p-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm">
-               <h4 className="font-black text-xs uppercase tracking-widest text-emerald-500 mb-4 flex items-center gap-2">
+            <div className="p-6 bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
+               <h4 className="font-black text-[10px] uppercase tracking-widest text-emerald-500 mb-3 flex items-center gap-2">
                   <ServerOffIcon size={14} /> Zero Infrastructure
                </h4>
-               <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium">
+               <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium leading-relaxed">
                   We operate no backend. No databases. No file caches. PaperKnife is a static distribution of code that activates your browser's existing power.
                </p>
             </div>
           </div>
 
-          {/* Accordion Column */}
-          <div className="lg:col-span-7 bg-white dark:bg-zinc-900 rounded-[3rem] p-4 md:p-10 border border-gray-100 dark:border-white/5 shadow-sm">
+          {/* Accordion Column - Compact */}
+          <div className="lg:col-span-7 bg-white dark:bg-zinc-900 rounded-[2.5rem] p-2 md:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
              <SpecItem title="How it Works" icon={CpuIcon} defaultOpen={true}>
-                Every action is executed locally on your device's CPU. Using high-performance <span className="text-rose-500 font-bold">Web Workers</span> and <span className="text-rose-500 font-bold">WebAssembly</span>, PaperKnife loads your PDF into a sandboxed environment within your browser tab. Heavy computations happen in background threads, keeping your UI responsive.
+                Every action is executed locally on your device's CPU. Using high-performance <span className="text-rose-500 font-bold">Web Workers</span> and <span className="text-rose-500 font-bold">WebAssembly</span>, PaperKnife loads your PDF into a sandboxed environment within your browser tab.
              </SpecItem>
 
              <SpecItem title="Data Lifecycle" icon={PrivacyIcon}>
-                Your documents live exclusively in your browser's <span className="text-rose-500 font-bold">volatile memory (RAM)</span>. We do not use persistent storage, cookies, or IndexedDB for your file content. Once the tab is closed or you navigate away, the processed data is immediately destroyed.
+                Your documents live exclusively in your browser's <span className="text-rose-500 font-bold">volatile memory (RAM)</span>. We do not use persistent storage or cookies for your file content. Once the tab is closed, the data is destroyed.
              </SpecItem>
 
              <SpecItem title="Deep Metadata Clean" icon={DiskIcon}>
-                PaperKnife doesn't just edit PDFs; it sanitizes them. Our "Deep Clean" metadata protocol purges identifying strings like Producer, Creator, and XMP metadata that standard editors often leave behind, ensuring your files are truly anonymous.
+                Our "Deep Clean" metadata protocol purges identifying strings like Producer, Creator, and XMP metadata that standard editors leave behind, ensuring your files are truly anonymous.
              </SpecItem>
 
              <SpecItem title="Radical Transparency" icon={CodeIcon}>
-                Trust should be verified, not assumed. PaperKnife is <span className="text-rose-500 font-bold">100% Open Source</span> under the <span className="text-rose-500 font-bold">GNU AGPL v3</span> license. This gives you the right to audit every line of code and guarantees the engine remains free and transparent.
+                PaperKnife is <span className="text-rose-500 font-bold">100% Open Source</span> under the <span className="text-rose-500 font-bold">GNU AGPL v3</span> license. This gives you the right to audit every line of code and guarantees the engine remains free.
              </SpecItem>
 
              <SpecItem title="Privacy Nodes" icon={ShieldIcon}>
-                We believe in a decentralized web. By processing documents on-device, every PaperKnife user acts as their own "Privacy Node." There is no central point of failure, no honeypot for hackers, and no surveillance capability.
+                By processing documents on-device, every user acts as their own "Privacy Node." There is no central point of failure and no surveillance capability.
              </SpecItem>
           </div>
 
         </div>
       </section>
 
-      {/* 4. Final Footer Links */}
-      <section className="max-w-4xl mx-auto px-6 text-center border-t border-gray-100 dark:border-zinc-900 pt-20">
-        <div className="flex flex-wrap justify-center gap-6 mb-16">
-           <a href="https://github.com/potatameister/PaperKnife" target="_blank" className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-colors group">
-              <GHIcon size={18} /> Audit Source Code <ExternalLinkIcon size={14} className="opacity-40 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+      {/* 4. Final Footer Links - Condensed */}
+      <section className="max-w-4xl mx-auto px-6 text-center border-t border-gray-100 dark:border-zinc-900 pt-16">
+        <div className="flex flex-wrap justify-center gap-8 mb-12">
+           <a href="https://github.com/potatameister/PaperKnife" target="_blank" className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-colors group">
+              <GHIcon size={16} /> Audit Source <ExternalLinkIcon size={12} className="opacity-40 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
            </a>
-           <button onClick={() => navigate('/thanks')} className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-colors group">
-              <SparklesIcon size={18} /> Credits <ChevronRightIcon size={14} className="opacity-40 group-hover:translate-x-1 transition-transform" />
+           <button onClick={() => navigate('/thanks')} className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-colors group">
+              <SparklesIcon size={16} /> Credits <ChevronRightIcon size={12} className="opacity-40 group-hover:translate-x-1 transition-transform" />
            </button>
         </div>
         
-        <div className="opacity-30 hover:opacity-100 transition-opacity duration-700">
-          <PaperKnifeLogo size={40} iconColor="#F43F5E" partColor="currentColor" className="mx-auto mb-6" />
-          <p className="text-[10px] font-black uppercase tracking-[1em] text-gray-400">Handcrafted by potatameister</p>
+        <div className="opacity-20 hover:opacity-50 transition-opacity duration-700">
+          <PaperKnifeLogo size={32} iconColor="#F43F5E" partColor="currentColor" className="mx-auto mb-4" />
+          <p className="text-[9px] font-black uppercase tracking-[0.6em] text-gray-400">potatameister</p>
         </div>
       </section>
 
