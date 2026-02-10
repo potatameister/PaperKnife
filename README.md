@@ -1,57 +1,53 @@
 # ✈️ PaperKnife
 
-**The Swiss Army Knife for PDFs.**  
-*100% Client-Side. Zero Servers. Absolute Privacy.*
+**The Privacy-First PDF Engine.**  
+*Android First. Zero-Server Web. Absolute Sovereignty.*
 
 ![License](https://img.shields.io/badge/license-AGPL--3.0-rose.svg)
-![Privacy](https://img.shields.io/badge/Privacy-100%25-green.svg)
-![Status](https://img.shields.io/badge/status-Active-success.svg)
+![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20Android-blue.svg)
+![Status](https://img.shields.io/badge/Titan%20Engine-v1.0.0-success.svg)
 
 ---
 
-## 🛡️ Why PaperKnife?
+## 🛡️ The "Titan" Protocol
 
-Most PDF tools upload your sensitive documents to a cloud server to process them. This means your bank statements, contracts, and medical records leave your device.
+PaperKnife is not just another PDF tool. It is a **Zero-Server Document Engine** built for the era of surveillance.
 
-**PaperKnife is different.**
-It runs entirely in your browser using WebAssembly. Your files **never** leave your device's memory. You can even turn off your Wi-Fi and use it offline.
+Most free PDF tools upload your bank statements and contracts to a cloud server. **PaperKnife rejects this trade-off.**
+We have engineered a high-performance manipulation engine that runs 100% on your device's CPU (via WebAssembly).
 
-## ✨ Features
+*   **Android First:** A native-feeling, touch-optimized experience available as a high-performance APK.
+*   **Zero-Server Web:** A fully functional PWA that runs offline in any modern browser.
+*   **Deep Privacy:** Your files **never** leave your device's RAM. We don't even have a database.
 
-PaperKnife includes 9 professional-grade tools:
+## ⚡ Titan UI Engine
 
-| Tool | Description | Status |
-| :--- | :--- | :--- |
-| **Merge PDF** | Combine multiple files into one document. | ✅ Ready |
-| **Split PDF** | Visually extract specific pages or ranges. | ✅ Ready |
-| **Compress PDF** | Optimize file size for sharing (High/Med/Low). | ✅ Ready |
-| **Repair PDF** | Attempt to fix corrupted or unreadable files. | ✅ Ready |
-| **Image to PDF** | Convert images (JPG/PNG) into a professional PDF. | ✅ Ready |
-| **PDF to Image** | Convert pages to high-quality JPG/PNG (ZIP). | ✅ Ready |
-| **Signature** | Add your electronic signature securely. | ✅ Ready |
-| **Protect PDF** | Encrypt documents with strong passwords. | ✅ Ready |
-| **Unlock PDF** | Remove passwords from protected files. | ✅ Ready |
-| **Rotate PDF** | Fix page orientation permanently. | ✅ Ready |
-| **Watermark** | Overlay custom text for branding/security. | ✅ Ready |
-| **Page Numbers** | Automatically add custom numbering. | ✅ Ready |
-| **Metadata** | Edit Title, Author, Keywords for privacy. | ✅ Ready |
-| **Rearrange** | Drag and drop pages to reorder them. | ✅ Ready |
-| **PDF to Text** | Extract plain text for editing. | ✅ Ready |
+PaperKnife v1.0 features the **"Titan" Design System**—a high-density, professional interface that adapts to your environment:
 
-## 🎭 Chameleon Mode
+*   **Command Center (Android):** A thumb-friendly, bottom-heavy interface with "History Clipboard" and "Smart Quick-Pick" for rapid mobile workflows.
+*   **Bento Dashboard (Web):** A spacious, grid-based layout optimized for desktop productivity and drag-and-drop actions.
+*   **Immersion Preview:** A high-fidelity, distortion-free PDF viewer with "Night Vision" and auto-hiding controls.
 
-PaperKnife features a unique "Chameleon" architecture that adapts its entire UI paradigm based on the device:
+## 🛠️ Core Capabilities
 
-*   **Web View (Bento Grid):** A desktop-optimized dashboard for high productivity.
-*   **Android View (Native):** A thumb-friendly, mobile-first interface that feels like a native app.
+| Engine Module | Description |
+| :--- | :--- |
+| **Modification** | Merge, Split, Rotate, Rearrange, Page Numbers. |
+| **Optimization** | Intelligent Compression (High/Standard/Smallest), Repair. |
+| **Security** | AES-256 Encryption (Protect), Password Removal (Unlock). |
+| **Conversion** | PDF to Image (High-Res), Image to PDF, PDF to Text. |
+| **Studio** | Watermarking, Metadata Editing, Digital Signatures. |
 
 ## 🚀 Getting Started
 
-### Prerequisites
-*   Node.js 18+
-*   npm
+### Download for Android
+Get the latest **Titan APK** from the [Releases Page](https://github.com/potatameister/PaperKnife/releases/latest).
 
-### Installation
+### Run on Web
+Visit the official instance (or self-host it):
+[**Launch PaperKnife Web**](https://potatameister.github.io/PaperKnife/)
+
+### Local Development
 
 1.  **Clone the repository:**
     ```bash
@@ -64,53 +60,25 @@ PaperKnife features a unique "Chameleon" architecture that adapts its entire UI 
     npm install
     ```
 
-3.  **Run the development server:**
+3.  **Ignite the Engine:**
     ```bash
     npm run dev
     ```
-    Open `http://localhost:5173/PaperKnife/` in your browser.
+    Open `http://localhost:5173/PaperKnife/` to see the Chameleon engine in action.
 
-### Building for Production
-
-**Web (PWA):**
-```bash
-npm run build
-# Output is in /dist
-```
-
-**Android (APK):**
-PaperKnife uses Capacitor to wrap the web app.
-```bash
-npm run build
-npx cap sync
-npx cap open android
-```
-
-## 🛠️ Tech Stack
+## 🏗️ Tech Stack
 
 *   **Core:** React 18, Vite, TypeScript
-*   **PDF Engine:** `pdf-lib` (Manipulation), `pdfjs-dist` (Rendering)
-*   **UI:** Tailwind CSS, Lucide React, Framer Motion (via CSS animations)
-*   **PWA:** `vite-plugin-pwa`
-*   **Mobile:** Capacitor
-
-## 🔒 Privacy Protocol
-
-*   **Zero-Server Architecture:** No backend API.
-*   **No Analytics:** No Google Analytics or tracking scripts.
-*   **Local Processing:** All logic executes in the browser's Main Thread or Web Workers.
+*   **Engine:** `pdf-lib` (WASM), `pdfjs-dist` (Rendering)
+*   **Native Wrapper:** Capacitor (Android)
+*   **Architecture:** Zero-Server, 100% Client-Side
 
 ## 📄 License
 
-This project is licensed under the **GNU Affero General Public License v3 (AGPL v3)**. 
+This project is protected by the **GNU Affero General Public License v3 (AGPL v3)**. 
 
-### Why AGPL v3?
-PaperKnife is a privacy-first utility. We chose the AGPL v3 to ensure:
-*   **Absolute Transparency:** Any version of PaperKnife hosted on a network (as a website or service) **must** provide a way for users to download the source code.
-*   **Open Core:** Modified versions cannot be turned into proprietary "black box" services.
-*   **User Sovereignty:** You have the legal right to verify exactly how your data is being handled.
-
-For more details, see the [LICENSE](LICENSE) file.
+### The "Web Loophole" is Closed.
+We chose AGPL v3 to guarantee user freedom. If you deploy a modified version of PaperKnife over a network (e.g., as a website), you **must** provide the source code to your users. This ensures PaperKnife can never be turned into a proprietary, privacy-invading "black box" service.
 
 ---
-*Built with ❤️ by [potatameister](https://github.com/potatameister)*
+*Handcrafted with ❤️ by [potatameister](https://github.com/potatameister)*

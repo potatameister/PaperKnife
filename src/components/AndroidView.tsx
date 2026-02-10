@@ -20,7 +20,8 @@ import {
   Sun as SunIcon, 
   Upload as UploadIcon,
   LayoutGrid as LayoutGridIcon, 
-  ClipboardList
+  ClipboardList,
+  Download
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { getRecentActivity, ActivityEntry } from '../utils/recentActivity'
@@ -69,22 +70,34 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
       <header className="px-6 pt-safe pb-2 sticky top-0 z-50 bg-[#FAFAFA]/95 dark:bg-black/95 backdrop-blur-xl border-b border-transparent">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
-             <div className="relative">
-                <PaperKnifeLogo size={24} iconColor="#F43F5E" partColor="currentColor" />
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[#FAFAFA] dark:border-black animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-             </div>
+             <PaperKnifeLogo size={24} iconColor="#F43F5E" partColor="currentColor" />
              <div className="flex flex-col">
-                <span className="text-lg font-black tracking-tighter text-gray-900 dark:text-white leading-none">PaperKnife</span>
-                <span className="text-[7px] font-black text-emerald-500 uppercase tracking-[0.2em] mt-0.5">Secure Engine</span>
+                <div className="flex items-center gap-1.5">
+                   <span className="text-lg font-black tracking-tighter text-gray-900 dark:text-white leading-none">PaperKnife</span>
+                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                </div>
+                <span className="text-[7px] font-black text-rose-500 uppercase tracking-[0.2em] mt-0.5">Secure Engine</span>
              </div>
           </div>
           
-          <button 
-            onClick={toggleTheme}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-zinc-800 transition-colors"
-          >
-            {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}
-          </button>
+          <div className="flex items-center gap-2">
+            {!isNative && (
+              <a 
+                href="https://github.com/potatameister/PaperKnife/releases/latest" 
+                target="_blank"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-black/10 active:scale-95 transition-transform border border-white/10 dark:border-black/10"
+              >
+                <Download size={12} strokeWidth={3} />
+                Get APK
+              </a>
+            )}
+            <button 
+              onClick={toggleTheme}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-zinc-800 transition-colors"
+            >
+              {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+            </button>
+          </div>
         </div>
       </header>
 
