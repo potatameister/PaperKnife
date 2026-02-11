@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/icons/logo.svg" width="120" alt="PaperKnife Logo">
+  <img src="public/icons/logo.svg" width="120" alt="PaperKnife Logo" style="background: white; border-radius: 30px; padding: 15px;">
 </p>
 
 # PaperKnife
