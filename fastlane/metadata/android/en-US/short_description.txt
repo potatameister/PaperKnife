@@ -1,1 +1,1 @@
-The Swiss Army Knife for PDFs. Merge, Split, Compress, and Protect PDFs 100% locally on your device. No uploads, no servers, absolute privacy.
+Privacy-first PDF utility: Merge, Split, Compress & Protect PDFs 100% locally.

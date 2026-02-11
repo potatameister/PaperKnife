@@ -3,6 +3,7 @@ PaperKnife is a professional-grade, open-source PDF utility designed with a "Zer
 Your data never leaves your phone.
 
 Core Features:
+
 • Merge PDF: Combine multiple documents into one.
 • Split PDF: Visually extract specific pages or ranges.
 • Compress PDF: Reduce file size without sacrificing quality.
