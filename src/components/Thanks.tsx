@@ -8,11 +8,12 @@ export default function Thanks() {
 
   const links = [
     { name: 'pdf-lib', url: 'https://github.com/Hopding/pdf-lib', desc: 'Core document engine for local manipulation.' },
-    { name: 'PDF.js', url: 'https://mozilla.github.io/pdf.js/', desc: 'High-performance PDF rendering and parsing.' },
-    { name: 'Tesseract.js', url: 'https://tesseract.projectnaptha.com/', desc: 'Local OCR engine for image-to-text conversion.' },
-    { name: 'JSZip', url: 'https://stuk.github.io/jszip/', desc: 'Local file compression and bundling.' },
-    { name: 'Lucide', url: 'https://lucide.dev/', desc: 'Beautifully crafted open-source icons.' },
-    { name: 'Capacitor', url: 'https://capacitorjs.com/', desc: 'Native bridge for cross-platform mobile apps.' },
+    { name: 'PDF.js', url: 'https://github.com/mozilla/pdf.js', desc: 'High-performance PDF rendering and parsing.' },
+    { name: 'Tesseract.js', url: 'https://github.com/naptha/tesseract.js', desc: 'Local OCR engine for image-to-text conversion.' },
+    { name: 'JSZip', url: 'https://github.com/Stuk/jszip', desc: 'Local file compression and bundling.' },
+    { name: 'Lucide', url: 'https://github.com/lucide-icons/lucide', desc: 'Beautifully crafted open-source icons.' },
+    { name: 'Capacitor', url: 'https://github.com/ionic-team/capacitor', desc: 'Native bridge for cross-platform mobile apps.' },
+    { name: 'OpenCode', url: 'https://github.com/opencode-ai/opencode', desc: 'Open-source AI coding assistant for the terminal.' },
     { name: 'Termux', url: 'https://github.com/termux/termux-app', desc: 'Mobile terminal for on-the-go development.' },
     { name: 'Gemini CLI', url: 'https://github.com/google-gemini/gemini-cli', desc: 'AI assistance for architectural design.' },
   ]
