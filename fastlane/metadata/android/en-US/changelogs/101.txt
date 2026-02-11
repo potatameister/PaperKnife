@@ -1,0 +1,1 @@
+Address IzzyOnDroid feedback: remove INTERNET permission, fix metadata formatting, and update icon format.

@@ -8,8 +8,12 @@ export default function Thanks() {
 
   const links = [
     { name: 'pdf-lib', url: 'https://github.com/Hopding/pdf-lib', desc: 'Core document engine for local manipulation.' },
+    { name: 'PDF.js', url: 'https://mozilla.github.io/pdf.js/', desc: 'High-performance PDF rendering and parsing.' },
+    { name: 'Tesseract.js', url: 'https://tesseract.projectnaptha.com/', desc: 'Local OCR engine for image-to-text conversion.' },
+    { name: 'JSZip', url: 'https://stuk.github.io/jszip/', desc: 'Local file compression and bundling.' },
+    { name: 'Lucide', url: 'https://lucide.dev/', desc: 'Beautifully crafted open-source icons.' },
+    { name: 'Capacitor', url: 'https://capacitorjs.com/', desc: 'Native bridge for cross-platform mobile apps.' },
     { name: 'Termux', url: 'https://github.com/termux/termux-app', desc: 'Mobile terminal for on-the-go development.' },
-    { name: 'OpenCode', url: 'https://github.com/opencode-ai/opencode', desc: 'Open-source AI coding assistant for the terminal.' },
     { name: 'Gemini CLI', url: 'https://github.com/google-gemini/gemini-cli', desc: 'AI assistance for architectural design.' },
   ]
 
@@ -78,7 +82,7 @@ export default function Thanks() {
 
       <footer className="text-center py-8 opacity-20">
          <PaperKnifeLogo size={24} iconColor="#F43F5E" partColor="currentColor" className="mx-auto mb-4" />
-         <p className="text-[8px] font-black uppercase tracking-[0.5em]">PaperKnife Protocol v1.0</p>
+         <p className="text-[8px] font-black uppercase tracking-[0.5em]">PaperKnife Protocol v1.0.1</p>
       </footer>
     </div>
   )
