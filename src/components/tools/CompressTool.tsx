@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Zap, Loader2, Plus, X, FileIcon, Download, ChevronLeft, ChevronRight, Maximize2, ArrowRight, RefreshCcw } from 'lucide-react'
+import { Zap, Loader2, Plus, X, FileIcon, Download, ChevronLeft, ChevronRight, Maximize2, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import JSZip from 'jszip'
 import { Capacitor } from '@capacitor/core'
@@ -347,9 +347,6 @@ export default function CompressTool() {
               <SuccessState message={`Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`} downloadUrl={objectUrl} fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} />
             </div>
           )}
-          <button onClick={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} className="w-full py-4 text-gray-400 hover:text-rose-500 font-black uppercase tracking-[0.3em] text-[10px] flex items-center justify-center gap-2">
-            <RefreshCcw size={14}/> Start New Session
-          </button>
         </div>
       )}
       <PrivacyBadge />

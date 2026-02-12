@@ -88,7 +88,16 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
         <PdfPreview 
           file={internalPreviewFile} 
           onClose={() => setInternalPreviewFile(null)} 
-          onProcess={() => setInternalPreviewFile(null)} 
+          onProcess={() => {
+            const file = internalPreviewFile;
+            setInternalPreviewFile(null);
+            // Handoff to global Quick Drop selector after unmounting internal preview
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('open-quick-drop', { 
+                detail: { file } 
+              }))
+            }, 100);
+          }} 
         />
       )}
 

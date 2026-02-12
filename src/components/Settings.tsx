@@ -115,7 +115,7 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
            </div>
            <div>
               <h2 className="text-xl font-black dark:text-white tracking-tighter leading-none mb-1">Preferences</h2>
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Protocol v1.0.4 • Local</p>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Protocol v1.0.5 • Local</p>
            </div>
         </div>
 
@@ -276,7 +276,7 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
                 }}
               />
            </div>
-           <p className="text-[8px] font-black uppercase text-center text-gray-300 dark:text-zinc-700 tracking-[0.5em] mt-10">Configuration Engine v1.0.4 Stable</p>
+           <p className="text-[8px] font-black uppercase text-center text-gray-300 dark:text-zinc-700 tracking-[0.5em] mt-10">Configuration Engine v1.0.5 Stable</p>
         </div>
 
       </div>

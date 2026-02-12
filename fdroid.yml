@@ -2,36 +2,44 @@
 # This file provides instructions for the F-Droid inclusion request.
 
 Categories:
-  - Office
   - Security
+  - Writing
 License: AGPL-3.0-or-later
 WebSite: https://potatameister.github.io/PaperKnife/
 SourceCode: https://github.com/potatameister/PaperKnife
 IssueTracker: https://github.com/potatameister/PaperKnife/issues
 
-Summary: Privacy-first PDF utility (Zero-Server Architecture)
-Description: |-
-  PaperKnife is a professional-grade, open-source PDF utility designed with a 
-  "Zero-Server Architecture." Every operation (Merge, Split, Compress, etc.) 
-  happens 100% locally on your device.
+AutoName: PaperKnife
 
 RepoType: git
-Repo: https://github.com/potatameister/PaperKnife
+Repo: https://github.com/potatameister/PaperKnife.git
+Binaries: https://github.com/potatameister/PaperKnife/releases/download/v%v/paperknife-v%v.apk
 
 Builds:
-  - versionName: 1.0.4
-    versionCode: 10004
-    commit: v1.0.4
+  - versionName: 1.0.5
+    versionCode: 10005
+    commit: v1.0.5
     subdir: android/app
+    sudo:
+      - curl -Lo node.tar.gz https://nodejs.org/download/release/v22.21.1/node-v22.21.1-linux-x64.tar.gz
+      - echo "219a152ea859861d75adea578bdec3dce8143853c13c5187f40c40e77b0143b2 node.tar.gz"
+        | sha256sum -c -
+      - tar xzf node.tar.gz --strip-components=1 -C /usr/local/
     gradle:
       - yes
     prebuild:
       - cd ../..
-      - npm install
+      - npm install --build-from-source
       - npm run build
       - npx cap sync android
+    scanignore:
+      - node_modules/@capacitor/cli/assets/capacitor-cordova-android-plugins.tar.gz
+    scandelete:
+      - node_modules
 
-AutoUpdateMode: Version %v
+AllowedAPKSigningKeys: aee95e35a247e9fb0fe0b41c0977f889b733c38988c2d1c680f714e318c1e976
+
+AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.4
-CurrentVersionCode: 10004
+CurrentVersion: 1.0.5
+CurrentVersionCode: 10005
