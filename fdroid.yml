@@ -19,9 +19,9 @@ RepoType: git
 Repo: https://github.com/potatameister/PaperKnife
 
 Builds:
-  - versionName: 1.0.0
-    versionCode: 100
-    commit: main
+  - versionName: 1.0.3
+    versionCode: 10003
+    commit: v1.0.3
     subdir: android/app
     gradle:
       - yes
@@ -30,9 +30,8 @@ Builds:
       - npm install
       - npm run build
       - npx cap sync android
-    # Note: Using esbuild minifier for stability in source builds.
 
 AutoUpdateMode: Version %v
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.0
-CurrentVersionCode: 100
+CurrentVersion: 1.0.3
+CurrentVersionCode: 10003

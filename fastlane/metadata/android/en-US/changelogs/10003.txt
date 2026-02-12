@@ -1,0 +1,4 @@
+Security & Integrity Update:
+- Added Gradle distribution SHA-256 verification.
+- Verified metadata for F-Droid compliance.
+- Fixed reproducible build logic.
