@@ -103,7 +103,7 @@ function QuickDropModal({ file, onClear, onBack }: { file: File, onClear: () => 
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
       <div className="w-full max-w-md bg-[#FAFAFA] dark:bg-zinc-950 rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden border-t border-x border-white/10 sm:border animate-in slide-in-from-bottom-full duration-500 ease-out">
         
         {/* Header */}
@@ -273,6 +273,18 @@ function App() {
     return () => window.removeEventListener('fileIntent', onFileIntent)
   }, [])
 
+  // Handle Global Quick Drop Trigger (from other components)
+  useEffect(() => {
+    const handleGlobalTrigger = (e: any) => {
+      if (e.detail?.file) {
+        setDroppedFile(e.detail.file)
+        setShowQuickDrop(true)
+      }
+    }
+    window.addEventListener('open-quick-drop' as any, handleGlobalTrigger)
+    return () => window.removeEventListener('open-quick-drop' as any, handleGlobalTrigger)
+  }, [])
+
   const LoadingSpinner = () => (
     <div className="h-full w-full flex items-center justify-center bg-[#FAFAFA] dark:bg-black min-h-[60vh]">
       <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
@@ -296,12 +308,13 @@ function App() {
         <PipelineProvider>
           <Layout theme={theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme} toggleTheme={toggleTheme} tools={tools} onFileDrop={handleGlobalDrop} viewMode={viewMode}>
             <Toaster 
-              position="bottom-center" 
+              position="top-center" 
               expand={true} 
               richColors 
               duration={2000}
               toastOptions={{
-                className: 'dark:bg-zinc-900 dark:text-white dark:border-white/10'
+                className: 'dark:bg-zinc-900 dark:text-white dark:border-white/10 mt-12',
+                style: { zIndex: 1000 }
               }}
             />
             

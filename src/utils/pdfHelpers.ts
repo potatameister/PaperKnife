@@ -40,8 +40,29 @@ export const downloadFile = async (data: Uint8Array | string, fileName: string, 
         ? data.split(',')[1] 
         : btoa(data.reduce((acc, byte) => acc + String.fromCharCode(byte), ''));
 
+      // Resolve duplicate filenames
+      let finalName = fileName;
+      let counter = 1;
+      const baseName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+      const extension = fileName.substring(fileName.lastIndexOf('.'));
+
+      while (true) {
+        try {
+          await Filesystem.stat({
+            path: finalName,
+            directory: Directory.Documents
+          });
+          // If stat succeeds, file exists
+          finalName = `${baseName} (${counter})${extension}`;
+          counter++;
+        } catch (e) {
+          // If stat fails, file doesn't exist, we can use this name
+          break;
+        }
+      }
+
       await Filesystem.writeFile({
-        path: fileName,
+        path: finalName,
         data: base64Data,
         directory: Directory.Documents,
         recursive: true

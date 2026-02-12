@@ -27,9 +27,9 @@ RepoType: git
 Repo: https://github.com/potatameister/PaperKnife
 
 Builds:
-  - versionName: 1.0.4
-    versionCode: 10004
-    commit: v1.0.4
+  - versionName: 1.0.5
+    versionCode: 10005
+    commit: v1.0.5
     subdir: android/app
     sudo:
       - apt-get update || apt-get update
@@ -44,5 +44,5 @@ Builds:
 
 AutoUpdateMode: Version %v
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.4
-CurrentVersionCode: 10004
+CurrentVersion: 1.0.5
+CurrentVersionCode: 10005

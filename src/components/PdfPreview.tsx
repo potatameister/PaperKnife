@@ -4,8 +4,11 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Plus, Loader2, Lock, Share2 } from 'lucide-react'
-import { loadPdfDocument, renderPageThumbnail, shareFile } from '../utils/pdfHelpers'
+import { createPortal } from 'react-dom'
+import { X, Plus, Loader2, Lock, Share2, Unlock } from 'lucide-react'
+import { toast } from 'sonner'
+import { App } from '@capacitor/app'
+import { loadPdfDocument, renderPageThumbnail, shareFile, unlockPdf } from '../utils/pdfHelpers'
 import { PaperKnifeLogo } from './Logo'
 
 interface PdfPreviewProps {
@@ -71,10 +74,10 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
   const [isLoading, setIsLoading] = useState(true)
   const [pdfDoc, setPdfDoc] = useState<any>(null)
   const [isLocked, setIsLocked] = useState(false)
-  const [showControls, setShowControls] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
+  const [password, setPassword] = useState('')
+  const [isUnlocking, setIsUnlocking] = useState(false)
   
-  const lastScrollTop = useRef(0)
   const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -94,18 +97,38 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
       }
     }
     load()
-  }, [file])
 
-  // Immersion Mode Logic
-  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
-    const st = e.currentTarget.scrollTop
-    if (st > lastScrollTop.current && st > 100) {
-      setShowControls(false)
-    } else {
-      setShowControls(true)
+    // Handle Hardware Back Button
+    const backListener = App.addListener('backButton', () => {
+      onClose()
+    })
+
+    return () => {
+      backListener.then(l => l.remove())
     }
-    lastScrollTop.current = st <= 0 ? 0 : st
+  }, [file, onClose])
 
+  const handleUnlock = async () => {
+    if (!password) return
+    setIsUnlocking(true)
+    try {
+      const result = await unlockPdf(file, password)
+      if (result.success) {
+        setPdfDoc(result.pdfDoc)
+        setTotalPages(result.pageCount)
+        setIsLocked(false)
+        toast.success('Document unlocked')
+      } else {
+        toast.error('Incorrect password')
+      }
+    } catch (e) {
+      toast.error('Failed to unlock')
+    } finally {
+      setIsUnlocking(false)
+    }
+  }
+
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
     // Update current page based on intersection
     const pages = e.currentTarget.querySelectorAll('[data-page-num]')
     pages.forEach(page => {
@@ -121,14 +144,13 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
     await shareFile(new Uint8Array(buffer), file.name, file.type)
   }
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[200] bg-zinc-950 flex flex-col animate-in fade-in duration-300 overflow-hidden overscroll-none"
-      onClick={() => setShowControls(prev => !prev)}
+      className="fixed inset-0 z-[500] bg-zinc-950 flex flex-col animate-in fade-in duration-300 overflow-hidden overscroll-none"
     >
       
-      {/* Lightened Titan Header */}
-      <header className={`fixed top-0 inset-x-0 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-4 bg-zinc-900/90 backdrop-blur-xl border-b border-white/5 flex items-center justify-between z-50 shadow-lg transition-transform duration-500 ${showControls ? 'translate-y-0' : '-translate-y-full'}`} onClick={(e) => e.stopPropagation()}>
+      {/* Fixed Header - Always Visible */}
+      <header className="fixed top-0 inset-x-0 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-4 bg-zinc-900/95 backdrop-blur-xl border-b border-white/5 flex items-center justify-between z-50 shadow-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
@@ -152,25 +174,26 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
 
         <div className="flex items-center gap-2">
           <button 
-            onClick={handleShare} 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleShare();
+            }} 
             className="w-10 h-10 flex items-center justify-center bg-white/5 text-zinc-300 rounded-2xl active:bg-white/10 transition-all border border-white/5"
           >
             <Share2 size={18} strokeWidth={2.5} />
           </button>
 
           <button 
-            onClick={onProcess}
+            onClick={(e) => {
+              e.stopPropagation();
+              onProcess();
+            }}
             className="w-10 h-10 flex items-center justify-center bg-rose-500 text-white rounded-2xl shadow-lg shadow-rose-500/20 active:scale-95 active:bg-rose-600 transition-all border border-rose-400/20"
           >
             <Plus size={22} strokeWidth={3} />
           </button>
         </div>
       </header>
-
-      {/* Floating Page Indicator (Visible in Immersion) */}
-      <div className={`fixed top-[calc(env(safe-area-inset-top)+6rem)] right-6 z-[60] bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-2xl transition-all duration-500 ${!showControls ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
-         <span className="text-[10px] font-black text-white uppercase tracking-widest">{currentPage} / {totalPages}</span>
-      </div>
 
       {/* Main Content - Scrollable List of Pages */}
       <main 
@@ -187,14 +210,35 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
 
         {isLocked ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-8">
-            <div className="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner border border-rose-500/20">
+            <div className="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-inner border border-rose-500/20">
               <Lock size={32} />
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter mb-3">Layer Protected</h3>
-            <p className="text-sm text-zinc-500 max-w-xs mx-auto leading-relaxed mb-10">This document is currently encrypted. Please use the Unlock tool to proceed.</p>
+            <p className="text-sm text-zinc-500 max-w-xs mx-auto leading-relaxed mb-8">This document is encrypted. Enter the password to view the contents.</p>
+            
+            <div className="w-full max-w-xs space-y-3 mb-10">
+               <input 
+                 type="password" 
+                 value={password}
+                 onChange={(e) => setPassword(e.target.value)}
+                 onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+                 placeholder="Enter Password"
+                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold text-center outline-none focus:border-rose-500 transition-all"
+                 autoFocus
+               />
+               <button 
+                 onClick={handleUnlock}
+                 disabled={!password || isUnlocking}
+                 className="w-full py-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+               >
+                 {isUnlocking ? <Loader2 className="animate-spin" size={16} /> : <Unlock size={16} />} 
+                 Unlock Layer
+               </button>
+            </div>
+
             <button 
               onClick={onProcess} 
-              className="w-full max-w-[200px] py-4 bg-white text-black rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-transform"
+              className="text-zinc-500 font-black uppercase text-[10px] tracking-[0.2em] hover:text-white transition-colors"
             >
               Tool Selection
             </button>
@@ -213,8 +257,8 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
         )}
       </main>
 
-      {/* Lightened Status Bar */}
-      <footer className={`fixed bottom-0 inset-x-0 px-6 py-4 bg-zinc-900/90 backdrop-blur-xl border-t border-white/5 flex items-center justify-between text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 z-50 transition-transform duration-500 ${showControls ? 'translate-y-0' : 'translate-y-full'}`} onClick={(e) => e.stopPropagation()}>
+      {/* Fixed Status Bar - Always Visible */}
+      <footer className="fixed bottom-0 inset-x-0 px-6 py-4 bg-zinc-900/95 backdrop-blur-xl border-t border-white/5 flex items-center justify-between text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 z-50 pb-[calc(env(safe-area-inset-bottom)+1rem)]" onClick={(e) => e.stopPropagation()}>
          <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded-md border border-emerald-500/20">
                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
@@ -224,9 +268,10 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
             <span className="text-zinc-400">{(file.size / (1024*1024)).toFixed(2)} MB</span>
          </div>
          <div className="text-zinc-400 font-bold tracking-[0.1em]">
-            {totalPages} Nodes
+            {currentPage} / {totalPages} Nodes
          </div>
       </footer>
-    </div>
+    </div>,
+    document.body
   )
 }

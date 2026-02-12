@@ -1,0 +1,7 @@
+Deterministic Build & Feature Overhaul:
+- Standardized v1.0.5 for perfect byte-for-byte reproducibility.
+- Added 'Unlock in Preview': Decrypt locked files directly in the viewer.
+- Integrated React Portals for perfect UI layering and header visibility.
+- Fixed 'Process' (+) button for seamless multi-tool chaining.
+- Improved hardware back button support and edge-to-edge layout.
+- Hardened offline status by removing web-link intent filters.
