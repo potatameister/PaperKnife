@@ -71,6 +71,7 @@
 - **[2026-02-11]:** F-Droid Ready: Removed proprietary Google Play Services logic from Gradle, implemented Fastlane metadata structure, and created an AGPL-compliant `fdroid.yml` build recipe for community-driven inclusion.
 - **[2026-02-11]:** Official v1.0.0 Stable Release: Finalized all versioning, metadata, and production assets. Submitted to F-Droid and IzzyOnDroid. Implemented professional "Dark Engineering" branding and high-res social preview generators. Ready for community-driven growth.
 - **[2026-02-12]:** Official v1.0.1 Maintenance Release: Addressed IzzyOnDroid feedback for repository inclusion. Hardened "Zero-Server" architecture by removing all network permissions (INTERNET). Standardized Fastlane metadata, optimized store descriptions, and updated the icon for better visibility and compliance. Updated technical credits to acknowledge upstream engines (PDF.js, Tesseract.js).
+- **[2026-02-12]:** Official v1.0.2 Reproducibility Patch: Implemented deterministic build logic. versionCode is now automatically derived from package.json (e.g., 1.0.2 -> 10002). Standardized Vite base path to relative ('./') as the default to ensure identical asset hashes across different build environments. Updated CI/CD to preserve these standards.
 
 ## 🏗️ 5. Architectural Notes
 *   **Chameleon Engine:** Uses `viewMode` state in `App.tsx` to hot-swap between `WebView.tsx` and `AndroidView.tsx`.
