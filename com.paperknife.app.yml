@@ -1,0 +1,48 @@
+Categories:
+  - Office
+  - Security
+License: AGPL-3.0-or-later
+WebSite: https://potatameister.github.io/PaperKnife/
+SourceCode: https://github.com/potatameister/PaperKnife
+IssueTracker: https://github.com/potatameister/PaperKnife/issues
+
+Summary: Privacy-first PDF utility (Zero-Server Architecture)
+Description: |-
+  PaperKnife is a professional-grade, open-source PDF utility designed with a 
+  "Zero-Server Architecture." Every operation (Merge, Split, Compress, etc.) 
+  happens 100% locally on your device.
+
+  Your data never leaves your phone.
+
+  Core Features:
+  - Merge, Split, and Compress PDFs.
+  - Protect and Unlock with strong encryption.
+  - Convert Images to PDF and vice versa.
+  - Edit metadata and sign documents electronically.
+
+  Built for the community, PaperKnife is fully open-source and contains no tracking, 
+  no analytics, and no advertisements.
+
+RepoType: git
+Repo: https://github.com/potatameister/PaperKnife
+
+Builds:
+  - versionName: 1.0.3
+    versionCode: 10003
+    commit: v1.0.3
+    subdir: android/app
+    sudo:
+      - apt-get update || apt-get update
+      - apt-get install -y nodejs npm
+    prebuild:
+      - cd ../..
+      - npm install
+      - npm run build
+      - npx cap sync android
+    gradle:
+      - yes
+
+AutoUpdateMode: Version %v
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.3
+CurrentVersionCode: 10003
