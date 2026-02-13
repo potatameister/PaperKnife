@@ -77,9 +77,9 @@ export default function PdfToTextTool() {
               setProgress(Math.round(base + (m.progress * (100 / pdfData.pageCount)))) 
             } 
           },
-          workerPath: Capacitor.convertFileSrc(`${window.location.origin}/tesseract/worker.min.js`),
-          corePath: Capacitor.convertFileSrc(`${window.location.origin}/tesseract/tesseract-core.wasm.js`),
-          langPath: Capacitor.convertFileSrc(`${window.location.origin}/tesseract`),
+          workerPath: '/tesseract/worker.min.js',
+          corePath: '/tesseract/tesseract-core.wasm.js',
+          langPath: '/tesseract',
           gzip: false,
           cacheMethod: 'none'
         })
