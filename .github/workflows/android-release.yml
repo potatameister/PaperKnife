@@ -24,6 +24,16 @@ jobs:
       - name: Create Sign Directory
         run: mkdir to-sign
 
+      - name: Download OCR Assets (Standard Only)
+        run: |
+          mkdir -p public/tesseract/
+          curl -Lo public/tesseract/tesseract-core.wasm https://unpkg.com/tesseract.js-core@v5.1.1/tesseract-core.wasm
+          curl -Lo public/tesseract/tesseract-core-simd.wasm https://unpkg.com/tesseract.js-core@v5.1.1/tesseract-core-simd.wasm
+          curl -Lo public/tesseract/tesseract-core-lstm.wasm https://unpkg.com/tesseract.js-core@v5.1.1/tesseract-core-lstm.wasm
+          curl -Lo public/tesseract/tesseract-core.wasm.js https://unpkg.com/tesseract.js-core@v5.1.1/tesseract-core.wasm.js
+          curl -Lo public/tesseract/worker.min.js https://unpkg.com/tesseract.js@v5.1.1/dist/worker.min.js
+          curl -Lo public/tesseract/eng.traineddata https://raw.githubusercontent.com/naptha/tessdata/gh-pages/4.0.0/eng.traineddata.gz
+
       - name: Build Web Assets (Standard)
         run: npm run build
 
@@ -42,9 +52,11 @@ jobs:
           cd android && chmod +x gradlew && ./gradlew assembleRelease
           cp app/build/outputs/apk/release/app-release-unsigned.apk ../to-sign/paperknife-standard.apk
 
-      - name: Build Web Assets (F-Droid)
+      - name: Deep Clean for F-Droid
         run: |
-          rm -rf public/tesseract/*.wasm
+          rm -rf public/tesseract/
+          # Replace real tool with empty stub to remove library code from bundle
+          echo "export default function PdfToTextTool() { return null; }" > src/components/tools/PdfToTextTool.tsx
           export VITE_DISABLE_OCR=true
           npm run build
 
