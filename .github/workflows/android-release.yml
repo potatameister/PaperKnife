@@ -93,13 +93,3 @@ jobs:
             paperknife-fdroid-v${{ env.APP_VERSION }}.apk
           if-no-files-found: error
           compression-level: 0
-
-      - name: Upload APKs
-        uses: actions/upload-artifact@v4
-        with:
-          name: PaperKnife-v${{ env.APP_VERSION }}
-          path: |
-            paperknife-v${{ env.APP_VERSION }}.apk
-            paperknife-fdroid-v${{ env.APP_VERSION }}.apk
-          if-no-files-found: error
-          compression-level: 0
