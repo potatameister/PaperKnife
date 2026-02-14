@@ -38,7 +38,7 @@ jobs:
           npx cap sync android
           cd android && chmod +x gradlew && ./gradlew assembleRelease
           find app/build/outputs/apk/release/ -name "*.apk"
-          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/standard-unsigned.apk
+          mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/standard-unsigned.apk
 
       - name: Build Web Assets (F-Droid)
         run: |
@@ -51,7 +51,7 @@ jobs:
           npx cap sync android
           cd android && ./gradlew assembleRelease
           find app/build/outputs/apk/release/ -name "*.apk"
-          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/fdroid-unsigned.apk
+          mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/fdroid-unsigned.apk
 
       - name: Sign APKs
         uses: ilharp/sign-android-release@v2
@@ -66,8 +66,8 @@ jobs:
       - name: Prepare Final Files
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          cp android/app/build/outputs/apk/release/standard-unsigned-signed.apk "paperknife-v${VERSION}.apk"
-          cp android/app/build/outputs/apk/release/fdroid-unsigned-signed.apk "paperknife-fdroid-v${VERSION}.apk"
+          cp android/app/build/outputs/apk/release/standard-*-signed.apk "paperknife-v${VERSION}.apk"
+          cp android/app/build/outputs/apk/release/fdroid-*-signed.apk "paperknife-fdroid-v${VERSION}.apk"
           echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Upload APKs

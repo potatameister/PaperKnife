@@ -38,9 +38,6 @@ android {
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            
-            // Mandatory for F-Droid Reproducible Build (RB) comparison
-            signingConfig signingConfigs.debug
         }
     }
 
