@@ -21,6 +21,9 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Create Sign Directory
+        run: mkdir to-sign
+
       - name: Build Web Assets (Standard)
         run: npm run build
 
@@ -37,8 +40,7 @@ jobs:
         run: |
           npx cap sync android
           cd android && chmod +x gradlew && ./gradlew assembleRelease
-          mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/paperknife-standard.apk
-          ls -l app/build/outputs/apk/release/
+          cp app/build/outputs/apk/release/app-release-unsigned.apk ../to-sign/paperknife-standard.apk
 
       - name: Build Web Assets (F-Droid)
         run: |
@@ -50,13 +52,12 @@ jobs:
         run: |
           npx cap sync android
           cd android && ./gradlew assembleRelease
-          mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/paperknife-fdroid.apk
-          ls -l app/build/outputs/apk/release/
+          cp app/build/outputs/apk/release/app-release-unsigned.apk ../to-sign/paperknife-fdroid.apk
 
       - name: Sign APKs
         uses: ilharp/sign-android-release@v2
         with:
-          releaseDir: android/app/build/outputs/apk/release
+          releaseDir: to-sign
           signingKey: ${{ secrets.ANDROID_SIGNING_KEY }}
           keyAlias: ${{ secrets.ANDROID_ALIAS }}
           keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -66,10 +67,10 @@ jobs:
       - name: Prepare Final Files
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "Listing all APKs in release directory:"
-          ls -R android/app/build/outputs/apk/release/
-          cp android/app/build/outputs/apk/release/paperknife-standard*-signed.apk "paperknife-v${VERSION}.apk"
-          cp android/app/build/outputs/apk/release/paperknife-fdroid*-signed.apk "paperknife-fdroid-v${VERSION}.apk"
+          echo "Listing all signed APKs:"
+          ls -l to-sign/
+          cp to-sign/paperknife-standard-signed.apk "paperknife-v${VERSION}.apk"
+          cp to-sign/paperknife-fdroid-signed.apk "paperknife-fdroid-v${VERSION}.apk"
           echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Upload APKs
