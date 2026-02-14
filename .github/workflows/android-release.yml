@@ -76,11 +76,15 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 -d > release.jks
           
+          # Find apksigner
+          APKSIGNER=$(find $ANDROID_SDK_ROOT/build-tools -name apksigner | sort -r | head -n 1)
+          echo "Using apksigner at: $APKSIGNER"
+          
           # Sign Standard
-          apksigner sign --ks release.jks --ks-key-alias "${{ secrets.ANDROID_ALIAS }}" --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" --min-sdk-version 23 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out "paperknife-v${VERSION}.apk" to-sign/paperknife-standard.apk
+          $APKSIGNER sign --ks release.jks --ks-key-alias "${{ secrets.ANDROID_ALIAS }}" --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" --min-sdk-version 23 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out "paperknife-v${VERSION}.apk" to-sign/paperknife-standard.apk
           
           # Sign F-Droid
-          apksigner sign --ks release.jks --ks-key-alias "${{ secrets.ANDROID_ALIAS }}" --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" --min-sdk-version 23 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out "paperknife-fdroid-v${VERSION}.apk" to-sign/paperknife-fdroid.apk
+          $APKSIGNER sign --ks release.jks --ks-key-alias "${{ secrets.ANDROID_ALIAS }}" --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" --min-sdk-version 23 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out "paperknife-fdroid-v${VERSION}.apk" to-sign/paperknife-fdroid.apk
           
           echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
 
