@@ -37,7 +37,8 @@ jobs:
         run: |
           npx cap sync android
           cd android && chmod +x gradlew && ./gradlew assembleRelease
-          mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/standard-unsigned.apk
+          find app/build/outputs/apk/release/ -name "*.apk"
+          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/standard-unsigned.apk
 
       - name: Build Web Assets (F-Droid)
         run: |
@@ -49,7 +50,8 @@ jobs:
         run: |
           npx cap sync android
           cd android && ./gradlew assembleRelease
-          mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/fdroid-unsigned.apk
+          find app/build/outputs/apk/release/ -name "*.apk"
+          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/fdroid-unsigned.apk
 
       - name: Sign APKs
         uses: ilharp/sign-android-release@v2
