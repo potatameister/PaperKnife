@@ -100,7 +100,7 @@ const PrivacyWeb = () => {
 
         <div className="pt-12 text-center opacity-30">
            <PaperKnifeLogo size={32} iconColor="#10B981" partColor="currentColor" className="mx-auto mb-4" />
-           <p className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400">Privacy Protocol v1.0.6 Stable</p>
+           <p className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400">Privacy Protocol v1.0.7 Stable</p>
         </div>
       </div>
     </div>
