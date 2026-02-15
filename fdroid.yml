@@ -11,14 +11,32 @@ IssueTracker: https://github.com/potatameister/PaperKnife/issues
 
 AutoName: PaperKnife
 
+Summary: Privacy-first PDF utility (Zero-Server Architecture)
+Description: |-
+  PaperKnife is a professional-grade, open-source PDF utility designed with a 
+  "Zero-Server Architecture." Every operation (Merge, Split, Compress, etc.) 
+  happens 100% locally on your device.
+
+  Your data never leaves your phone.
+
+  Core Features:
+  - Merge, Split, and Compress PDFs.
+  - Protect and Unlock with strong encryption.
+  - Convert Images to PDF and vice versa.
+  - Edit metadata and sign documents electronically.
+
+  Built for the community, PaperKnife is fully open-source and contains no tracking, 
+  no analytics, and no advertisements.
+
 RepoType: git
 Repo: https://github.com/potatameister/PaperKnife.git
-Binaries: https://github.com/potatameister/PaperKnife/releases/download/v%v/paperknife-lite-v%v.apk
+Binaries: 
+  https://github.com/potatameister/PaperKnife/releases/download/v%v/paperknife-lite-v%v.apk
 
 Builds:
-  - versionName: 1.0.8
-    versionCode: 10008
-    commit: v1.0.8
+  - versionName: 1.0.9
+    versionCode: 10009
+    commit: v1.0.9
     subdir: android/app
     sudo:
       - curl -Lo node.tar.gz https://nodejs.org/download/release/v22.21.1/node-v22.21.1-linux-x64.tar.gz
@@ -33,10 +51,18 @@ Builds:
       - npm ci
       - npm run build
       - npx cap sync android
+    scanignore:
+      - node_modules/@capacitor/cli/assets/capacitor-cordova-android-plugins.tar.gz
+      - node_modules/@capacitor/cli/assets/ios-pods-template.tar.gz
+      - node_modules/@capacitor/cli/assets/ios-spm-template.tar.gz
+      - node_modules/@capacitor/cli/assets/android-template.tar.gz
+      - node_modules/@capacitor/cli/assets/capacitor-cordova-ios-plugins.tar.gz
+    scandelete:
+      - node_modules
 
 AllowedAPKSigningKeys: aee95e35a247e9fb0fe0b41c0977f889b733c38988c2d1c680f714e318c1e976
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.8
-CurrentVersionCode: 10008
+CurrentVersion: 1.0.9
+CurrentVersionCode: 10009
