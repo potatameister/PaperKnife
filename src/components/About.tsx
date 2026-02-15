@@ -183,7 +183,7 @@ const AboutAPK = () => {
             <PaperKnifeLogo size={40} iconColor="#F43F5E" partColor="currentColor" />
           </div>
           <h2 className="text-2xl font-black tracking-tighter dark:text-white leading-none mb-1">PaperKnife</h2>
-          <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">v1.0.8 Stable • Absolute Privacy</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">v1.0.9 Stable • Absolute Privacy</p>
         </div>
 
         {/* 2. Fuel the Engine (Prominent Support - MOVED TO TOP) */}
