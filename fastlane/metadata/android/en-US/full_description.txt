@@ -13,3 +13,5 @@ Core Features:
 • Secure: Edit metadata and sign documents electronically.
 
 Built for the community, PaperKnife is fully open-source (AGPLv3) and contains no tracking, no analytics, and no advertisements. It's the ultimate tool for those who value their document privacy.
+
+Note: This "Lite" store version excludes non-free Deep OCR binaries for FOSS compliance. Users who require full OCR support and advanced text extraction can download the Full Version directly from our GitHub repository.

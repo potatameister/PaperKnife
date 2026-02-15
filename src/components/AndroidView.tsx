@@ -200,7 +200,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
 
         {/* Minimal Footer */}
         <div className="flex flex-col items-center gap-2 py-8 opacity-20">
-           <p className="text-[8px] font-black uppercase tracking-[0.4em] dark:text-white text-center">PaperKnife v1.0.7</p>
+           <p className="text-[8px] font-black uppercase tracking-[0.4em] dark:text-white text-center">PaperKnife v1.0.8</p>
         </div>
 
       </main>

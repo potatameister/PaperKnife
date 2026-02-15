@@ -25,6 +25,9 @@ export default function PdfToTextTool() {
   const [copied, setCopied] = useState(false)
   const isNative = Capacitor.isNativePlatform()
 
+  // F-Droid compliance check
+  const isOcrDisabled = import.meta.env.VITE_DISABLE_OCR === 'true'
+
   useEffect(() => {
     const pipelined = consumePipelineFile()
     if (pipelined) {
@@ -137,14 +140,28 @@ export default function PdfToTextTool() {
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => setExtractionMode('text')} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center ${extractionMode === 'text' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}><Zap size={20} className={extractionMode === 'text' ? 'text-rose-500' : 'text-gray-400'} /><span className="font-black uppercase text-[10px] mt-1">Fast Scan</span></button>
-                  <button onClick={() => setExtractionMode('ocr')} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center ${extractionMode === 'ocr' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}><ScanSearch size={20} className={extractionMode === 'ocr' ? 'text-rose-500' : 'text-gray-400'} /><span className="font-black uppercase text-[10px] mt-1">Deep OCR</span></button>
+                  <button 
+                    onClick={() => !isOcrDisabled && setExtractionMode('ocr')} 
+                    disabled={isOcrDisabled}
+                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center ${extractionMode === 'ocr' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'} ${isOcrDisabled ? 'opacity-40 grayscale grayscale-mask' : ''}`}
+                  >
+                    <ScanSearch size={20} className={extractionMode === 'ocr' ? 'text-rose-500' : 'text-gray-400'} />
+                    <span className="font-black uppercase text-[10px] mt-1">{isOcrDisabled ? 'No OCR' : 'Deep OCR'}</span>
+                  </button>
                 </div>
                 {isProcessing && (
                   <div className="space-y-2"><div className="w-full bg-gray-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden shadow-inner"><div className="bg-rose-500 h-full transition-all" style={{ width: `${progress}%` }} /></div><p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse px-1">Scanning Document...</p></div>
                 )}
                 {!isProcessing && (
                   <div className="space-y-4">
-                    {extractionMode === 'ocr' && (
+                    {isOcrDisabled && (
+                      <div className="p-4 bg-gray-50 dark:bg-zinc-900/50 rounded-xl border border-gray-100 dark:border-white/5">
+                         <p className="text-[9px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider text-center">
+                            Deep OCR is disabled in this F-Droid build to comply with non-binary policies. Use 'Fast Scan' or get the full version from GitHub.
+                         </p>
+                      </div>
+                    )}
+                    {extractionMode === 'ocr' && !isOcrDisabled && (
                       <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/20">
                          <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold uppercase tracking-widest text-center">
                             Note: Deep OCR is CPU-intensive and may take a few minutes depending on your device performance.

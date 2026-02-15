@@ -10,13 +10,12 @@ AutoName: PaperKnife
 
 RepoType: git
 Repo: https://github.com/potatameister/PaperKnife.git
-Binaries: 
-  https://github.com/potatameister/PaperKnife/releases/download/v%v/paperknife-fdroid-v%v.apk
+Binaries: https://github.com/potatameister/PaperKnife/releases/download/v%v/paperknife-lite-v%v.apk
 
 Builds:
-  - versionName: 1.0.7
-    versionCode: 10007
-    commit: v1.0.7
+  - versionName: 1.0.8
+    versionCode: 10008
+    commit: v1.0.8
     subdir: android/app
     sudo:
       - curl -Lo node.tar.gz https://nodejs.org/download/release/v22.21.1/node-v22.21.1-linux-x64.tar.gz
@@ -27,20 +26,14 @@ Builds:
       - yes
     prebuild:
       - cd ../..
-      - rm -rf public/tesseract/
-      - echo "export default function PdfToTextTool() { return null; }" > src/components/tools/PdfToTextTool.tsx
       - export VITE_DISABLE_OCR=true
       - npm ci
       - npm run build
       - npx cap sync android
-    scanignore:
-      - node_modules/@capacitor/cli/assets/capacitor-cordova-android-plugins.tar.gz
-    scandelete:
-      - node_modules
 
 AllowedAPKSigningKeys: aee95e35a247e9fb0fe0b41c0977f889b733c38988c2d1c680f714e318c1e976
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.7
-CurrentVersionCode: 10007
+CurrentVersion: 1.0.8
+CurrentVersionCode: 10008

@@ -76,7 +76,9 @@ const tools: Tool[] = [
 ]
 
 export const IS_OCR_DISABLED = import.meta.env.VITE_DISABLE_OCR === 'true'
-export const activeTools = IS_OCR_DISABLED ? tools.filter(t => t.path !== '/pdf-to-text') : tools
+export const activeTools = IS_OCR_DISABLED 
+  ? tools.filter(t => t.path !== '/pdf-to-text') 
+  : tools
 
 function QuickDropModal({ file, onClear, onBack }: { file: File, onClear: () => void, onBack?: () => void }) {
   const navigate = useNavigate()
