@@ -19,8 +19,13 @@ export default function SignatureTool() {
   const [pdfData, setPdfData] = useState<SignaturePdfData | null>(null); const [signatureImg, setSignatureImg] = useState<string | null>(null); const [signatureFile, setSignatureFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false); const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [customFileName, setCustomFileName] = useState('paperknife-signed')
-  const [unlockPassword, setUnlockPassword] = useState(''); const [activePage] = useState(1); const [pos, setPos] = useState({ x: 50, y: 50 })
-  const [size, setSize] = useState(150); const [thumbnail, setThumbnail] = useState<string | null>(null); const [isDraggingSig, setIsDraggingSig] = useState(false); const [isResizing, setIsResizing] = useState(false)
+  const [unlockPassword, setUnlockPassword] = useState('');
+  const [activePage, setActivePage] = useState<number>(1);
+  const [pos, setPos] = useState({ x: 50, y: 50 })
+  const [size, setSize] = useState(150);
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [isDraggingSig, setIsDraggingSig] = useState(false);
+  const [isResizing, setIsResizing] = useState(false)
   const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
@@ -45,7 +50,13 @@ export default function SignatureTool() {
     try {
       const meta = await getPdfMetaData(file)
       if (meta.isLocked) { setPdfData({ file, pageCount: 0, isLocked: true }) }
-      else { const pdfDoc = await loadPdfDocument(file); setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc }); const thumb = await renderPageThumbnail(pdfDoc, 1, 2.0); setThumbnail(thumb) }
+      else {
+        let pdfDoc = await loadPdfDocument(file);
+        setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc });
+        setActivePage(1);
+        const thumb = await renderPageThumbnail(pdfDoc, activePage, 2.0);
+        setThumbnail(thumb);
+      }
     } finally { 
       setIsProcessing(false) 
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -62,14 +73,43 @@ export default function SignatureTool() {
   const saveSignedPdf = async () => {
     if (!pdfData || !signatureFile) return; setIsProcessing(true)
     try {
-      const arrayBuffer = await pdfData.file.arrayBuffer(); const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password, ignoreEncryption: true } as any)
-      const sigBytes = await signatureFile.arrayBuffer(); let sigImage = signatureFile.type === 'image/png' ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes)
-      const page = pdfDoc.getPages()[activePage - 1]; const { width, height } = page.getSize(); const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width))
+      const arrayBuffer = await pdfData.file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password, ignoreEncryption: true } as any);
+      const sigBytes = await signatureFile.arrayBuffer();
+      let sigImage = signatureFile.type === 'image/png' ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
+      const page = pdfDoc.getPages()[activePage - 1];
+      const { width, height } = page.getSize();
+      const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width));
       page.drawImage(sigImage, { x: pdfX, y: pdfY, width: size, height: size * (sigImage.height / sigImage.width) })
       const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes as any], { type: 'application/pdf' }); const url = URL.createObjectURL(blob)
       setDownloadUrl(url); addActivity({ name: `${customFileName}.pdf`, tool: 'Signature', size: blob.size, resultUrl: url })
     } finally { setIsProcessing(false) }
   }
+
+  async function changePage(param: string) {
+  if (!pdfData?.pdfDoc) {
+    console.warn("PDF not loaded yet");
+    return;
+  }
+
+  setActivePage(prevPage => {
+    let newPage = prevPage;
+
+    if (param === "prev") {
+      newPage = prevPage - 1;
+    } else if (param === "next") {
+      newPage = prevPage + 1;
+    }
+
+    renderPageThumbnail(pdfData.pdfDoc, newPage, 2.0).then(thumb => {
+      setThumbnail(thumb);
+    });
+
+    console.log("New active page value:: " + newPage);
+    return newPage;
+  });
+}
+
 
   const ActionButton = () => (
     <button onClick={saveSignedPdf} disabled={isProcessing || !signatureImg} className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-rose-500/20 ${isNative ? 'py-4 rounded-2xl text-sm' : 'p-6 rounded-3xl text-xl'}`}>
@@ -95,14 +135,25 @@ export default function SignatureTool() {
         <div className="space-y-6" onMouseMove={handleMouseMove} onTouchMove={handleMouseMove} onMouseUp={() => { setIsDraggingSig(false); setIsResizing(false); }} onTouchEnd={() => { setIsDraggingSig(false); setIsResizing(false); }}>
           {!downloadUrl ? (
             <>
-              <div className="bg-white dark:bg-zinc-900 p-4 rounded-3xl border border-gray-100 dark:border-white/5 relative aspect-[1/1.4] overflow-hidden touch-none" ref={previewRef} onClick={(e) => { if (!signatureImg || isDraggingSig || isResizing) return; const r = e.currentTarget.getBoundingClientRect(); setPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }) }}>
-                {thumbnail ? <img src={thumbnail} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center"><Loader2 className="animate-spin text-rose-500" /></div>}
-                {signatureImg && (
-                  <div onMouseDown={(e) => { e.stopPropagation(); setIsDraggingSig(true) }} onTouchStart={(e) => { e.stopPropagation(); setIsDraggingSig(true) }} style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${size}px`, transform: 'translate(-50%, -50%)' }} className="absolute cursor-move ring-2 ring-rose-500 rounded-sm">
-                    <img src={signatureImg} className="w-full pointer-events-none" />
-                    <div onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true) }} onTouchStart={(e) => { e.stopPropagation(); setIsResizing(true) }} className="absolute -bottom-2 -right-2 w-6 h-6 bg-rose-500 rounded-full border-2 border-white cursor-nwse-resize" />
-                  </div>
-                )}
+              <div className="flex justify-between">
+                <div className="flex items-center mr-12">
+                  { /* Set Current page # -- */ }
+                  <button onClick={() => changePage('prev')} disabled={activePage == 1} className="text-3xl p-2 hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-xl transition-colors text-gray-500 hover:text-rose-500 shrink-0">Left</button>
+                </div>
+                <div className="bg-white dark:bg-zinc-900 p-4 rounded-3xl border border-gray-100 dark:border-white/5 relative aspect-[1/1.4] overflow-hidden touch-none" ref={previewRef} onClick={(e) => { if (!signatureImg || isDraggingSig || isResizing) return; const r = e.currentTarget.getBoundingClientRect(); setPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }) }}>
+                  {/* Add two buttons, left and right. On click, change thumbnail. */}
+                  {thumbnail ? <img src={thumbnail} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center"><Loader2 className="animate-spin text-rose-500" /></div>}
+                  {signatureImg && (
+                    <div onMouseDown={(e) => { e.stopPropagation(); setIsDraggingSig(true) }} onTouchStart={(e) => { e.stopPropagation(); setIsDraggingSig(true) }} style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${size}px`, transform: 'translate(-50%, -50%)' }} className="absolute cursor-move ring-2 ring-rose-500 rounded-sm">
+                      <img src={signatureImg} className="w-full pointer-events-none" />
+                      <div onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true) }} onTouchStart={(e) => { e.stopPropagation(); setIsResizing(true) }} className="absolute -bottom-2 -right-2 w-6 h-6 bg-rose-500 rounded-full border-2 border-white cursor-nwse-resize" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center ml-12">
+                  { /* Set Current page # ++ */ }
+                  <button onClick={() => changePage('next') } disabled={activePage == pdfData.pageCount} className="text-3xl p-2 hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-xl transition-colors text-gray-500 hover:text-rose-500 shrink-0">Right</button>
+                </div>
               </div>
               <div className="flex gap-4">
                 <button onClick={() => signatureInputRef.current?.click()} className="flex-1 p-4 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-white border border-gray-100 dark:border-white/5 rounded-2xl font-black uppercase text-xs hover:border-rose-500 transition-all">
