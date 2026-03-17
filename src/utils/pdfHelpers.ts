@@ -287,27 +287,32 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
 };
 
 export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, isDecrypted: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
+  console.log('unlockPdf: attempting to unlock file with password length:', password?.length || 0);
+  
   // Try pdf-lib FIRST because it actually decrypts the bytes for us
   try {
-    const libBuffer = await file.arrayBuffer();
+    // Use file.slice() to get a fresh blob reference before reading buffer
+    const libBuffer = await file.slice(0, file.size).arrayBuffer();
+    console.log('pdf-lib: read buffer, length:', libBuffer.byteLength);
+
     const pdfDoc = await PDFDocument.load(libBuffer, { 
-      password: password 
+      password: password || undefined
     } as any);
     
     const pageCount = pdfDoc.getPageCount();
     const unencryptedBytes = await pdfDoc.save();
+    console.log('pdf-lib: successfully decrypted and saved, bytes:', unencryptedBytes.length);
     
-    // Now load the unencrypted PDF with pdfjs for rendering thumbnails/previews
-    // We don't need to re-read from file here because unencryptedBytes is a new Uint8Array
     let firstPageThumb = '';
     try {
+      // Use Uint8Array view for pdfjs
       const loadingTask = pdfjsLib.getDocument({
-        data: unencryptedBytes,
+        data: new Uint8Array(unencryptedBytes),
       });
       const pdf = await loadingTask.promise;
       firstPageThumb = await renderPageThumbnail(pdf, 1);
     } catch (thumbError) {
-      console.warn('Could not render thumbnail for unencrypted PDF:', thumbError);
+      console.warn('pdf-lib: thumbnail rendering failed after decryption:', thumbError);
     }
     
     return {
@@ -316,31 +321,36 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       isLocked: false,
       success: true,
       isDecrypted: true,
-      pdfDoc: undefined, // We don't return the pdf-lib doc object, just the data
+      pdfDoc: undefined, 
       pdfData: new Uint8Array(unencryptedBytes)
     };
   } catch (libError: any) {
     const libErrorMsg = libError?.message || '';
-    console.log('pdf-lib unlock failed, trying pdfjs as fallback:', libErrorMsg);
+    const libErrorName = libError?.name || '';
+    console.log('pdf-lib unlock failed (likely AES-256):', libErrorName, libErrorMsg);
 
-    // If pdf-lib failed because of unsupported encryption (e.g. AES-256), 
-    // try pdfjs which supports more encryption types but only for viewing.
+    // If pdf-lib failed (e.g. for AES-256), try pdfjs for viewing fallback
     try {
-      // CRITICAL: Fetch a completely fresh buffer for the fallback!
-      const fallbackBuffer = await file.arrayBuffer();
+      console.log('pdfjs: attempting fallback unlock...');
+      // Fresh buffer for pdfjs
+      const fallbackBuffer = await file.slice(0, file.size).arrayBuffer();
+      const fallbackBytes = new Uint8Array(fallbackBuffer);
+      console.log('pdfjs: read fresh buffer, length:', fallbackBytes.length);
       
       const loadingTask = pdfjsLib.getDocument({
-        data: fallbackBuffer,
+        data: fallbackBytes,
         password: password,
+        stopAtErrors: false
       });
 
       const pdf = await loadingTask.promise;
+      console.log('pdfjs: successfully unlocked in fallback mode (encrypted view only)');
       
       let firstPageThumb = '';
       try {
         firstPageThumb = await renderPageThumbnail(pdf, 1);
       } catch (thumbError) {
-        console.warn('Could not render thumbnail in fallback:', thumbError);
+        console.warn('pdfjs: thumbnail rendering failed in fallback:', thumbError);
       }
 
       return {
@@ -350,7 +360,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
         success: true,
         isDecrypted: false,
         pdfDoc: pdf,
-        pdfData: new Uint8Array(fallbackBuffer) // Note: These are still encrypted!
+        pdfData: fallbackBytes // Note: These are still encrypted!
       };
     } catch (pdfjsError: any) {
       const errorMsg = pdfjsError?.message || '';
