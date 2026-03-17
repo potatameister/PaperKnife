@@ -287,10 +287,9 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
 };
 
 export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, isDecrypted: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
-  const arrayBuffer = await file.arrayBuffer();
-  
   // Try pdf-lib FIRST because it actually decrypts the bytes for us
   try {
+    const arrayBuffer = await file.arrayBuffer();
     const pdfDoc = await PDFDocument.load(arrayBuffer, { 
       password: password 
     } as any);
@@ -321,8 +320,10 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
     // If pdf-lib failed because of unsupported encryption (e.g. AES-256), 
     // try pdfjs which supports more encryption types but only for viewing.
     try {
+      // Re-read the buffer because pdf-lib might have detached the previous one
+      const fallbackBuffer = await file.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({
-        data: arrayBuffer,
+        data: fallbackBuffer,
         password: password,
       });
 
@@ -336,7 +337,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
         success: true,
         isDecrypted: false,
         pdfDoc: pdf,
-        pdfData: new Uint8Array(arrayBuffer) // Note: These are still encrypted!
+        pdfData: new Uint8Array(fallbackBuffer) // Note: These are still encrypted!
       };
     } catch (pdfjsError: any) {
       const errorMsg = pdfjsError?.message || '';
