@@ -46,7 +46,7 @@ import MergeTool from './components/tools/MergeTool'
 import SplitTool from './components/tools/SplitTool'
 import ProtectTool from './components/tools/ProtectTool'
 import CompressTool from './components/tools/CompressTool'
-import UnlockTool from './components/tools/UnlockTool'
+import UnlockTool from './components/tools/UnlockTool' // Force refresh
 import PdfToImageTool from './components/tools/PdfToImageTool'
 import RotateTool from './components/tools/RotateTool'
 import PdfToTextTool from './components/tools/PdfToTextTool'
