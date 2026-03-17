@@ -9,6 +9,7 @@
  */
 
 import * as pdfjsLib from 'pdfjs-dist';
+import { PDFDocument } from 'pdf-lib'
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -286,8 +287,11 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
 };
 
 export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
+  let arrayBuffer: ArrayBuffer;
+  
+  // Try pdfjs first
   try {
-    const arrayBuffer = await file.arrayBuffer();
+    arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
       password: password,
@@ -307,23 +311,73 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
   } catch (error: any) {
     const errorMsg = error?.message || '';
     const errorName = error?.name || '';
-    console.error('Unlock PDF error:', errorName, errorMsg);
+    console.error('pdfjs unlock failed:', errorName, errorMsg);
     
+    // Check if it's definitely a wrong password error
     const isPasswordError = errorName === 'PasswordException' || 
       errorMsg.toLowerCase().includes('password') ||
       errorMsg.toLowerCase().includes('incorrect') ||
       errorMsg.toLowerCase().includes('invalid');
     
-    if (!isPasswordError) {
-      console.error('Non-password unlock error:', error);
+    if (isPasswordError) {
+      return {
+        thumbnail: '',
+        pageCount: 0,
+        isLocked: true,
+        success: false
+      };
     }
     
-    return {
-      thumbnail: '',
-      pageCount: 0,
-      isLocked: true,
-      success: false
-    };
+    // Try pdf-lib as fallback for other errors
+    console.log('Trying pdf-lib fallback for unlock...');
+    try {
+      const fileBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(fileBuffer, { 
+        password: password 
+      } as any);
+      
+      const pageCount = pdfDoc.getPageCount();
+      const unencryptedBytes = await pdfDoc.save();
+      
+      // Now load the unencrypted PDF with pdfjs for rendering
+      const loadingTask = pdfjsLib.getDocument({
+        data: unencryptedBytes,
+      });
+      const pdf = await loadingTask.promise;
+      const firstPageThumb = await renderPageThumbnail(pdf, 1);
+      
+      return {
+        thumbnail: firstPageThumb,
+        pageCount: pageCount,
+        isLocked: false,
+        success: true,
+        pdfDoc: pdf,
+        pdfData: new Uint8Array(unencryptedBytes)
+      };
+    } catch (libError: any) {
+      console.error('pdf-lib fallback also failed:', libError?.message);
+      
+      // If pdf-lib fails with encryption error, it's wrong password
+      const libErrorMsg = libError?.message || '';
+      if (libErrorMsg.toLowerCase().includes('encrypted') || 
+          libErrorMsg.toLowerCase().includes('password') ||
+          libErrorMsg.toLowerCase().includes('invalid')) {
+        return {
+          thumbnail: '',
+          pageCount: 0,
+          isLocked: true,
+          success: false
+        };
+      }
+      
+      console.error('Non-password unlock error:', libError);
+      return {
+        thumbnail: '',
+        pageCount: 0,
+        isLocked: true,
+        success: false
+      };
+    }
   }
 };
 
