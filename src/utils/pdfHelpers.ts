@@ -289,8 +289,8 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
 export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, isDecrypted: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
   // Try pdf-lib FIRST because it actually decrypts the bytes for us
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(arrayBuffer, { 
+    const libBuffer = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(libBuffer, { 
       password: password 
     } as any);
     
@@ -298,11 +298,17 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
     const unencryptedBytes = await pdfDoc.save();
     
     // Now load the unencrypted PDF with pdfjs for rendering thumbnails/previews
-    const loadingTask = pdfjsLib.getDocument({
-      data: unencryptedBytes,
-    });
-    const pdf = await loadingTask.promise;
-    const firstPageThumb = await renderPageThumbnail(pdf, 1);
+    // We don't need to re-read from file here because unencryptedBytes is a new Uint8Array
+    let firstPageThumb = '';
+    try {
+      const loadingTask = pdfjsLib.getDocument({
+        data: unencryptedBytes,
+      });
+      const pdf = await loadingTask.promise;
+      firstPageThumb = await renderPageThumbnail(pdf, 1);
+    } catch (thumbError) {
+      console.warn('Could not render thumbnail for unencrypted PDF:', thumbError);
+    }
     
     return {
       thumbnail: firstPageThumb,
@@ -310,7 +316,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       isLocked: false,
       success: true,
       isDecrypted: true,
-      pdfDoc: pdf,
+      pdfDoc: undefined, // We don't return the pdf-lib doc object, just the data
       pdfData: new Uint8Array(unencryptedBytes)
     };
   } catch (libError: any) {
@@ -320,15 +326,22 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
     // If pdf-lib failed because of unsupported encryption (e.g. AES-256), 
     // try pdfjs which supports more encryption types but only for viewing.
     try {
-      // Re-read the buffer because pdf-lib might have detached the previous one
+      // CRITICAL: Fetch a completely fresh buffer for the fallback!
       const fallbackBuffer = await file.arrayBuffer();
+      
       const loadingTask = pdfjsLib.getDocument({
         data: fallbackBuffer,
         password: password,
       });
 
       const pdf = await loadingTask.promise;
-      const firstPageThumb = await renderPageThumbnail(pdf, 1);
+      
+      let firstPageThumb = '';
+      try {
+        firstPageThumb = await renderPageThumbnail(pdf, 1);
+      } catch (thumbError) {
+        console.warn('Could not render thumbnail in fallback:', thumbError);
+      }
 
       return {
         thumbnail: firstPageThumb,
