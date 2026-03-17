@@ -24,47 +24,8 @@ import { PipelineProvider, usePipeline } from './utils/pipelineContext'
 import { ViewModeProvider } from './utils/viewModeContext'
 import { clearActivity, updateLastSeen, getLastSeen } from './utils/recentActivity'
 import ScrollToTop from './components/ScrollToTop'
-import { useSwipe } from './utils/useSwipe'
 
-// Swipeable wrapper for main navigation pages
-function SwipeableMainPages({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate()
-  const location = useLocation()
-  
-  const mainPages = ['/', '/android-tools', '/android-history', '/settings']
-  const currentIndex = mainPages.indexOf(location.pathname)
-  
-  const { onTouchStart, onTouchEnd } = useSwipe({
-    onSwipeLeft: () => {
-      if (currentIndex < mainPages.length - 1) {
-        navigate(mainPages[currentIndex + 1])
-      }
-    },
-    onSwipeRight: () => {
-      if (currentIndex > 0) {
-        navigate(mainPages[currentIndex - 1])
-      }
-    },
-    threshold: 70
-  })
 
-  // Only enable swipe on main pages
-  const isMainPage = mainPages.includes(location.pathname)
-  
-  if (!isMainPage) {
-    return <>{children}</>
-  }
-
-  return (
-    <div 
-      onTouchStart={onTouchStart} 
-      onTouchEnd={onTouchEnd}
-      className="min-h-screen"
-    >
-      {children}
-    </div>
-  )
-}
 
 // Critical Views - No lazy loading to prevent dynamic import errors on Android
 import WebView from './components/WebView'
@@ -390,7 +351,6 @@ function App() {
             )}
 
             <Suspense fallback={<LoadingSpinner />}>
-              <SwipeableMainPages>
               <Routes>
                 <Route path="/" element={
                   viewMode === 'web' ? (
@@ -426,7 +386,6 @@ function App() {
                 <Route path="/settings" element={<SettingsView theme={theme} setTheme={setTheme} />} />
                 <Route path="/thanks" element={<Thanks />} />
               </Routes>
-              </SwipeableMainPages>
             </Suspense>
 
             {/* Chameleon Toggle (Dev Only) */}
