@@ -305,7 +305,6 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       password: password,
       cMapUrl: getCMapUrl(),
       cMapPacked: true,
-      ignoreEncryption: false,
     });
 
     const pdf = await loadingTask.promise;
