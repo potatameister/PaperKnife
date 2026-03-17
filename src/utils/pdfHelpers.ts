@@ -23,14 +23,8 @@ export interface PdfMetaData {
   isLocked: boolean
 }
 
-// Fixed cMapUrl for true offline usage (relative to base)
-const getCMapUrl = () => {
-  const isCapacitor = Capacitor.isNativePlatform();
-  return isCapacitor ? 'cmaps/' : '/PaperKnife/cmaps/';
-};
-
 /**
- * Universal file downloader that works on Web and Android
+ * Universal file downloader
  */
 export const downloadFile = async (data: Uint8Array | string, fileName: string, mimeType: string) => {
   if (Capacitor.isNativePlatform()) {
@@ -172,8 +166,6 @@ export const loadPdfDocument = async (file: File) => {
   try {
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
-      cMapUrl: getCMapUrl(),
-      cMapPacked: true,
     });
     return await loadingTask.promise;
   } catch (error: any) {
@@ -182,8 +174,6 @@ export const loadPdfDocument = async (file: File) => {
     }
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
-      cMapUrl: getCMapUrl(),
-      cMapPacked: true,
       stopAtErrors: false,
     });
     return await loadingTask.promise;
@@ -275,8 +265,6 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
   try {
     const loadingTask = pdfjsLib.getDocument({
       data: await file.arrayBuffer(),
-      cMapUrl: getCMapUrl(),
-      cMapPacked: true,
     });
     
     loadingTask.onPassword = () => { throw new Error('PASSWORD_REQUIRED'); };
@@ -303,8 +291,6 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
       password: password,
-      cMapUrl: getCMapUrl(),
-      cMapPacked: true,
     });
 
     const pdf = await loadingTask.promise;
