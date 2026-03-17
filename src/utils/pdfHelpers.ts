@@ -305,6 +305,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       password: password,
       cMapUrl: getCMapUrl(),
       cMapPacked: true,
+      ignoreEncryption: false,
     });
 
     const pdf = await loadingTask.promise;
@@ -319,6 +320,19 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       pdfData: new Uint8Array(arrayBuffer)
     };
   } catch (error: any) {
+    const errorMsg = error?.message || '';
+    const errorName = error?.name || '';
+    console.error('Unlock PDF error:', errorName, errorMsg);
+    
+    const isPasswordError = errorName === 'PasswordException' || 
+      errorMsg.toLowerCase().includes('password') ||
+      errorMsg.toLowerCase().includes('incorrect') ||
+      errorMsg.toLowerCase().includes('invalid');
+    
+    if (!isPasswordError) {
+      console.error('Non-password unlock error:', error);
+    }
+    
     return {
       thumbnail: '',
       pageCount: 0,
