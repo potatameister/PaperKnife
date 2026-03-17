@@ -286,6 +286,60 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
   }
 };
 
+// Rasterize a PDF by rendering each page to an image and saving to a new PDF
+// This effectively removes ALL encryption and permissions (but loses text selection)
+export const flattenPdf = async (pdf: any): Promise<Uint8Array> => {
+  const newPdf = await PDFDocument.create();
+  const numPages = pdf.numPages;
+
+  for (let i = 1; i <= numPages; i++) {
+    // Render page to high-quality image
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 }); // 2x scale for good quality
+    
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Canvas context unavailable');
+    
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    
+    // Fill white background (transparent PDFs turn black otherwise)
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise;
+    
+    // Convert to JPG (smaller than PNG, good enough for documents)
+    const imgDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    
+    // Fetch the data URL to get the bytes
+    const res = await fetch(imgDataUrl);
+    const imgBytes = await res.arrayBuffer();
+    
+    // Embed into new PDF
+    const jpgImage = await newPdf.embedJpg(imgBytes);
+    const jpgDims = jpgImage.scale(0.5); // Scale back down to original size (since we rendered at 2x)
+    
+    const newPage = newPdf.addPage([jpgDims.width, jpgDims.height]);
+    newPage.drawImage(jpgImage, {
+      x: 0,
+      y: 0,
+      width: jpgDims.width,
+      height: jpgDims.height,
+    });
+    
+    // Clean up to save memory
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+
+  return await newPdf.save();
+};
+
 export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, isDecrypted: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
   console.log('unlockPdf: attempting to unlock file with password length:', password?.length || 0);
   

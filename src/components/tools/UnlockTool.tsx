@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Lock, Unlock, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, unlockPdf, flattenPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
@@ -56,13 +56,25 @@ export default function UnlockTool() {
       const result = await unlockPdf(pdfData.file, password)
       if (!result.success) throw new Error('Incorrect password.')
       
+      let finalBytes: Uint8Array | undefined = result.pdfData;
+
       if (!result.isDecrypted || !result.pdfData) {
-        throw new Error('Unsupported encryption (AES-256). We can currently only unlock PDFs using standard RC4 encryption.')
+        // Modern encryption detected. Fallback to rasterization.
+        toast.info('Modern encryption detected. Smart-unlocking via reconstruction... (this may take a moment)', { duration: 5000 })
+        
+        if (!result.pdfDoc) {
+           throw new Error('Unlock failed: Document could not be opened for reconstruction.')
+        }
+        
+        // This is the "magic" step: we rebuild the PDF from the viewable pages
+        finalBytes = await flattenPdf(result.pdfDoc);
       }
 
-      const blob = new Blob([result.pdfData as any], { type: 'application/pdf' })
+      if (!finalBytes) throw new Error('Failed to generate unlocked file.')
+
+      const blob = new Blob([finalBytes as any], { type: 'application/pdf' })
       const url = createUrl(blob)
-      addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url, buffer: result.pdfData })
+      addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url, buffer: finalBytes })
     } catch (error: any) { 
       console.error('Unlock error:', error)
       toast.error(error.message || 'Error.') 
