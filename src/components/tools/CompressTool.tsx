@@ -131,7 +131,69 @@ export default function CompressTool() {
     } else { toast.error('Incorrect password') }
   }
 
-  const compressSingleFile = async (item: CompressPdfFile, quality: CompressionQuality, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array }> => {
+  const compressSingleFile = async (item: CompressPdfFile, quality: CompressionQuality, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array, method: string }> => {
+    const originalBuffer = new Uint8Array(await item.file.arrayBuffer())
+    const originalSize = originalBuffer.byteLength
+    
+    // First try: pdf-lib compression (preserves vectors, smaller for image-heavy PDFs)
+    try {
+      if (onProgress) onProgress(10)
+      
+      const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
+      worker.postMessage({ 
+        type: 'COMPRESS_PDF_SAFE', 
+        payload: { 
+          buffer: originalBuffer, 
+          password: item.password,
+          quality 
+        } 
+      }, [originalBuffer.buffer] as any)
+      
+      const compressedResult = await new Promise<{ buffer: Uint8Array, size: number }>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          worker.terminate()
+          reject(new Error('Compression timeout'))
+        }, 120000) // 2 minute timeout
+        
+        worker.onmessage = (e) => {
+          if (e.data.type === 'PROGRESS') {
+            if (onProgress) onProgress(10 + Math.round(e.data.payload * 0.4))
+          } else if (e.data.type === 'SUCCESS') {
+            clearTimeout(timeout)
+            const buffer = e.data.payload
+            worker.terminate()
+            resolve({ buffer, size: buffer.byteLength })
+          } else if (e.data.type === 'ERROR') {
+            clearTimeout(timeout)
+            worker.terminate()
+            reject(new Error(e.data.payload))
+          }
+        }
+        
+        worker.onerror = (_e) => {
+          clearTimeout(timeout)
+          worker.terminate()
+          reject(new Error('Worker failed'))
+        }
+      })
+      
+      if (onProgress) onProgress(60)
+      
+      // If pdf-lib compression made it smaller, use it
+      if (compressedResult.size < originalSize) {
+        const blob = new Blob([compressedResult.buffer as any], { type: 'application/pdf' })
+        return { url: createUrl(blob), size: compressedResult.size, buffer: compressedResult.buffer, method: 'smart' }
+      }
+      
+      // If pdf-lib made it larger, fall back to original buffer for rasterization approach
+      console.log('pdf-lib compression made file larger, falling back to rasterization')
+    } catch (err) {
+      console.error('pdf-lib compression failed:', err)
+    }
+    
+    // Second try: rasterization (original approach)
+    if (onProgress) onProgress(65)
+    
     let pdfDoc = item.pdfDoc || await loadPdfDocument(item.file)
     const scaleMap = { high: 1.0, medium: 1.5, low: 2.0 }; const qualityMap = { high: 0.3, medium: 0.5, low: 0.7 }
     const scale = scaleMap[quality]; const jpegQuality = qualityMap[quality]
@@ -148,9 +210,10 @@ export default function CompressTool() {
       for (let j = 0; j < binaryString.length; j++) bytes[j] = binaryString.charCodeAt(j)
       pagesData.push({ imageBytes: bytes, width: viewport.width, height: viewport.height })
       
-      if (onProgress) onProgress(Math.round((i / item.pageCount) * 50))
+      if (onProgress) onProgress(65 + Math.round((i / item.pageCount) * 25))
       canvas.width = 0; canvas.height = 0
     }
+    
     return new Promise((resolve, reject) => {
       try {
         const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
@@ -158,10 +221,10 @@ export default function CompressTool() {
         
         worker.onmessage = (e) => {
           if (e.data.type === 'PROGRESS') {
-             if (onProgress) onProgress(50 + Math.round(e.data.payload * 0.5))
+             if (onProgress) onProgress(90 + Math.round(e.data.payload * 0.1))
           } else if (e.data.type === 'SUCCESS') {
-            const blob = new Blob([e.data.payload], { type: 'application/pdf' })
-            resolve({ url: createUrl(blob), size: blob.size, buffer: e.data.payload }); worker.terminate()
+            const blob = new Blob([e.data.payload as any], { type: 'application/pdf' })
+            resolve({ url: createUrl(blob), size: blob.size, buffer: e.data.payload, method: 'rasterize' }); worker.terminate()
           } else if (e.data.type === 'ERROR') {
             reject(new Error(e.data.payload)); worker.terminate()
           }
