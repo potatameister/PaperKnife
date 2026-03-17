@@ -144,14 +144,15 @@ export default function SplitTool() {
         if (type === 'SUCCESS') {
           const blob = new Blob([payload], { type: 'application/pdf' })
           const url = createUrl(blob)
-          addActivity({ name: `${customFileName || 'split'}.pdf`, tool: 'Split', size: blob.size, resultUrl: url })
+          addActivity({ name: `${customFileName || 'split'}.pdf`, tool: 'Split', size: blob.size, resultUrl: url, buffer: payload })
           setIsProcessing(false); worker.terminate()
         } else if (type === 'SUCCESS_BATCH') {
           const zip = new JSZip()
           payload.forEach((res: { name: string, buffer: Uint8Array }) => { zip.file(res.name, res.buffer) })
           const zipBlob = await zip.generateAsync({ type: 'blob' })
           const url = createUrl(zipBlob)
-          addActivity({ name: `${customFileName || 'split'}.zip`, tool: 'Split', size: zipBlob.size, resultUrl: url })
+          const zipBuffer = await zipBlob.arrayBuffer()
+          addActivity({ name: `${customFileName || 'split'}.zip`, tool: 'Split', size: zipBlob.size, resultUrl: url, buffer: new Uint8Array(zipBuffer) })
           setIsProcessing(false); worker.terminate()
         } else if (type === 'ERROR') {
           toast.error(payload); setIsProcessing(false); worker.terminate()

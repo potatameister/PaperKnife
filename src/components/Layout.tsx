@@ -191,7 +191,6 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             </button>
             <button onClick={() => setShowHistory(true)} className={`p-2 transition-colors relative ${showHistory ? 'text-rose-500' : 'text-gray-400 hover:text-rose-500'}`}>
               <HistoryIcon size={20} />
-              {activity.length > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-black" />}
             </button>
           </div>
         </header>

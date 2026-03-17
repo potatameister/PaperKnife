@@ -42,33 +42,55 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault()
+    if (!downloadUrl) {
+      toast.error('No file available to download')
+      return
+    }
     try {
       toast.loading(`Saving ${fileName}...`, { id: 'save-action' })
       const response = await fetch(downloadUrl)
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`)
+      }
       const blob = await response.blob()
+      if (blob.size === 0) {
+        throw new Error('File is empty')
+      }
       const buffer = await blob.arrayBuffer()
       const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
       
       await downloadFile(new Uint8Array(buffer), fileName, mimeType)
       toast.success(`Saved to Documents as ${fileName}`, { id: 'save-action' })
-    } catch (err) {
-      toast.error('Failed to save file', { id: 'save-action' })
+    } catch (err: any) {
+      console.error('Download error:', err)
+      toast.error(err.message || 'Failed to save file', { id: 'save-action' })
     }
   }
 
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault()
+    if (!downloadUrl) {
+      toast.error('No file available to share')
+      return
+    }
     try {
       toast.loading('Preparing to share...', { id: 'share-action' })
       const response = await fetch(downloadUrl)
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`)
+      }
       const blob = await response.blob()
+      if (blob.size === 0) {
+        throw new Error('File is empty')
+      }
       const buffer = await blob.arrayBuffer()
       const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
       
       await shareFile(new Uint8Array(buffer), fileName, mimeType)
       toast.dismiss('share-action')
-    } catch (err) {
-      toast.error('Failed to share file', { id: 'share-action' })
+    } catch (err: any) {
+      console.error('Share error:', err)
+      toast.error(err.message || 'Failed to share file', { id: 'share-action' })
     }
   }
 

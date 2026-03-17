@@ -297,7 +297,7 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
   }
 };
 
-export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, pdfDoc?: any }> => {
+export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({
@@ -315,7 +315,8 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       pageCount: pdf.numPages,
       isLocked: false,
       success: true,
-      pdfDoc: pdf
+      pdfDoc: pdf,
+      pdfData: new Uint8Array(arrayBuffer)
     };
   } catch (error: any) {
     return {
@@ -324,5 +325,122 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       isLocked: true,
       success: false
     };
+  }
+};
+
+export interface RenderPageOptions {
+  scale?: number;
+  enableTextLayer?: boolean;
+  enableAnnotationLayer?: boolean;
+}
+
+export const renderPdfPage = async (
+  pdf: any,
+  pageNum: number,
+  container: HTMLElement,
+  options: RenderPageOptions = {}
+): Promise<void> => {
+  const { scale = 1.0, enableAnnotationLayer = true } = options;
+  
+  try {
+    const page = await pdf.getPage(pageNum);
+    const viewport = page.getViewport({ scale });
+    
+    // Clear container
+    container.innerHTML = '';
+    container.style.width = `${viewport.width}px`;
+    container.style.height = `${viewport.height}px`;
+    
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Canvas context not available');
+    
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    
+    // Wrapper for positioning
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.display = 'inline-block';
+    wrapper.style.width = `${viewport.width}px`;
+    wrapper.style.height = `${viewport.height}px`;
+    
+    // Canvas layer
+    const canvasWrapper = document.createElement('div');
+    canvasWrapper.style.position = 'absolute';
+    canvasWrapper.style.top = '0';
+    canvasWrapper.style.left = '0';
+    canvasWrapper.appendChild(canvas);
+    
+    wrapper.appendChild(canvasWrapper);
+    container.appendChild(wrapper);
+    
+    // Render canvas
+    await page.render({
+      canvasContext: context,
+      viewport,
+      intent: 'display'
+    }).promise;
+    
+    // Annotation layer for hyperlinks
+    if (enableAnnotationLayer) {
+      const annotations = await page.getAnnotations();
+      const annotationLayer = document.createElement('div');
+      annotationLayer.style.position = 'absolute';
+      annotationLayer.style.top = '0';
+      annotationLayer.style.left = '0';
+      annotationLayer.style.width = '100%';
+      annotationLayer.style.height = '100%';
+      annotationLayer.style.pointerEvents = 'auto';
+      annotationLayer.style.zIndex = '10';
+      
+      for (const annotation of annotations) {
+        if (annotation.subtype === 'Link' && annotation.rect) {
+          const link = document.createElement('a');
+          // PDF coordinates: [x1, y1, x2, y2] where origin is bottom-left
+          const rect = annotation.rect;
+          const x1 = Math.min(rect[0], rect[2]);
+          const x2 = Math.max(rect[0], rect[2]);
+          const y1 = Math.min(rect[1], rect[3]);
+          const y2 = Math.max(rect[1], rect[3]);
+          
+          // Convert PDF coords to viewport coords
+          const viewX = viewport.convertToViewportPoint(x1, y2);
+          const viewY = viewport.convertToViewportPoint(x2, y1);
+          
+          const left = Math.min(viewX[0], viewY[0]);
+          const top = Math.min(viewX[1], viewY[1]);
+          const width = Math.abs(viewY[0] - viewX[0]);
+          const height = Math.abs(viewY[1] - viewX[1]);
+          
+          link.style.position = 'absolute';
+          link.style.left = `${left}px`;
+          link.style.top = `${top}px`;
+          link.style.width = `${width}px`;
+          link.style.height = `${height}px`;
+          link.style.cursor = 'pointer';
+          link.style.zIndex = '10';
+          
+          if (annotation.url) {
+            link.href = annotation.url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+          } else if (annotation.dest) {
+            link.href = '#';
+            link.onclick = (e) => {
+              e.preventDefault();
+            };
+          }
+          
+          annotationLayer.appendChild(link);
+        }
+      }
+      
+      wrapper.appendChild(annotationLayer);
+    }
+    
+  } catch (error) {
+    console.error(`Error rendering page ${pageNum}:`, error);
   }
 };

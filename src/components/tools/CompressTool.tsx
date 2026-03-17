@@ -78,6 +78,7 @@ type CompressPdfFile = {
   status: 'pending' | 'processing' | 'completed' | 'error'
   resultUrl?: string
   resultSize?: number
+  keptOriginal?: boolean
 }
 
 type CompressionQuality = 'low' | 'medium' | 'high'
@@ -131,47 +132,67 @@ export default function CompressTool() {
     } else { toast.error('Incorrect password') }
   }
 
-  const compressSingleFile = async (item: CompressPdfFile, quality: CompressionQuality, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array }> => {
-    let pdfDoc = item.pdfDoc || await loadPdfDocument(item.file)
-    const scaleMap = { high: 1.0, medium: 1.5, low: 2.0 }; const qualityMap = { high: 0.3, medium: 0.5, low: 0.7 }
-    const scale = scaleMap[quality]; const jpegQuality = qualityMap[quality]
-    const pagesData: { imageBytes: Uint8Array, width: number, height: number }[] = []
-    for (let i = 1; i <= item.pageCount; i++) {
-      const page = await pdfDoc.getPage(i); const viewport = page.getViewport({ scale })
-      const canvas = document.createElement('canvas'); const context = canvas.getContext('2d')
-      if (!context) continue
-      canvas.height = viewport.height; canvas.width = viewport.width
-      await page.render({ canvasContext: context, viewport }).promise
-      const imgData = canvas.toDataURL('image/jpeg', jpegQuality)
-      const base64 = imgData.split(',')[1]; const binaryString = window.atob(base64)
-      const bytes = new Uint8Array(binaryString.length)
-      for (let j = 0; j < binaryString.length; j++) bytes[j] = binaryString.charCodeAt(j)
-      pagesData.push({ imageBytes: bytes, width: viewport.width, height: viewport.height })
-      
-      // Update progress during rasterization phase
-      if (onProgress) onProgress(Math.round((i / item.pageCount) * 50)) // First 50% is rasterization
-      canvas.width = 0; canvas.height = 0
-    }
+  const compressSingleFile = async (item: CompressPdfFile, quality: CompressionQuality, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array, wasOriginal?: boolean }> => {
+    const originalBuffer = new Uint8Array(await item.file.arrayBuffer())
+    const originalSize = originalBuffer.byteLength
+    console.log('Starting compression, original size:', originalSize)
+
     return new Promise((resolve, reject) => {
       try {
         const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
-        worker.postMessage({ type: 'COMPRESS_PDF_ASSEMBLY', payload: { pages: pagesData, quality } }, pagesData.map(p => p.imageBytes.buffer) as any)
+        worker.postMessage({ 
+          type: 'COMPRESS_PDF_SAFE', 
+          payload: { 
+            buffer: originalBuffer, 
+            password: item.password,
+            quality 
+          } 
+        }, [originalBuffer.buffer] as any)
         
         worker.onmessage = (e) => {
           if (e.data.type === 'PROGRESS') {
-             if (onProgress) onProgress(50 + Math.round(e.data.payload * 0.5)) // Second 50% is assembly
+            if (onProgress) onProgress(e.data.payload)
           } else if (e.data.type === 'SUCCESS') {
-            const blob = new Blob([e.data.payload], { type: 'application/pdf' })
-            resolve({ url: createUrl(blob), size: blob.size, buffer: e.data.payload }); worker.terminate()
+            try {
+              const compressedBuffer = e.data.payload
+              const compressedSize = compressedBuffer.byteLength
+              console.log('Compression complete, compressed size:', compressedSize)
+              
+              // If compressed is larger than original, return original
+              if (compressedSize > originalSize) {
+                console.log('Compressed larger than original, returning original')
+                const blob = new Blob([originalBuffer], { type: 'application/pdf' })
+                const url = createUrl(blob)
+                console.log('Created URL for original:', url)
+                resolve({ 
+                  url, 
+                  size: originalSize, 
+                  buffer: originalBuffer,
+                  wasOriginal: true
+                })
+              } else {
+                const blob = new Blob([compressedBuffer], { type: 'application/pdf' })
+                const url = createUrl(blob)
+                console.log('Created URL for compressed:', url)
+                resolve({ url, size: compressedSize, buffer: compressedBuffer })
+              }
+            } catch (err) {
+              console.error('Error creating blob:', err)
+              reject(err)
+            }
+            worker.terminate()
           } else if (e.data.type === 'ERROR') {
+            console.error('Worker error:', e.data.payload)
             reject(new Error(e.data.payload)); worker.terminate()
           }
         }
 
-        worker.onerror = () => {
+        worker.onerror = (e) => {
+          console.error('Worker error event:', e)
           reject(new Error('Worker failed to start or execution error.')); worker.terminate()
         }
       } catch (e: any) {
+        console.error('Compression setup error:', e)
         reject(new Error(`Failed to start worker: ${e.message}`))
       }
     })
@@ -190,10 +211,10 @@ export default function CompressTool() {
       const item = pendingFiles[i]
       setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f))
       try {
-        const { url, size, buffer } = await compressSingleFile(item, quality, isSingle ? setGlobalProgress : undefined)
+        const { url, size, buffer, wasOriginal } = await compressSingleFile(item, quality, isSingle ? setGlobalProgress : undefined)
         results.push({ name: item.file.name.replace('.pdf', '-compressed.pdf'), buffer })
-        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: url, resultSize: size } : f))
-        addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size, resultUrl: url })
+        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: url, resultSize: size, keptOriginal: wasOriginal } : f))
+        addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size, resultUrl: url, buffer: buffer })
         if (pendingFiles.length === 1) {
            const originalBuffer = await pendingFiles[0].file.arrayBuffer()
            setPipelineFile({ 
@@ -344,7 +365,15 @@ export default function CompressTool() {
           {objectUrl && files.length === 1 && (
             <div className="space-y-8">
               {lastPipelinedFile?.originalBuffer && lastPipelinedFile?.buffer && <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm"><QualityCompare originalBuffer={lastPipelinedFile.originalBuffer} compressedBuffer={lastPipelinedFile.buffer} /></div>}
-              <SuccessState message={`Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`} downloadUrl={objectUrl} fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} />
+              <SuccessState 
+                message={files[0].keptOriginal 
+                  ? 'Original file was already optimized' 
+                  : `Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`
+                } 
+                downloadUrl={objectUrl} 
+                fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} 
+                onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} 
+              />
             </div>
           )}
         </div>

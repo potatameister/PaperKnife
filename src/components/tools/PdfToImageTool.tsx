@@ -4,7 +4,7 @@ import JSZip from 'jszip'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
-import { getPdfMetaData, loadPdfDocument, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, unlockPdf, downloadFile } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
@@ -12,6 +12,8 @@ import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type ImageFormat = 'jpg' | 'png'
+type DpiOption = 72 | 144 | 216 | 300
+type SaveMode = 'zip' | 'individual'
 type PdfData = { file: File, thumbnail?: string, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
 
 export default function PdfToImageTool() {
@@ -22,6 +24,8 @@ export default function PdfToImageTool() {
   const [progress, setProgress] = useState(0)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [format, setFormat] = useState<ImageFormat>('jpg')
+  const [dpi, setDpi] = useState<DpiOption>(144)
+  const [saveMode, setSaveMode] = useState<SaveMode>('zip')
   const [customFileName, setCustomFileName] = useState('paperknife-images')
   const [unlockPassword, setUnlockPassword] = useState('')
   const isNative = Capacitor.isNativePlatform()
@@ -70,28 +74,59 @@ export default function PdfToImageTool() {
     if (!pdfData || !pdfData.pdfDoc) return
     setIsProcessing(true); setProgress(0); await new Promise(resolve => setTimeout(resolve, 100))
     try {
-      const zip = new JSZip(); const scale = 2.0
-      for (let i = 1; i <= pdfData.pageCount; i++) {
-        const page = await pdfData.pdfDoc.getPage(i); const viewport = page.getViewport({ scale })
-        const canvas = document.createElement('canvas'); const context = canvas.getContext('2d')
-        if (!context) continue
-        canvas.height = viewport.height; canvas.width = viewport.width
-        await page.render({ canvasContext: context, viewport }).promise
-        const imgData = canvas.toDataURL(format === 'png' ? 'image/png' : 'image/jpeg', 0.8)
-        const base64Data = imgData.split(',')[1]
-        const padNum = i.toString().padStart(Math.max(2, pdfData.pageCount.toString().length), '0')
-        zip.file(`${customFileName}-${padNum}.${format}`, base64Data, { base64: true })
-        setProgress(Math.round((i / pdfData.pageCount) * 100))
+      const scale = dpi / 72  // Convert DPI to scale (72 DPI = scale 1.0)
+      
+      if (saveMode === 'zip') {
+        // ZIP mode - existing behavior
+        const zip = new JSZip()
+        for (let i = 1; i <= pdfData.pageCount; i++) {
+          const page = await pdfData.pdfDoc.getPage(i); const viewport = page.getViewport({ scale })
+          const canvas = document.createElement('canvas'); const context = canvas.getContext('2d')
+          if (!context) continue
+          canvas.height = viewport.height; canvas.width = viewport.width
+          await page.render({ canvasContext: context, viewport }).promise
+          const imgData = canvas.toDataURL(format === 'png' ? 'image/png' : 'image/jpeg', 0.8)
+          const base64Data = imgData.split(',')[1]
+          const padNum = i.toString().padStart(Math.max(2, pdfData.pageCount.toString().length), '0')
+          zip.file(`${customFileName}-${padNum}.${format}`, base64Data, { base64: true })
+          setProgress(Math.round((i / pdfData.pageCount) * 100))
+        }
+        const zipBlob = await zip.generateAsync({ type: 'blob' })
+        const url = URL.createObjectURL(zipBlob); setDownloadUrl(url)
+        const zipBuffer = new Uint8Array(await zipBlob.arrayBuffer())
+        setPipelineFile({
+          buffer: zipBuffer,
+          name: `${customFileName}.zip`,
+          type: 'application/zip'
+        })
+        addActivity({ name: `${customFileName}.zip`, tool: 'PDF to Image', size: zipBlob.size, resultUrl: url, buffer: zipBuffer })
+      } else {
+        // Individual mode - download each image separately
+        for (let i = 1; i <= pdfData.pageCount; i++) {
+          const page = await pdfData.pdfDoc.getPage(i); const viewport = page.getViewport({ scale })
+          const canvas = document.createElement('canvas'); const context = canvas.getContext('2d')
+          if (!context) continue
+          canvas.height = viewport.height; canvas.width = viewport.width
+          await page.render({ canvasContext: context, viewport }).promise
+          const imgData = canvas.toDataURL(format === 'png' ? 'image/png' : 'image/jpeg', 0.8)
+          const padNum = i.toString().padStart(Math.max(2, pdfData.pageCount.toString().length), '0')
+          const fileName = `${customFileName}-${padNum}.${format}`
+          const mimeType = format === 'png' ? 'image/png' : 'image/jpeg'
+          
+          // Convert base64 to Uint8Array
+          const base64Data = imgData.split(',')[1]
+          const binaryString = atob(base64Data)
+          const bytes = new Uint8Array(binaryString.length)
+          for (let j = 0; j < binaryString.length; j++) bytes[j] = binaryString.charCodeAt(j)
+          
+          await downloadFile(bytes, fileName, mimeType)
+          setProgress(Math.round((i / pdfData.pageCount) * 100))
+          
+          // Small delay between downloads to prevent browser blocking
+          await new Promise(resolve => setTimeout(resolve, 300))
+        }
+        toast.success(`Saved ${pdfData.pageCount} images!`)
       }
-      const zipBlob = await zip.generateAsync({ type: 'blob' })
-      const url = URL.createObjectURL(zipBlob); setDownloadUrl(url)
-      const zipBuffer = new Uint8Array(await zipBlob.arrayBuffer())
-      setPipelineFile({
-        buffer: zipBuffer,
-        name: `${customFileName}.zip`,
-        type: 'application/zip'
-      })
-      addActivity({ name: `${customFileName}.zip`, tool: 'PDF to Image', size: zipBlob.size, resultUrl: url })
     } catch (error: any) { toast.error(`Error: ${error.message}`) } finally { setIsProcessing(false) }
   }
 
@@ -133,7 +168,17 @@ export default function PdfToImageTool() {
             {!downloadUrl ? (
               <>
                 <div><label className="block text-[10px] font-black uppercase text-gray-400 mb-4 tracking-widest px-1">Image Format</label><div className="grid grid-cols-2 gap-3">{(['jpg', 'png'] as const).map(fmt => <button key={fmt} onClick={() => setFormat(fmt)} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center ${format === fmt ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}><span className={`font-black uppercase text-[10px] ${format === fmt ? 'text-rose-500' : 'text-gray-400'}`}>{fmt}</span></button>)}</div></div>
-                <div><label className="block text-[10px] font-black uppercase text-gray-400 mb-3 tracking-widest px-1">Output ZIP Name</label><input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" /></div>
+                <div><label className="block text-[10px] font-black uppercase text-gray-400 mb-4 tracking-widest px-1">Quality (DPI)</label><div className="grid grid-cols-4 gap-2">{([
+                  { value: 72, label: 'Low', sub: '72' },
+                  { value: 144, label: 'Medium', sub: '144' },
+                  { value: 216, label: 'High', sub: '216' },
+                  { value: 300, label: 'Best', sub: '300' }
+                ] as const).map(opt => <button key={opt.value} onClick={() => setDpi(opt.value as DpiOption)} className={`p-3 rounded-2xl border-2 transition-all flex flex-col items-center ${dpi === opt.value ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}><span className={`font-black uppercase text-[10px] ${dpi === opt.value ? 'text-rose-500' : 'text-gray-400'}`}>{opt.label}</span><span className={`text-[8px] ${dpi === opt.value ? 'text-rose-400' : 'text-gray-300'}`}>{opt.sub} dpi</span></button>)}</div></div>
+                <div><label className="block text-[10px] font-black uppercase text-gray-400 mb-4 tracking-widest px-1">Save As</label><div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setSaveMode('zip')} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center ${saveMode === 'zip' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}><span className={`font-black uppercase text-[10px] ${saveMode === 'zip' ? 'text-rose-500' : 'text-gray-400'}`}>ZIP File</span><span className={`text-[8px] ${saveMode === 'zip' ? 'text-rose-400' : 'text-gray-300'}`}>All in one</span></button>
+                  <button onClick={() => setSaveMode('individual')} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center ${saveMode === 'individual' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}><span className={`font-black uppercase text-[10px] ${saveMode === 'individual' ? 'text-rose-500' : 'text-gray-400'}`}>Separate</span><span className={`text-[8px] ${saveMode === 'individual' ? 'text-rose-400' : 'text-gray-300'}`}>One by one</span></button>
+                </div></div>
+                <div><label className="block text-[10px] font-black uppercase text-gray-400 mb-3 tracking-widest px-1">Output {saveMode === 'zip' ? 'ZIP' : 'Image'} Name</label><input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" /></div>
               </>
             ) : (
               <SuccessState message="Images Ready!" downloadUrl={downloadUrl} fileName={`${customFileName}.zip`} onStartOver={() => { setDownloadUrl(null); setProgress(0); setPdfData(null); setIsProcessing(false); }} showPreview={false} />

@@ -20,7 +20,8 @@ import {
   Sun as SunIcon, 
   Upload as UploadIcon,
   LayoutGrid as LayoutGridIcon, 
-  ClipboardList
+  ClipboardList,
+  Coffee
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { getRecentActivity, ActivityEntry } from '../utils/recentActivity'
@@ -95,7 +96,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
            <button 
             onClick={() => fileInputRef.current?.click()}
             className="w-full bg-zinc-900 dark:bg-zinc-100 rounded-[2.25rem] p-6 text-left relative overflow-hidden shadow-xl shadow-zinc-900/10 dark:shadow-[0_0_30px_rgba(244,63,94,0.15)] group active:scale-[0.98] transition-all duration-100"
-           >
+          >
               {/* Static Background Pattern */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500 rounded-full blur-[80px] -mr-20 -mt-20 opacity-20 dark:opacity-[0.08] pointer-events-none" />
               
@@ -198,9 +199,30 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
            </div>
         </section>
 
+        {/* Buy Me A Coffee */}
+        <section>
+          <a
+            href="https://buymeacoffee.com/potatameister"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 rounded-[1.5rem] border border-amber-100 dark:border-amber-800/30 shadow-sm active:scale-[0.98] transition-transform hover:shadow-md"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
+                <Coffee size={22} strokeWidth={2.5} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-black text-amber-800 dark:text-amber-300 leading-tight mb-0.5">Support Development</p>
+                <p className="text-[10px] text-amber-600/80 dark:text-amber-500/80 font-medium">Your support keeps PaperKnife free! ☕️</p>
+              </div>
+              <ChevronRightIcon size={16} className="text-amber-400" />
+            </div>
+          </a>
+        </section>
+
         {/* Minimal Footer */}
         <div className="flex flex-col items-center gap-2 py-8 opacity-20">
-           <p className="text-[8px] font-black uppercase tracking-[0.4em] dark:text-white text-center">PaperKnife v1.0.9</p>
+           <p className="text-[8px] font-black uppercase tracking-[0.4em] dark:text-white text-center">PaperKnife v1.1.0</p>
         </div>
 
       </main>

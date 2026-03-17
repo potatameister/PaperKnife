@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
-  Search, ChevronRight
+  Search, ChevronRight, X, Grid3X3
 } from 'lucide-react'
 import { Tool, ToolCategory } from '../types'
 import { PaperKnifeLogo } from './Logo'
@@ -34,24 +34,45 @@ export default function AndroidToolsView({ tools }: { tools: Tool[] }) {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-black pb-32 transition-colors">
-      <header className="px-6 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-6">
-        <h1 className="text-4xl font-black tracking-tighter dark:text-white mb-8">All Tools</h1>
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         
-        <div className="relative group">
-          <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-gray-500">
-            <Search size={20} />
-          </div>
-          <input 
-            type="text"
-            placeholder="Search for a tool..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#EEE8F4] dark:bg-[#2B2930] border-none rounded-[1.75rem] py-4 pl-14 pr-6 text-base font-bold placeholder:text-gray-400 focus:bg-white dark:focus:bg-[#36343B] ring-2 ring-transparent focus:ring-rose-500/10 transition-all dark:text-white outline-none shadow-sm"
-          />
+        {/* Header with Icon */}
+        <div className="flex items-center gap-4 px-6 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4">
+           <div className="w-12 h-12 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-500/20 text-white shrink-0">
+              <Grid3X3 size={24} strokeWidth={2.5} />
+           </div>
+           <div>
+              <h2 className="text-xl font-black dark:text-white tracking-tighter leading-none mb-1">Tools</h2>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Catalog</p>
+           </div>
         </div>
-      </header>
 
-      <main className="px-4 space-y-8">
+        {/* Search */}
+        <div className="px-6">
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-rose-500 transition-colors">
+              <Search size={18} />
+            </div>
+            <input 
+              type="text"
+              placeholder="Search for a tool..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold placeholder:text-gray-400 focus:bg-white dark:focus:bg-zinc-800 shadow-sm outline-none transition-all dark:text-white"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-4 flex items-center text-gray-400"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <main className="px-4 pt-6 space-y-8">
         {(Object.keys(groupedTools) as ToolCategory[]).map((category) => (
           <section key={category} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h3 className="px-2 mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-[#49454F] dark:text-[#CAC4D0]">
@@ -85,7 +106,7 @@ export default function AndroidToolsView({ tools }: { tools: Tool[] }) {
 
       <footer className="text-center py-12 opacity-20">
          <PaperKnifeLogo size={24} iconColor="#F43F5E" partColor="currentColor" className="mx-auto mb-4" />
-         <p className="text-[9px] font-black uppercase tracking-[0.5em]">PaperKnife Version 1.0.9</p>
+         <p className="text-[9px] font-black uppercase tracking-[0.5em]">PaperKnife Version 1.1.0</p>
       </footer>
     </div>
   )

@@ -84,7 +84,7 @@ export default function PageNumberTool() {
       })
       const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob); setDownloadUrl(url)
-      addActivity({ name: `${customFileName}.pdf`, tool: 'Page Numbers', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.pdf`, tool: 'Page Numbers', size: blob.size, resultUrl: url, buffer: pdfBytes })
     } catch (error: any) { toast.error(`Error: ${error.message}`) } finally { setIsProcessing(false) }
   }
 

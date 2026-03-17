@@ -100,6 +100,35 @@ self.onmessage = async (e: MessageEvent) => {
       self.postMessage({ type: 'SUCCESS', payload: pdfBytes }, [pdfBytes.buffer] as any)
     }
 
+    else if (type === 'COMPRESS_PDF_SAFE') {
+      // Proper compression: preserve vectors/text, copy pages with optimization
+      const { buffer, password } = payload as { buffer: Uint8Array, password?: string }
+      
+      const originalPdf = await PDFDocument.load(buffer, { 
+        password: password || undefined,
+        ignoreEncryption: true 
+      } as any)
+
+      const newPdf = await PDFDocument.create()
+      const pageIndices = originalPdf.getPageIndices()
+      const totalPages = pageIndices.length
+
+      for (let i = 0; i < totalPages; i++) {
+        const [copiedPage] = await newPdf.copyPages(originalPdf, [i])
+        newPdf.addPage(copiedPage)
+        self.postMessage({ type: 'PROGRESS', payload: Math.round(((i + 1) / totalPages) * 50) })
+      }
+
+      // Save with compression
+      const compressedBytes = await newPdf.save({ 
+        useObjectStreams: true,
+        addDefaultPage: false
+      })
+      
+      self.postMessage({ type: 'PROGRESS', payload: 100 })
+      self.postMessage({ type: 'SUCCESS', payload: compressedBytes }, [compressedBytes.buffer] as any)
+    }
+
   } catch (error: any) {
     self.postMessage({ type: 'ERROR', payload: error.message || 'Worker Error' })
   }

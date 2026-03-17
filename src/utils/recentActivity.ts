@@ -4,12 +4,13 @@ export interface ActivityEntry {
   tool: string
   timestamp: number
   size: number
-  resultUrl?: string // Temporary session URL
+  resultUrl?: string // Temporary session URL (deprecated)
+  buffer?: ArrayBuffer | Uint8Array // Stored file data for persistence
 }
 
 const DB_NAME = 'PaperKnifeDB'
 const STORE_NAME = 'activity'
-const DB_VERSION = 1
+const DB_VERSION = 2 // Incremented to handle buffer field
 
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
@@ -40,7 +41,7 @@ export const addActivity = async (entry: Omit<ActivityEntry, 'id' | 'timestamp'>
   
   // Cleanup: respect user setting
   const limitSetting = localStorage.getItem('historyLimit')
-  const limit = limitSetting === '999' ? 999999 : parseInt(limitSetting || '10')
+  const limit = limitSetting === '999' ? 999999 : parseInt(limitSetting || '20')
   
   const request = store.getAll()
   request.onsuccess = () => {
@@ -55,7 +56,7 @@ export const addActivity = async (entry: Omit<ActivityEntry, 'id' | 'timestamp'>
   }
 }
 
-export const getRecentActivity = async (limit = 10): Promise<ActivityEntry[]> => {
+export const getRecentActivity = async (limit = 20): Promise<ActivityEntry[]> => {
   const db = await openDB()
   const tx = db.transaction(STORE_NAME, 'readonly')
   const store = tx.objectStore(STORE_NAME)
@@ -76,10 +77,23 @@ export const clearActivity = async () => {
   await store.clear()
 }
 
+export const deleteActivityItem = async (id: string) => {
+  const db = await openDB()
+  const tx = db.transaction(STORE_NAME, 'readwrite')
+  const store = tx.objectStore(STORE_NAME)
+  await store.delete(id)
+}
+
 export const updateLastSeen = () => {
   localStorage.setItem('lastSeen', String(Date.now()))
 }
 
 export const getLastSeen = () => {
   return Number(localStorage.getItem('lastSeen') || '0')
+}
+
+export const createBlobUrl = (buffer: ArrayBuffer | Uint8Array, _fileName: string): string => {
+  const data = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer)
+  const blob = new Blob([data as unknown as BlobPart], { type: 'application/pdf' })
+  return URL.createObjectURL(blob)
 }

@@ -14,7 +14,7 @@ import {
   RotateCw, Type, Hash, Tags, FileText, ArrowUpDown, PenTool, 
   Wrench, ImagePlus, FileImage, Palette, X, ChevronDown
 } from 'lucide-react'
-import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { Toaster, toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 import { Filesystem } from '@capacitor/filesystem'
@@ -24,6 +24,47 @@ import { PipelineProvider, usePipeline } from './utils/pipelineContext'
 import { ViewModeProvider } from './utils/viewModeContext'
 import { clearActivity, updateLastSeen, getLastSeen } from './utils/recentActivity'
 import ScrollToTop from './components/ScrollToTop'
+import { useSwipe } from './utils/useSwipe'
+
+// Swipeable wrapper for main navigation pages
+function SwipeableMainPages({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  
+  const mainPages = ['/', '/android-tools', '/android-history', '/settings']
+  const currentIndex = mainPages.indexOf(location.pathname)
+  
+  const { onTouchStart, onTouchEnd } = useSwipe({
+    onSwipeLeft: () => {
+      if (currentIndex < mainPages.length - 1) {
+        navigate(mainPages[currentIndex + 1])
+      }
+    },
+    onSwipeRight: () => {
+      if (currentIndex > 0) {
+        navigate(mainPages[currentIndex - 1])
+      }
+    },
+    threshold: 70
+  })
+
+  // Only enable swipe on main pages
+  const isMainPage = mainPages.includes(location.pathname)
+  
+  if (!isMainPage) {
+    return <>{children}</>
+  }
+
+  return (
+    <div 
+      onTouchStart={onTouchStart} 
+      onTouchEnd={onTouchEnd}
+      className="min-h-screen"
+    >
+      {children}
+    </div>
+  )
+}
 
 // Critical Views - No lazy loading to prevent dynamic import errors on Android
 import WebView from './components/WebView'
@@ -31,6 +72,9 @@ import AndroidView from './components/AndroidView'
 import AndroidToolsView from './components/AndroidToolsView'
 import AndroidHistoryView from './components/AndroidHistoryView'
 import About from './components/About'
+import HallOfFame from './components/HallOfFame'
+import Libraries from './components/Libraries'
+import Sponsor from './components/Sponsor'
 import Thanks from './components/Thanks'
 import PrivacyPolicy from './components/PrivacyPolicy'
 import SettingsView from './components/Settings'
@@ -346,6 +390,7 @@ function App() {
             )}
 
             <Suspense fallback={<LoadingSpinner />}>
+              <SwipeableMainPages>
               <Routes>
                 <Route path="/" element={
                   viewMode === 'web' ? (
@@ -373,11 +418,15 @@ function App() {
                 <Route path="/repair" element={<RepairTool />} />
                 <Route path="/extract-images" element={<ExtractImagesTool />} />
                 <Route path="/grayscale" element={<GrayscaleTool />} />
-                <Route path="/about" element={<About viewMode={viewMode} />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/hall-of-fame" element={<HallOfFame />} />
+                <Route path="/libraries" element={<Libraries />} />
+                <Route path="/sponsor" element={<Sponsor />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/settings" element={<SettingsView theme={theme} setTheme={setTheme} />} />
                 <Route path="/thanks" element={<Thanks />} />
               </Routes>
+              </SwipeableMainPages>
             </Suspense>
 
             {/* Chameleon Toggle (Dev Only) */}

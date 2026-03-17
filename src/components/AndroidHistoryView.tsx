@@ -3,36 +3,42 @@ import {
   Download as DownloadIcon, 
   Clock as HistoryIcon, Shield as ShieldIcon, Search as SearchIcon, FileText as FileTextIcon, ChevronRight as ChevronRightIcon, X as XIcon, Trash2 as Trash2Icon, Calendar as CalendarIcon, HardDrive as HardDriveIcon
 } from 'lucide-react'
-import { ActivityEntry, getRecentActivity, clearActivity } from '../utils/recentActivity'
+import { ActivityEntry, getRecentActivity, deleteActivityItem, createBlobUrl } from '../utils/recentActivity'
 import { toast } from 'sonner'
 
 export default function AndroidHistoryView() {
   const [history, setHistory] = useState<ActivityEntry[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedItem, setSelectedItem] = useState<ActivityEntry | null>(null)
 
   useEffect(() => {
     const limitSetting = localStorage.getItem('historyLimit')
-    const limit = limitSetting === '999' ? 100 : parseInt(limitSetting || '10')
+    const limit = limitSetting === '999' ? 100 : parseInt(limitSetting || '20')
     getRecentActivity(limit).then(setHistory)
   }, [])
 
-  const handleClear = async () => {
-    toast('Wipe all history?', {
-      id: 'history-wipe-confirm',
-      action: {
-        label: 'Confirm',
-        onClick: async () => {
-          await clearActivity()
-          setHistory([])
-          toast.success('History wiped', { id: 'history-wipe-done' })
-          toast.dismiss('history-wipe-confirm')
-        }
-      },
-      cancel: {
-        label: 'Cancel',
-        onClick: () => toast.dismiss('history-wipe-confirm')
-      }
-    })
+  const handleDelete = async (id: string) => {
+    await deleteActivityItem(id)
+    setHistory(prev => prev.filter(item => item.id !== id))
+    setSelectedItem(null)
+    toast.success('Removed from history')
+  }
+
+  const handleDownload = (item: ActivityEntry) => {
+    if (!item.buffer) {
+      toast.error('File data not available')
+      return
+    }
+    const blobUrl = createBlobUrl(item.buffer, item.name)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = item.name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(blobUrl)
+    toast.success('Download started')
+    setSelectedItem(null)
   }
 
   const filteredHistory = history.filter(item => 
@@ -55,45 +61,101 @@ export default function AndroidHistoryView() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-black pb-32 transition-colors">
-      <header className="px-6 pt-[calc(env(safe-area-inset-top)+1rem)] pb-6 sticky top-0 bg-[#FAFAFA]/90 dark:bg-black/90 backdrop-blur-xl z-50 border-b border-gray-100 dark:border-white/5">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex flex-col text-left">
-            <h1 className="text-3xl font-black tracking-tighter dark:text-white">Activity</h1>
-            <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 opacity-80">Local Storage Active</p>
+      {/* Bottom Sheet Overlay */}
+      {selectedItem && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-in fade-in"
+          onClick={() => setSelectedItem(null)}
+        >
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 rounded-t-[2.5rem] pt-6 px-6 pb-[calc(env(safe-area-inset-bottom)+7rem)] animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1.5 bg-gray-200 dark:bg-zinc-700 rounded-full mx-auto mb-6" />
+            
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-14 h-14 bg-gray-50 dark:bg-zinc-800 text-gray-400 rounded-2xl flex items-center justify-center">
+                <FileTextIcon size={24} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black truncate dark:text-white">{selectedItem.name}</p>
+                <p className="text-xs text-gray-400">{selectedItem.tool} • {formatSize(selectedItem.size)}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedItem(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white"
+              >
+                <XIcon size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {selectedItem.buffer ? (
+                <button 
+                  onClick={() => handleDownload(selectedItem)}
+                  className="w-full flex items-center gap-4 p-4 bg-rose-500 text-white rounded-2xl font-black active:scale-[0.98] transition-all"
+                >
+                  <DownloadIcon size={20} />
+                  <span>Download</span>
+                </button>
+              ) : (
+                <div className="w-full flex items-center gap-4 p-4 bg-gray-100 dark:bg-zinc-800 text-gray-400 rounded-2xl font-black">
+                  <DownloadIcon size={20} />
+                  <span>File not available</span>
+                </div>
+              )}
+              
+              <button 
+                onClick={() => handleDelete(selectedItem.id)}
+                className="w-full flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl font-black active:scale-[0.98] transition-all"
+              >
+                <Trash2Icon size={20} />
+                <span>Delete from History</span>
+              </button>
+            </div>
           </div>
-          {history.length > 0 && (
-            <button 
-              onClick={handleClear}
-              className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl active:scale-90 transition-all shadow-sm"
-            >
-              <Trash2Icon size={20} />
-            </button>
-          )}
+        </div>
+      )}
+
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        
+        {/* Header with Icon */}
+        <div className="flex items-center gap-4 px-6 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4">
+           <div className="w-12 h-12 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-500/20 text-white shrink-0">
+              <HistoryIcon size={24} strokeWidth={2.5} />
+           </div>
+           <div>
+              <h2 className="text-xl font-black dark:text-white tracking-tighter leading-none mb-1">Activity</h2>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">History</p>
+           </div>
         </div>
 
-        <div className="relative group">
-          <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-rose-500 transition-colors">
-            <SearchIcon size={18} />
+        {/* Search */}
+        <div className="px-6">
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-rose-500 transition-colors">
+              <SearchIcon size={18} />
+            </div>
+            <input 
+              type="text"
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold placeholder:text-gray-400 focus:bg-white dark:focus:bg-zinc-800 shadow-sm outline-none transition-all dark:text-white"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-4 flex items-center text-gray-400"
+              >
+                <XIcon size={16} />
+              </button>
+            )}
           </div>
-          <input 
-            type="text"
-            placeholder="Search documents..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/5 rounded-2xl py-4 pl-14 pr-6 text-sm font-bold placeholder:text-gray-400 focus:bg-white dark:focus:bg-zinc-800 shadow-sm outline-none transition-all dark:text-white"
-          />
-          {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-4 flex items-center text-gray-400"
-            >
-              <XIcon size={16} />
-            </button>
-          )}
         </div>
-      </header>
+      </div>
 
-      <main className="px-4 py-6 space-y-2">
+      <main className="px-6 space-y-4 mt-4 pb-[calc(env(safe-area-inset-bottom)+5rem)]">
         {filteredHistory.length === 0 ? (
           <div className="py-24 text-center flex flex-col items-center animate-in fade-in duration-700">
             <div className="w-20 h-20 bg-gray-50 dark:bg-zinc-900 rounded-[2.5rem] flex items-center justify-center text-gray-300 mb-6 border border-gray-100 dark:border-white/5">
@@ -104,7 +166,11 @@ export default function AndroidHistoryView() {
           </div>
         ) : (
           filteredHistory.map((item) => (
-            <div key={item.id} className="p-4 bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 flex items-center gap-4 active:scale-[0.99] transition-all shadow-sm group">
+            <div 
+              key={item.id} 
+              onClick={() => setSelectedItem(item)}
+              className="p-4 bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 flex items-center gap-4 active:scale-[0.99] transition-all shadow-sm group cursor-pointer"
+            >
               <div className="w-12 h-12 bg-gray-50 dark:bg-zinc-800 text-gray-400 group-hover:bg-rose-50 dark:group-hover:bg-rose-900/20 group-hover:text-rose-500 rounded-2xl flex items-center justify-center shrink-0 transition-colors shadow-inner">
                 <FileTextIcon size={22} />
               </div>
@@ -122,18 +188,7 @@ export default function AndroidHistoryView() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                 {item.resultUrl && (
-                    <a 
-                      href={item.resultUrl} 
-                      download={item.name} 
-                      className="w-10 h-10 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-rose-500/20 active:scale-90 transition-all"
-                    >
-                      <DownloadIcon size={18} />
-                    </a>
-                 )}
-                 <ChevronRightIcon size={16} className="text-gray-200 dark:text-zinc-800" />
-              </div>
+              <ChevronRightIcon size={16} className="text-gray-200 dark:text-zinc-800" />
             </div>
           ))
         )}

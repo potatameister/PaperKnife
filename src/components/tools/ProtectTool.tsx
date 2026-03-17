@@ -84,7 +84,7 @@ export default function ProtectTool() {
       
       const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' })
       const url = createUrl(blob)
-      addActivity({ name: `${customFileName || 'protected'}.pdf`, tool: 'Protect', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName || 'protected'}.pdf`, tool: 'Protect', size: blob.size, resultUrl: url, buffer: encryptedBytes })
     } catch (error: any) { 
       console.error('Encryption error:', error)
       toast.error(`Encryption failed: ${error.message}`) 

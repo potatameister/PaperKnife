@@ -24,6 +24,7 @@ type PdfFile = {
   isLocked: boolean
   rotation: number
   password?: string
+  unlockedBuffer?: Uint8Array
 }
 
 // Format File Size helper
@@ -256,7 +257,8 @@ export default function MergeTool() {
         isLocked: false,
         thumbnail: result.thumbnail,
         pageCount: result.pageCount,
-        password: pass
+        password: pass,
+        unlockedBuffer: result.pdfData
       } : f))
     } else {
       toast.error('Incorrect password for ' + pdfFile.file.name)
@@ -321,9 +323,9 @@ export default function MergeTool() {
       const fileDatas = []
       for (const f of files) {
         fileDatas.push({
-          buffer: await f.file.arrayBuffer(),
+          buffer: f.unlockedBuffer || new Uint8Array(await f.file.arrayBuffer()),
           rotation: f.rotation,
-          password: f.password
+          password: f.unlockedBuffer ? undefined : f.password
         })
       }
 
@@ -348,7 +350,8 @@ export default function MergeTool() {
             name: fileName,
             tool: 'Merge',
             size: blob.size,
-            resultUrl: url
+            resultUrl: url,
+            buffer: payload
           })
           
           setIsProcessing(false)

@@ -10,6 +10,7 @@ interface NativeToolLayoutProps {
   children: React.ReactNode
   actions?: React.ReactNode
   onBack?: () => void
+  hideNativeHeader?: boolean
 }
 
 export const NativeToolLayout = ({ 
@@ -17,7 +18,8 @@ export const NativeToolLayout = ({
   description, 
   children, 
   actions,
-  onBack 
+  onBack,
+  hideNativeHeader = false
 }: NativeToolLayoutProps) => {
   const navigate = useNavigate()
   
@@ -28,7 +30,7 @@ export const NativeToolLayout = ({
   
   // A more reliable way is to check the layout context or simply use media queries 
   // but since we want to avoid double headers with the main Layout.tsx:
-  const showNativeHeader = isAndroidView
+  const showNativeHeader = isAndroidView && !hideNativeHeader
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FAFAFA] dark:bg-black transition-colors">
@@ -51,7 +53,7 @@ export const NativeToolLayout = ({
       {/* Main Content Area */}
       <main className={`flex-1 flex flex-col p-4 md:p-8 max-w-5xl mx-auto w-full ${actions ? 'pb-32 md:pb-8' : ''}`}>
         {/* Web View Header (Only Visible on Desktop or when native header is hidden) */}
-        <div className={`${showNativeHeader ? 'hidden md:block' : 'block'} mb-8`}>
+        <div className={`${showNativeHeader ? 'hidden md:block' : 'block'} mb-8 ${!title && !description ? 'hidden' : ''}`}>
            <ToolHeader title={title} description={description} />
         </div>
 

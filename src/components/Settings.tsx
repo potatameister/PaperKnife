@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { 
   Trash2, Clock, Moon, Sun, Monitor,
   ChevronRight, Info, Zap, User, DownloadCloud, ListFilter,
-  RotateCcw, ShieldCheck, Bug, Heart as HeartIcon, Settings2
+  RotateCcw, ShieldCheck, Bug, Heart as HeartIcon, Settings2, Award, Library
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { clearActivity } from '../utils/recentActivity'
@@ -78,7 +78,7 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
   const [wipeTimer, setWipeTimer] = useState(localStorage.getItem('autoWipeTimer') || '15')
   const [haptics, setHaptics] = useState(localStorage.getItem('hapticsEnabled') === 'true')
   const [autoDownload, setAutoDownload] = useState(localStorage.getItem('autoDownload') === 'true')
-  const [historyLimit, setHistoryLimit] = useState(localStorage.getItem('historyLimit') || '10')
+  const [historyLimit, setHistoryLimit] = useState(localStorage.getItem('historyLimit') || '20')
   const [defaultAuthor, setDefaultAuthor] = useState(localStorage.getItem('defaultAuthor') || '')
 
   const handleToggle = (key: string, currentVal: boolean, setter: (v: boolean) => void) => {
@@ -105,17 +105,17 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
   }
 
   return (
-    <NativeToolLayout title="System" description="Core Configuration" actions={null}>
+    <NativeToolLayout title="" description="" actions={null} hideNativeHeader={true}>
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 pb-40">
         
-        {/* Integrated Header */}
-        <div className="flex items-center gap-4 px-2 mb-8 mt-2">
+        {/* Header with Icon */}
+        <div className="flex items-center gap-4 px-6 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4">
            <div className="w-12 h-12 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-500/20 text-white shrink-0">
               <Settings2 size={24} strokeWidth={2.5} />
            </div>
            <div>
               <h2 className="text-xl font-black dark:text-white tracking-tighter leading-none mb-1">Preferences</h2>
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Protocol v1.0.9 • Local</p>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Configuration</p>
            </div>
         </div>
 
@@ -212,36 +212,52 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
               value={historyLimit}
               onChange={(e) => handleSelect('historyLimit', e.target.value, setHistoryLimit)}
               className="bg-gray-100 dark:bg-black px-3 py-2 rounded-xl text-[11px] font-black text-gray-600 dark:text-gray-300 outline-none border border-transparent focus:border-rose-500 cursor-pointer"
-             >
+              >
                 <option value="5">5 Files</option>
                 <option value="10">10 Files</option>
                 <option value="20">20 Files</option>
-                <option value="50">50 Files</option>
-                <option value="999">Unlimited</option>
-             </select>
+              </select>
           </div>
         </SettingGroup>
 
-        {/* Ecosystem */}
-        <SettingGroup title="Ecosystem">
+        {/* Support */}
+        <SettingGroup title="Support">
           <SettingItem 
             icon={HeartIcon} 
             title="Sponsor Project" 
             subtitle="Fuel development"
             iconColor="text-rose-500 bg-rose-50 dark:bg-rose-900/20"
-            onClick={() => window.open('https://github.com/sponsors/potatameister', '_blank')}
+            onClick={() => navigate('/sponsor')}
+          />
+          <SettingItem 
+            icon={Award} 
+            title="Hall of Fame" 
+            subtitle="Supporters"
+            iconColor="text-amber-500 bg-amber-50 dark:bg-amber-900/20"
+            onClick={() => navigate('/hall-of-fame')}
+          />
+          <SettingItem 
+            icon={Library} 
+            title="Libraries Used" 
+            subtitle="Open Source Dependencies"
+            iconColor="text-blue-500 bg-blue-50 dark:bg-blue-900/20"
+            onClick={() => navigate('/libraries')}
+          />
+        </SettingGroup>
+
+        {/* About */}
+        <SettingGroup title="About">
+          <SettingItem 
+            icon={Info} 
+            title="About PaperKnife" 
+            subtitle="Protocol Details"
+            onClick={() => navigate('/about')}
           />
           <SettingItem 
             icon={Bug} 
             title="Report Issue" 
             subtitle="GitHub Tracker"
             onClick={() => window.open('https://github.com/potatameister/PaperKnife/issues', '_blank')}
-          />
-          <SettingItem 
-            icon={Info} 
-            title="About PaperKnife" 
-            subtitle="Protocol Details"
-            onClick={() => navigate('/about')}
           />
           <SettingItem 
             icon={ShieldCheck} 
@@ -274,9 +290,8 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
                     window.location.reload()
                   }
                 }}
-              />
-           </div>
-           <p className="text-[8px] font-black uppercase text-center text-gray-300 dark:text-zinc-700 tracking-[0.5em] mt-10">Configuration Engine v1.0.9 Stable</p>
+               />
+            </div>
         </div>
 
       </div>

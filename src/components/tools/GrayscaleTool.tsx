@@ -109,7 +109,7 @@ export default function GrayscaleTool() {
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       setDownloadUrl(url)
-      addActivity({ name: `${customFileName}.pdf`, tool: 'Grayscale', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.pdf`, tool: 'Grayscale', size: blob.size, resultUrl: url, buffer: pdfBytes })
     } catch (error: any) { 
       toast.error(`Error: ${error.message}`) 
     } finally { 

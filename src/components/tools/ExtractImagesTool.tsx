@@ -120,9 +120,10 @@ export default function ExtractImagesTool() {
 
       const zipBlob = await zip.generateAsync({ type: 'blob' })
       const url = URL.createObjectURL(zipBlob)
+      const zipBuffer = new Uint8Array(await zipBlob.arrayBuffer())
       setDownloadUrl(url)
       setExtractedCount(imageCounter)
-      addActivity({ name: `${customFileName}.zip`, tool: 'Extract Images', size: zipBlob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.zip`, tool: 'Extract Images', size: zipBlob.size, resultUrl: url, buffer: zipBuffer })
       toast.success(`Extracted ${imageCounter} images!`)
     } catch (error: any) { 
       toast.error(`Error: ${error.message}`) 

@@ -115,7 +115,7 @@ export default function RearrangeTool() {
       copiedPages.forEach(page => newPdf.addPage(page))
       const pdfBytes = await newPdf.save(); const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob); setDownloadUrl(url)
-      addActivity({ name: `${customFileName}.pdf`, tool: 'Rearrange', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.pdf`, tool: 'Rearrange', size: blob.size, resultUrl: url, buffer: pdfBytes })
     } catch (error: any) { toast.error(`Error: ${error.message}`) } finally { setIsProcessing(false) }
   }
 

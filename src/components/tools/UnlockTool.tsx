@@ -61,7 +61,7 @@ export default function UnlockTool() {
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = createUrl(blob)
-      addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url, buffer: pdfBytes })
     } catch (error: any) { toast.error(error.message || 'Error.') } finally { setIsProcessing(false) }
   }
 

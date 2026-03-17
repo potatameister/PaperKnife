@@ -47,7 +47,7 @@ export default function RepairTool() {
       const url = URL.createObjectURL(blob)
       
       setDownloadUrl(url)
-      addActivity({ name: `${customFileName}.pdf`, tool: 'Repair', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.pdf`, tool: 'Repair', size: blob.size, resultUrl: url, buffer: pdfBytes })
       toast.success('PDF rebuilt successfully!')
     } catch (error: any) { 
       toast.error(`Repair failed: ${error.message}`) 

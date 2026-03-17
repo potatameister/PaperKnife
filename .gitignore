@@ -33,6 +33,7 @@ dist-ssr
 GEMINI.md
 gha-creds-*.json
 AGENTS.md
+changelog.txt
 
 # Capacitor
 android/app/build

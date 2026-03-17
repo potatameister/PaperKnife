@@ -67,7 +67,7 @@ export default function SignatureTool() {
       const page = pdfDoc.getPages()[activePage - 1]; const { width, height } = page.getSize(); const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width))
       page.drawImage(sigImage, { x: pdfX, y: pdfY, width: size, height: size * (sigImage.height / sigImage.width) })
       const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes as any], { type: 'application/pdf' }); const url = URL.createObjectURL(blob)
-      setDownloadUrl(url); addActivity({ name: `${customFileName}.pdf`, tool: 'Signature', size: blob.size, resultUrl: url })
+      setDownloadUrl(url); addActivity({ name: `${customFileName}.pdf`, tool: 'Signature', size: blob.size, resultUrl: url, buffer: pdfBytes })
     } finally { setIsProcessing(false) }
   }
 

@@ -94,7 +94,7 @@ export default function WatermarkTool() {
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       setDownloadUrl(url)
-      addActivity({ name: `${customFileName}.pdf`, tool: 'Watermark', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.pdf`, tool: 'Watermark', size: blob.size, resultUrl: url, buffer: pdfBytes })
     } catch (error: any) { 
       toast.error(`Error: ${error.message}`) 
     } finally { 
