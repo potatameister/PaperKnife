@@ -70,6 +70,11 @@ export default function RearrangeTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
+      if (!result.isDecrypted) {
+        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
+        setIsProcessing(false)
+        return
+      }
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword, thumbnail: result.thumbnail })
       setPageOrder(Array.from({ length: result.pageCount }, (_, i) => (i + 1).toString()))
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-rearranged`)
@@ -108,7 +113,7 @@ export default function RearrangeTool() {
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true } as any)
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined } as any)
       const newPdf = await PDFDocument.create()
       const indices = pageOrder.map(id => parseInt(id) - 1)
       const copiedPages = await newPdf.copyPages(pdfDoc, indices)

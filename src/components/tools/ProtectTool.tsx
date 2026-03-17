@@ -46,6 +46,11 @@ export default function ProtectTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
+      if (!result.isDecrypted) {
+        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
+        setIsProcessing(false)
+        return
+      }
       setPdfData({ ...pdfData, isLocked: false, thumbnail: result.thumbnail, pageCount: result.pageCount, sourcePassword: unlockPassword })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-protected`)
     } else { toast.error('Incorrect password') }
@@ -73,7 +78,7 @@ export default function ProtectTool() {
     
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.sourcePassword || undefined, ignoreEncryption: true } as any)
+      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.sourcePassword || undefined } as any)
       const newPdf = await PDFDocument.create()
       const pages = await newPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
       pages.forEach(page => newPdf.addPage(page))

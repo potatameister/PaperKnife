@@ -62,6 +62,11 @@ export default function MetadataTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
+      if (!result.isDecrypted) {
+        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
+        setIsProcessing(false)
+        return
+      }
       const arrayBuffer = await pdfData.file.arrayBuffer()
       const pdfDoc = await PDFDocument.load(arrayBuffer, { password: unlockPassword } as any)
       const currentMeta = { title: pdfDoc.getTitle() || '', author: pdfDoc.getAuthor() || '', subject: pdfDoc.getSubject() || '', keywords: pdfDoc.getKeywords() || '', creator: pdfDoc.getCreator() || '', producer: pdfDoc.getProducer() || '' }
@@ -101,7 +106,7 @@ export default function MetadataTool() {
     await new Promise(resolve => setTimeout(resolve, 300))
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true } as any)
+      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined } as any)
       let targetPdf: PDFDocument
       
       if (deepClean) {

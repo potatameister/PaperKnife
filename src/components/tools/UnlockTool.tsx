@@ -56,13 +56,20 @@ export default function UnlockTool() {
     try {
       const result = await unlockPdf(pdfData.file, password)
       if (!result.success) throw new Error('Incorrect password.')
-      const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: password || undefined, ignoreEncryption: true } as any)
-      const pdfBytes = await pdfDoc.save()
-      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
+      
+      if (!result.isDecrypted || !result.pdfData) {
+        throw new Error('Unsupported encryption (AES-256). We can currently only unlock PDFs using standard RC4 encryption.')
+      }
+
+      const blob = new Blob([result.pdfData as any], { type: 'application/pdf' })
       const url = createUrl(blob)
-      addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url, buffer: pdfBytes })
-    } catch (error: any) { toast.error(error.message || 'Error.') } finally { setIsProcessing(false) }
+      addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url, buffer: result.pdfData })
+    } catch (error: any) { 
+      console.error('Unlock error:', error)
+      toast.error(error.message || 'Error.') 
+    } finally { 
+      setIsProcessing(false) 
+    }
   }
 
   const ActionButton = () => (

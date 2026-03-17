@@ -37,6 +37,11 @@ export default function GrayscaleTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
+      if (!result.isDecrypted) {
+        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
+        setIsProcessing(false)
+        return
+      }
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail, password: unlockPassword })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-grayscale`)
     } else { toast.error('Incorrect password') }

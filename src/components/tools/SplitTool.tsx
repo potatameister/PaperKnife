@@ -71,6 +71,11 @@ export default function SplitTool() {
     setIsLoadingMeta(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
+      if (!result.isDecrypted) {
+        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
+        setIsLoadingMeta(false)
+        return
+      }
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword, thumbnail: result.thumbnail })
       const all = new Set<number>(); for (let i = 1; i <= result.pageCount; i++) all.add(i)
       setSelectedPages(all); setRangeInput(`1-${result.pageCount}`)

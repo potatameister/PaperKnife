@@ -127,6 +127,10 @@ export default function CompressTool() {
     if (!item) return
     const result = await unlockPdf(item.file, password)
     if (result.success) {
+      if (!result.isDecrypted) {
+        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
+        return
+      }
       setFiles(prev => prev.map(f => f.id === id ? { ...f, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail, password } : f))
     } else { toast.error('Incorrect password') }
   }

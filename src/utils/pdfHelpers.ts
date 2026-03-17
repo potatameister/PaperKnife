@@ -286,96 +286,69 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
   }
 };
 
-export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
-  let arrayBuffer: ArrayBuffer;
+export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, isDecrypted: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
+  const arrayBuffer = await file.arrayBuffer();
   
-  // Try pdfjs first
+  // Try pdf-lib FIRST because it actually decrypts the bytes for us
   try {
-    arrayBuffer = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(arrayBuffer, { 
+      password: password 
+    } as any);
+    
+    const pageCount = pdfDoc.getPageCount();
+    const unencryptedBytes = await pdfDoc.save();
+    
+    // Now load the unencrypted PDF with pdfjs for rendering thumbnails/previews
     const loadingTask = pdfjsLib.getDocument({
-      data: arrayBuffer,
-      password: password,
+      data: unencryptedBytes,
     });
-
     const pdf = await loadingTask.promise;
     const firstPageThumb = await renderPageThumbnail(pdf, 1);
-
+    
     return {
       thumbnail: firstPageThumb,
-      pageCount: pdf.numPages,
+      pageCount: pageCount,
       isLocked: false,
       success: true,
+      isDecrypted: true,
       pdfDoc: pdf,
-      pdfData: new Uint8Array(arrayBuffer)
+      pdfData: new Uint8Array(unencryptedBytes)
     };
-  } catch (error: any) {
-    const errorMsg = error?.message || '';
-    const errorName = error?.name || '';
-    console.error('pdfjs unlock failed:', errorName, errorMsg);
-    
-    // Check if it's definitely a wrong password error
-    const isPasswordError = errorName === 'PasswordException' || 
-      errorMsg.toLowerCase().includes('password') ||
-      errorMsg.toLowerCase().includes('incorrect') ||
-      errorMsg.toLowerCase().includes('invalid');
-    
-    if (isPasswordError) {
-      return {
-        thumbnail: '',
-        pageCount: 0,
-        isLocked: true,
-        success: false
-      };
-    }
-    
-    // Try pdf-lib as fallback for other errors
-    console.log('Trying pdf-lib fallback for unlock...');
+  } catch (libError: any) {
+    const libErrorMsg = libError?.message || '';
+    console.log('pdf-lib unlock failed, trying pdfjs as fallback:', libErrorMsg);
+
+    // If pdf-lib failed because of unsupported encryption (e.g. AES-256), 
+    // try pdfjs which supports more encryption types but only for viewing.
     try {
-      const fileBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(fileBuffer, { 
-        password: password 
-      } as any);
-      
-      const pageCount = pdfDoc.getPageCount();
-      const unencryptedBytes = await pdfDoc.save();
-      
-      // Now load the unencrypted PDF with pdfjs for rendering
       const loadingTask = pdfjsLib.getDocument({
-        data: unencryptedBytes,
+        data: arrayBuffer,
+        password: password,
       });
+
       const pdf = await loadingTask.promise;
       const firstPageThumb = await renderPageThumbnail(pdf, 1);
-      
+
       return {
         thumbnail: firstPageThumb,
-        pageCount: pageCount,
+        pageCount: pdf.numPages,
         isLocked: false,
         success: true,
+        isDecrypted: false,
         pdfDoc: pdf,
-        pdfData: new Uint8Array(unencryptedBytes)
+        pdfData: new Uint8Array(arrayBuffer) // Note: These are still encrypted!
       };
-    } catch (libError: any) {
-      console.error('pdf-lib fallback also failed:', libError?.message);
+    } catch (pdfjsError: any) {
+      const errorMsg = pdfjsError?.message || '';
+      const errorName = pdfjsError?.name || '';
+      console.error('pdfjs unlock also failed:', errorName, errorMsg);
       
-      // If pdf-lib fails with encryption error, it's wrong password
-      const libErrorMsg = libError?.message || '';
-      if (libErrorMsg.toLowerCase().includes('encrypted') || 
-          libErrorMsg.toLowerCase().includes('password') ||
-          libErrorMsg.toLowerCase().includes('invalid')) {
-        return {
-          thumbnail: '',
-          pageCount: 0,
-          isLocked: true,
-          success: false
-        };
-      }
-      
-      console.error('Non-password unlock error:', libError);
       return {
         thumbnail: '',
         pageCount: 0,
         isLocked: true,
-        success: false
+        success: false,
+        isDecrypted: false
       };
     }
   }

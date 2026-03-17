@@ -35,7 +35,14 @@ export default function SignatureTool() {
     if (!pdfData || !unlockPassword) return; setIsProcessing(true)
     try {
       const result = await unlockPdf(pdfData.file, unlockPassword)
-      if (result.success) { setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }); const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb) }
+      if (result.success) {
+        if (!result.isDecrypted) {
+          toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
+          setIsProcessing(false)
+          return
+        }
+        setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }); const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb)
+      }
       else { toast.error('Incorrect password') }
     } finally { setIsProcessing(false) }
   }
@@ -62,7 +69,7 @@ export default function SignatureTool() {
   const saveSignedPdf = async () => {
     if (!pdfData || !signatureFile) return; setIsProcessing(true)
     try {
-      const arrayBuffer = await pdfData.file.arrayBuffer(); const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password, ignoreEncryption: true } as any)
+      const arrayBuffer = await pdfData.file.arrayBuffer(); const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password } as any)
       const sigBytes = await signatureFile.arrayBuffer(); let sigImage = signatureFile.type === 'image/png' ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes)
       const page = pdfDoc.getPages()[activePage - 1]; const { width, height } = page.getSize(); const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width))
       page.drawImage(sigImage, { x: pdfX, y: pdfY, width: size, height: size * (sigImage.height / sigImage.width) })
