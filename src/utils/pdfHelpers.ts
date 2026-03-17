@@ -15,8 +15,10 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 // Explicitly import the worker as a URL so Vite handles it correctly
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import pdfWasm from 'pdfjs-dist/build/pdf.worker.wasm?url';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+(pdfjsLib.GlobalWorkerOptions as any).wasmUrl = pdfWasm;
 
 export interface PdfMetaData {
   thumbnail: string
