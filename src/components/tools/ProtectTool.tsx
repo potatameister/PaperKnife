@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Lock, ShieldCheck, Loader2, ArrowRight, X } from 'lucide-react'
-import { PDFDocument } from 'pdf-lib'
+import { encryptPDF } from '@pdfsmaller/pdf-encrypt-lite'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
@@ -72,37 +72,17 @@ export default function ProtectTool() {
   const protectPDF = async () => {
     if (!pdfData || !password || password !== confirmPassword) return
     setIsProcessing(true); 
-    // Small delay to let the UI show the loader
     await new Promise(resolve => setTimeout(resolve, 150))
     
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.sourcePassword || undefined } as any)
-      const newPdf = await PDFDocument.create()
-      const pages = await newPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
-      pages.forEach(page => newPdf.addPage(page))
+      const pdfBytes = new Uint8Array(arrayBuffer)
       
-      // Use native pdf-lib encryption (Standard RC4/AES-128)
-      // This ensures we can also UNLOCK it later!
-      await newPdf.encrypt({
-        userPassword: password,
-        ownerPassword: password,
-        permissions: {
-          printing: 'highResolution',
-          modifying: false,
-          copying: false,
-          annotating: false,
-          fillingForms: false,
-          contentAccessibility: false,
-          documentAssembly: false,
-        }
-      })
+      const encryptedBytes = await encryptPDF(pdfBytes, password)
       
-      const pdfBytes = await newPdf.save()
-      
-      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
+      const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' })
       const url = createUrl(blob)
-      addActivity({ name: `${customFileName || 'protected'}.pdf`, tool: 'Protect', size: blob.size, resultUrl: url, buffer: pdfBytes })
+      addActivity({ name: `${customFileName || 'protected'}.pdf`, tool: 'Protect', size: blob.size, resultUrl: url, buffer: encryptedBytes })
     } catch (error: any) { 
       console.error('Encryption error:', error)
       toast.error(`Encryption failed: ${error.message}`) 

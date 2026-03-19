@@ -10,6 +10,7 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocument } from 'pdf-lib'
+import { decryptPDF } from '@pdfsmaller/pdf-decrypt-lite'
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -18,8 +19,18 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import openjpegWasm from 'pdfjs-dist/wasm/openjpeg.wasm?url';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-// Configure the wasm path for JPX decoding (OpenJPEG)
-(pdfjsLib.GlobalWorkerOptions as any).wasmUrl = openjpegWasm;
+
+// Extract the directory path from the WASM file URL for wasmUrl parameter
+const wasmDir = openjpegWasm.replace(/openjpeg\.wasm.*$/, '');
+
+// Helper to create document loading task with WASM support for JPX
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getDocumentWithWasm = (params: any) => {
+  return pdfjsLib.getDocument({
+    ...params,
+    wasmUrl: wasmDir
+  });
+};
 
 export interface PdfMetaData {
   thumbnail: string
@@ -168,7 +179,7 @@ export const shareFile = async (data: Uint8Array | string, fileName: string, mim
 export const loadPdfDocument = async (file: File) => {
   const arrayBuffer = await file.arrayBuffer();
   try {
-    const loadingTask = pdfjsLib.getDocument({
+    const loadingTask = getDocumentWithWasm({
       data: arrayBuffer,
     });
     return await loadingTask.promise;
@@ -176,7 +187,7 @@ export const loadPdfDocument = async (file: File) => {
     if (error.name === 'PasswordException') {
       throw error;
     }
-    const loadingTask = pdfjsLib.getDocument({
+    const loadingTask = getDocumentWithWasm({
       data: arrayBuffer,
       stopAtErrors: false,
     });
@@ -267,7 +278,7 @@ export const generateThumbnail = async (file: File, pageNum: number = 1): Promis
 
 export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
   try {
-    const loadingTask = pdfjsLib.getDocument({
+    const loadingTask = getDocumentWithWasm({
       data: await file.arrayBuffer(),
     });
     
@@ -346,31 +357,39 @@ export const flattenPdf = async (pdf: any): Promise<Uint8Array> => {
 export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, isDecrypted: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
   console.log('unlockPdf: attempting to unlock file with password length:', password?.length || 0);
   
-  // Try pdf-lib FIRST because it actually decrypts the bytes for us
+  // Try @pdfsmaller/pdf-decrypt-lite first (supports more encryption types)
   try {
-    // Use file.slice() to get a fresh blob reference before reading buffer
     const libBuffer = await file.slice(0, file.size).arrayBuffer();
-    console.log('pdf-lib: read buffer, length:', libBuffer.byteLength);
+    const pdfBytes = new Uint8Array(libBuffer);
+    console.log('pdf-decrypt-lite: read buffer, length:', pdfBytes.length);
 
-    const pdfDoc = await PDFDocument.load(libBuffer, { 
-      password: password || undefined
-    } as any);
+    const decryptedBytes = await decryptPDF(pdfBytes, password);
+    console.log('pdf-decrypt-lite: successfully decrypted, bytes:', decryptedBytes.length);
     
-    const pageCount = pdfDoc.getPageCount();
-    const unencryptedBytes = await pdfDoc.save();
-    console.log('pdf-lib: successfully decrypted and saved, bytes:', unencryptedBytes.length);
+    // Manual byte-by-byte copy to a new buffer
+    const safeBytes = new Uint8Array(decryptedBytes.length);
+    for (let i = 0; i < decryptedBytes.length; i++) {
+      safeBytes[i] = decryptedBytes[i];
+    }
     
     let firstPageThumb = '';
     try {
-      // Use Uint8Array view for pdfjs
-      const loadingTask = pdfjsLib.getDocument({
-        data: new Uint8Array(unencryptedBytes),
+      const loadingTask = getDocumentWithWasm({
+        data: new Uint8Array(safeBytes),
       });
       const pdf = await loadingTask.promise;
       firstPageThumb = await renderPageThumbnail(pdf, 1);
     } catch (thumbError) {
-      console.warn('pdf-lib: thumbnail rendering failed after decryption:', thumbError);
+      console.warn('pdf-decrypt-lite: thumbnail rendering failed after decryption:', thumbError);
     }
+    
+    // Get page count
+    let pageCount = 0;
+    try {
+      const tempLoadingTask = getDocumentWithWasm({ data: new Uint8Array(safeBytes) });
+      const tempPdf = await tempLoadingTask.promise;
+      pageCount = tempPdf.numPages;
+    } catch {}
     
     return {
       thumbnail: firstPageThumb,
@@ -379,22 +398,33 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       success: true,
       isDecrypted: true,
       pdfDoc: undefined, 
-      pdfData: new Uint8Array(unencryptedBytes)
+      pdfData: safeBytes
     };
   } catch (libError: any) {
     const libErrorMsg = libError?.message || '';
     const libErrorName = libError?.name || '';
-    console.log('pdf-lib unlock failed (likely AES-256):', libErrorName, libErrorMsg);
+    console.log('pdf-decrypt-lite unlock failed:', libErrorName, libErrorMsg);
 
-    // If pdf-lib failed (e.g. for AES-256), try pdfjs for viewing fallback
+    // Check if it's a wrong password error
+    if (libErrorMsg.toLowerCase().includes('incorrect') || 
+        libErrorMsg.toLowerCase().includes('password') ||
+        libErrorName === 'PasswordException') {
+      return {
+        thumbnail: '',
+        pageCount: 0,
+        isLocked: true,
+        success: false,
+        isDecrypted: false
+      };
+    }
+
+    // If pdf-decrypt-lite failed (unsupported encryption), try pdfjs for viewing fallback
     try {
       console.log('pdfjs: attempting fallback unlock...');
-      // Fresh buffer for pdfjs
       const fallbackBuffer = await file.slice(0, file.size).arrayBuffer();
       const fallbackBytes = new Uint8Array(fallbackBuffer);
-      console.log('pdfjs: read fresh buffer, length:', fallbackBytes.length);
       
-      const loadingTask = pdfjsLib.getDocument({
+      const loadingTask = getDocumentWithWasm({
         data: fallbackBytes,
         password: password,
         stopAtErrors: false
@@ -417,7 +447,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
         success: true,
         isDecrypted: false,
         pdfDoc: pdf,
-        pdfData: fallbackBytes // Note: These are still encrypted!
+        pdfData: fallbackBytes
       };
     } catch (pdfjsError: any) {
       const errorMsg = pdfjsError?.message || '';

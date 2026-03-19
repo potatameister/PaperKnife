@@ -72,7 +72,10 @@ export default function UnlockTool() {
 
       if (!finalBytes) throw new Error('Failed to generate unlocked file.')
 
-      const blob = new Blob([finalBytes as any], { type: 'application/pdf' })
+      // Belt-and-suspenders: always copy to a fresh buffer before Blob creation
+      const safeFinalBytes = new Uint8Array(finalBytes!);
+      const blob = new Blob([safeFinalBytes as BlobPart], { type: 'application/pdf' })
+
       const url = createUrl(blob)
       addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url, buffer: finalBytes })
     } catch (error: any) { 
