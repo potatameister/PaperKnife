@@ -199,7 +199,7 @@ export default function CompressTool() {
     if (onProgress) onProgress(65)
     
     let pdfDoc = item.pdfDoc || await loadPdfDocument(item.file)
-    const scaleMap = { high: 1.0, medium: 1.5, low: 2.0 }; const qualityMap = { high: 0.3, medium: 0.5, low: 0.7 }
+    const scaleMap = { high: 2.0, medium: 1.5, low: 1.0 }; const qualityMap = { high: 0.85, medium: 0.6, low: 0.35 }
     const scale = scaleMap[quality]; const jpegQuality = qualityMap[quality]
     const pagesData: { imageBytes: Uint8Array, width: number, height: number }[] = []
     for (let i = 1; i <= item.pageCount; i++) {
@@ -226,9 +226,17 @@ export default function CompressTool() {
         worker.onmessage = (e) => {
           if (e.data.type === 'PROGRESS') {
              if (onProgress) onProgress(90 + Math.round(e.data.payload * 0.1))
-          } else if (e.data.type === 'SUCCESS') {
-            const blob = new Blob([e.data.payload as any], { type: 'application/pdf' })
-            resolve({ url: createUrl(blob), size: blob.size, buffer: e.data.payload, method: 'rasterize' }); worker.terminate()
+} else if (e.data.type === 'SUCCESS') {
+  worker.terminate()
+  const rasterizedBuffer = e.data.payload as any
+  // Guardrail: if rasterization made it larger, return original instead
+  if (rasterizedBuffer.byteLength >= originalSize) {
+    const originalBlob = new Blob([originalBuffer], { type: 'application/pdf' })
+    resolve({ url: createUrl(originalBlob), size: originalSize, buffer: originalBuffer, method: 'original' })
+  } else {
+    const blob = new Blob([rasterizedBuffer], { type: 'application/pdf' })
+    resolve({ url: createUrl(blob), size: blob.size, buffer: rasterizedBuffer, method: 'rasterize' })
+  }
           } else if (e.data.type === 'ERROR') {
             reject(new Error(e.data.payload)); worker.terminate()
           }
@@ -256,9 +264,12 @@ export default function CompressTool() {
       const item = pendingFiles[i]
       setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f))
       try {
-        const { url, size, buffer } = await compressSingleFile(item, quality, isSingle ? setGlobalProgress : undefined)
+        const { url, size, buffer, method } = await compressSingleFile(item, quality, isSingle ? setGlobalProgress : undefined)
         results.push({ name: item.file.name.replace('.pdf', '-compressed.pdf'), buffer })
         setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: url, resultSize: size } : f))
+        if (method === 'original') {
+          toast.info('This PDF is already optimized and cannot be reduced further.')
+        }
         addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size, resultUrl: url, buffer: buffer })
         if (pendingFiles.length === 1) {
            const originalBuffer = await pendingFiles[0].file.arrayBuffer()
@@ -411,7 +422,7 @@ export default function CompressTool() {
             <div className="space-y-8">
               {lastPipelinedFile?.originalBuffer && lastPipelinedFile?.buffer && <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm"><QualityCompare originalBuffer={lastPipelinedFile.originalBuffer} compressedBuffer={lastPipelinedFile.buffer} /></div>}
               <SuccessState 
-                message={`Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`}
+                message={`Reduced by ${Math.max(0, ((1 - (files[0].resultSize || 0) / files[0].file.size) * 100)).toFixed(0)}%`}
                 downloadUrl={objectUrl} 
                 fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} 
                 onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} 
