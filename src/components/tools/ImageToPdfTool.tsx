@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import { Plus, X, Loader2, GripVertical, Upload, ArrowRight } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
@@ -14,7 +14,13 @@ import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type ImageFile = { id: string, file: File, preview: string }
 
-function SortableImageItem({ id, img, onRemove }: { id: string, img: ImageFile, onRemove: (id: string) => void }) {
+interface SortableImageItemProps {
+  id: string;
+  img: ImageFile;
+  onRemove: (id: string) => void;
+}
+
+const SortableImageItem: React.FC<SortableImageItemProps> = ({ id, img, onRemove }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 0 }
   return (

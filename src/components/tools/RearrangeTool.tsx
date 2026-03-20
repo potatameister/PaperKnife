@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Loader2, Lock, Grid, Move, RefreshCcw, X } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { DndContext, closestCenter, KeyboardSensor, useSensor, useSensors, DragEndEvent, TouchSensor, MouseSensor } from '@dnd-kit/core'
@@ -6,7 +6,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStr
 import { CSS } from '@dnd-kit/utilities'
 import { toast } from 'sonner'
 
-import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, renderGridThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
@@ -20,7 +20,7 @@ const LazyThumbnail = ({ pdfDoc, pageNum }: { pdfDoc: any, pageNum: number }) =>
   useEffect(() => {
     if (!pdfDoc || src) return
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) { renderPageThumbnail(pdfDoc, pageNum, 1.0).then(setSrc); observer.disconnect() }
+      if (entries[0].isIntersecting) { renderGridThumbnail(pdfDoc, pageNum).then(setSrc); observer.disconnect() }
     }, { rootMargin: '200px' })
     if (imgRef.current) observer.observe(imgRef.current)
     return () => observer.disconnect()
@@ -29,7 +29,13 @@ const LazyThumbnail = ({ pdfDoc, pageNum }: { pdfDoc: any, pageNum: number }) =>
   return <div ref={imgRef} className="w-full h-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" /></div>
 }
 
-function SortablePage({ id, pageNum, pdfDoc }: { id: string, pageNum: number, pdfDoc: any }) {
+interface SortablePageProps {
+  id: string;
+  pageNum: number;
+  pdfDoc: any;
+}
+
+const SortablePage: React.FC<SortablePageProps> = ({ id, pageNum, pdfDoc }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 100 : 0, position: 'relative' as const }
   return (

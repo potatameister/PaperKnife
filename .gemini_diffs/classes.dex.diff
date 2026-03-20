@@ -1,0 +1,70 @@
+--- /tmp/tmp.gml1Abzvuf	2026-02-16 12:50:53.462837202 -0800
++++ /tmp/tmp.le6QgcP3Ex	2026-02-16 12:50:53.670838679 -0800
+@@ -1,10 +1,10 @@
+-Processing '/tmp/tmp.mRMEvmGYoe'...
+-Opened '/tmp/tmp.mRMEvmGYoe', DEX version '037'
++Processing '/tmp/tmp.sMCieWB5NG'...
++Opened '/tmp/tmp.sMCieWB5NG', DEX version '037'
+ DEX file header:
+ magic               : 'dex\n037\0'
+-checksum            : f45746e9
+-signature           : 1bc5...6974
+-file_size           : 7393060
++checksum            : 48edf4a9
++signature           : 5546...0dfa
++file_size           : 7393076
+ header_size         : 112
+ link_size           : 0
+ link_off            : 0 (0x000000)
+@@ -14,14 +14,14 @@
+ type_ids_off        : 190760 (0x02e928)
+ proto_ids_size      : 11478
+ proto_ids_off       : 217924 (0x035344)
+-field_ids_size      : 16122
++field_ids_size      : 16123
+ field_ids_off       : 355660 (0x056d4c)
+ method_ids_size     : 48790
+-method_ids_off      : 484636 (0x07651c)
++method_ids_off      : 484644 (0x076524)
+ class_defs_size     : 5523
+-class_defs_off      : 874956 (0x0d59cc)
+-data_size           : 6341368
+-data_off            : 1051692 (0x100c2c)
++class_defs_off      : 874964 (0x0d59d4)
++data_size           : 6341376
++data_off            : 1051700 (0x100c34)
+ 
+ access_flags        : 17 (0x0011)
+ static_fields_size  : 0
+@@ -765983,7 +765983,7 @@
+   Virtual methods   -
+ 
+ access_flags        : 17 (0x0011)
+-static_fields_size  : 3
++static_fields_size  : 4
+ instance_fields_size: 0
+ direct_methods_size : 1
+ virtual_methods_size: 0
+@@ -766002,15 +766002,20 @@
+       access        : 0x0009 (PUBLIC STATIC)
+       value         : 2131492864
+     #1              : (in Lcom/paperknife/app/R$mipmap;)
+-      name          : 'ic_launcher_foreground'
++      name          : 'ic_launcher_background'
+       type          : 'I'
+       access        : 0x0009 (PUBLIC STATIC)
+       value         : 2131492865
+     #2              : (in Lcom/paperknife/app/R$mipmap;)
+-      name          : 'ic_launcher_round'
++      name          : 'ic_launcher_foreground'
+       type          : 'I'
+       access        : 0x0009 (PUBLIC STATIC)
+       value         : 2131492866
++    #3              : (in Lcom/paperknife/app/R$mipmap;)
++      name          : 'ic_launcher_round'
++      type          : 'I'
++      access        : 0x0009 (PUBLIC STATIC)
++      value         : 2131492867
+   Instance fields   -
+   Direct methods    -
+     #0              : (in Lcom/paperknife/app/R$mipmap;)

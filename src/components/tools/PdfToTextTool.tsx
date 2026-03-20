@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Loader2, Copy, FileText, Lock, Check, Download, Zap, ScanSearch, ArrowRight, X } from 'lucide-react'
 import { toast } from 'sonner'
 import Tesseract from 'tesseract.js'

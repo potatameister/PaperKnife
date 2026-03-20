@@ -3,7 +3,7 @@
  * Copyright (C) 2026 potatameister
  */
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Plus, Share2, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
@@ -17,7 +17,14 @@ interface PdfPreviewProps {
   onProcess: () => void
 }
 
-const PdfPage = ({ pdfDoc, pageNum, scale, isActive }: { pdfDoc: any, pageNum: number, scale: number, isActive: boolean }) => {
+interface PdfPageProps {
+  pdfDoc: any;
+  pageNum: number;
+  scale: number;
+  isActive: boolean;
+}
+
+const PdfPage: React.FC<PdfPageProps> = ({ pdfDoc, pageNum, scale, isActive }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const renderedRef = useRef<string>('')
 

@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Lock, ShieldCheck, Loader2, ArrowRight, X } from 'lucide-react'
 import { encryptPDF } from '@pdfsmaller/pdf-encrypt-lite'
+import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
@@ -32,6 +33,25 @@ export default function ProtectTool() {
   const [customFileName, setCustomFileName] = useState('paperknife-protected')
   const isNative = Capacitor.isNativePlatform()
 
+  const [isLoadingFile, setIsLoadingFile] = useState(false)
+
+  const handleFile = async (file: File) => {
+    if (file.type !== 'application/pdf') return
+    setIsLoadingFile(true)
+    try {
+      await new Promise(resolve => setTimeout(resolve, 50)) // Allow UI to render loading state
+      const meta = await getPdfMetaData(file)
+      setPdfData({ file, thumbnail: meta.thumbnail, pageCount: meta.pageCount, isLocked: meta.isLocked })
+      setCustomFileName(`${file.name.replace('.pdf', '')}-protected`)
+      clearUrls()
+    } catch (e) {
+      console.error('Error reading PDF:', e)
+      toast.error('Failed to read PDF file.')
+    } finally {
+      setIsLoadingFile(false)
+    }
+  }
+
   useEffect(() => {
     const pipelined = consumePipelineFile()
     if (pipelined) {
@@ -56,14 +76,6 @@ export default function ProtectTool() {
     setIsProcessing(false)
   }
 
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') return
-    const meta = await getPdfMetaData(file)
-    setPdfData({ file, thumbnail: meta.thumbnail, pageCount: meta.pageCount, isLocked: meta.isLocked })
-    setCustomFileName(`${file.name.replace('.pdf', '')}-protected`)
-    clearUrls()
-  }
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) handleFile(e.target.files[0])
     if (e.target) e.target.value = ''
@@ -76,13 +88,28 @@ export default function ProtectTool() {
     
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfBytes = new Uint8Array(arrayBuffer)
       
-      const encryptedBytes = await encryptPDF(pdfBytes, password)
+      // Sanitize the PDF using pdf-lib before encryption.
+      // pdf-encrypt-lite's parser is much faster on pdf-lib's normalized output.
+      const pdfDoc = await PDFDocument.load(arrayBuffer)
       
-      const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' })
+      // Optimization: For larger files, disabling object streams can sometimes 
+      // speed up the initial parse in pdf.js after encryption.
+      const useObjectStreams = arrayBuffer.byteLength < 5 * 1024 * 1024;
+      const cleanPdfBytes = await pdfDoc.save({ useObjectStreams })
+      
+      const encryptedBytes = await encryptPDF(cleanPdfBytes, password)
+      if (!encryptedBytes || encryptedBytes.length === 0) {
+        throw new Error('Encryption returned empty data.')
+      }
+      
+      // Copy the encrypted bytes IMMEDIATELY to prevent detached buffer errors
+      const safeEncryptedBytes = new Uint8Array(encryptedBytes.length);
+      safeEncryptedBytes.set(encryptedBytes instanceof Uint8Array ? encryptedBytes : new Uint8Array(encryptedBytes));
+      
+      const blob = new Blob([safeEncryptedBytes as BlobPart], { type: 'application/pdf' })
       const url = createUrl(blob)
-      addActivity({ name: `${customFileName || 'protected'}.pdf`, tool: 'Protect', size: blob.size, resultUrl: url, buffer: encryptedBytes })
+      addActivity({ name: `${customFileName || 'protected'}.pdf`, tool: 'Protect', size: blob.size, resultUrl: url, buffer: safeEncryptedBytes })
     } catch (error: any) { 
       console.error('Encryption error:', error)
       toast.error(`Encryption failed: ${error.message}`) 
@@ -100,7 +127,13 @@ export default function ProtectTool() {
   return (
     <NativeToolLayout title="Protect PDF" description="Add strong encryption to your documents. Processed locally." actions={pdfData && !pdfData.isLocked && !objectUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
-      {!pdfData ? (
+      {isLoadingFile ? (
+        <div className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center flex flex-col items-center justify-center animate-in fade-in duration-500">
+          <Loader2 className="w-12 h-12 text-rose-500 animate-spin mb-4" />
+          <h3 className="text-xl font-bold dark:text-white mb-2">Reading PDF...</h3>
+          <p className="text-sm text-gray-400">This might take a moment for large files</p>
+        </div>
+      ) : !pdfData ? (
         <button 
           onClick={() => !isProcessing && fileInputRef.current?.click()} 
           className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group"
@@ -142,6 +175,7 @@ export default function ProtectTool() {
           </div>
         </div>
       )}
+      <button onClick={() => console.log('Browser process.env:', (window as any).process?.env)} className="fixed bottom-4 right-4 bg-black text-white p-2 rounded text-[8px] opacity-20 hover:opacity-100">Debug Env</button>
       <PrivacyBadge />
     </NativeToolLayout>
   )

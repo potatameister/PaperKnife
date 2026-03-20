@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Plus, X, Loader2, GripVertical, Lock, RotateCw, Upload, RefreshCw, ArrowRight } from 'lucide-react'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
@@ -33,8 +33,16 @@ const formatSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
+interface SortableItemProps {
+  id: string;
+  file: PdfFile;
+  onRemove: (id: string) => void;
+  onRotate: (id: string) => void;
+  onUnlock: (id: string, pass: string) => void;
+}
+
 // Draggable Item Component
-function SortableItem({ id, file, onRemove, onRotate, onUnlock }: { id: string, file: PdfFile, onRemove: (id: string) => void, onRotate: (id: string) => void, onUnlock: (id: string, pass: string) => void }) {
+const SortableItem: React.FC<SortableItemProps> = ({ id, file, onRemove, onRotate, onUnlock }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const [localPass, setLocalPass] = useState('')
   const [isUnlocking, setIsUnlocking] = useState(false)

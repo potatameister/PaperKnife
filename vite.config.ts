@@ -1,14 +1,18 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     react()
   ],
   base: process.env.VITE_BASE || './',
   server: {
-    host: true
+    host: true,
+    port: 3000,
+    hmr: process.env.DISABLE_HMR !== 'true',
   },
   build: {
     target: 'esnext',

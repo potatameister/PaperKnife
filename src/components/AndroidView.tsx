@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   ChevronRight as ChevronRightIcon,
@@ -21,11 +22,15 @@ import {
   Upload as UploadIcon,
   LayoutGrid as LayoutGridIcon, 
   ClipboardList,
-  Coffee
+  Coffee,
+  Smartphone as SmartphoneIcon,
+  Monitor as MonitorIcon
 } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { getRecentActivity, ActivityEntry } from '../utils/recentActivity'
 import { PaperKnifeLogo } from './Logo'
+import { useViewMode } from '../utils/viewModeContext'
+import { hapticImpact } from '../utils/haptics'
 
 interface AndroidViewProps {
   theme: 'light' | 'dark'
@@ -34,6 +39,7 @@ interface AndroidViewProps {
 }
 
 export default function AndroidView({ theme, toggleTheme, onFileSelect }: AndroidViewProps) {
+  const { viewMode, setViewMode } = useViewMode()
   const navigate = useNavigate()
   const [history, setHistory] = useState<ActivityEntry[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -80,12 +86,26 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
              </div>
           </div>
           
-          <button 
-            onClick={toggleTheme}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-zinc-800 transition-colors"
-          >
-            {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}
-          </button>
+          <div className="flex items-center gap-2">
+            {import.meta.env.DEV && !Capacitor.isNativePlatform() && (
+              <button 
+                onClick={() => {
+                  hapticImpact()
+                  setViewMode(viewMode === 'web' ? 'android' : 'web')
+                }}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-zinc-800 transition-colors"
+                title={viewMode === 'web' ? 'Switch to Android UI' : 'Switch to Web UI'}
+              >
+                {viewMode === 'web' ? <SmartphoneIcon size={18} /> : <MonitorIcon size={18} />}
+              </button>
+            )}
+            <button 
+              onClick={toggleTheme}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-zinc-800 transition-colors"
+            >
+              {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+            </button>
+          </div>
         </div>
       </header>
 

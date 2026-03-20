@@ -3,7 +3,7 @@ import { RotateCw, Lock, RefreshCcw, Loader2, X } from 'lucide-react'
 import { PDFDocument, degrees } from 'pdf-lib'
 import { toast } from 'sonner'
 
-import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, renderGridThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
@@ -17,7 +17,7 @@ const LazyThumbnail = ({ pdfDoc, pageNum, rotation }: { pdfDoc: any, pageNum: nu
   useEffect(() => {
     if (!pdfDoc || src) return
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) { renderPageThumbnail(pdfDoc, pageNum, 1.0).then(setSrc); observer.disconnect() }
+      if (entries[0].isIntersecting) { renderGridThumbnail(pdfDoc, pageNum).then(setSrc); observer.disconnect() }
     }, { rootMargin: '200px' })
     if (imgRef.current) observer.observe(imgRef.current)
     return () => observer.disconnect()

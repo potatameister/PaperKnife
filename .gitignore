@@ -1,51 +1,49 @@
-# Android signing keys
-*.jks
-*.keystore
-paperknife.jks
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-# Logs
-logs
-*.log
+# Testing
+coverage/
+
+# Production
+dist/
+build/
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+.pnpm-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Project specific
-.gemini/
-GEMINI.md
-gha-creds-*.json
-AGENTS.md
-changelog.txt
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
 
 # Capacitor
-android/app/build
-android/app/src/main/assets/public
-android/app/src/main/res/drawable/splash.png
-android/app/src/main/res/drawable-land-hdpi/splash.png
-android/app/src/main/res/drawable-land-mdpi/splash.png
-android/app/src/main/res/drawable-land-xhdpi/splash.png
-android/app/src/main/res/drawable-land-xxhdpi/splash.png
-android/app/src/main/res/drawable-land-xxxhdpi/splash.png
-android/app/src/main/res/drawable-port-hdpi/splash.png
-android/app/src/main/res/drawable-port-mdpi/splash.png
-android/app/src/main/res/drawable-port-xhdpi/splash.png
-android/app/src/main/res/drawable-port-xxhdpi/splash.png
-android/app/src/main/res/drawable-port-xxxhdpi/splash.png.gemini/
+/android/app/build
+/android/app/src/main/assets/public
+/android/app/src/main/res/xml/config.xml
+/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml
+/android/app/src/main/res/drawable/ic_launcher_background.xml
+/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+/ios/App/App/public
+/ios/App/Pods

@@ -15,7 +15,9 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 // Explicitly import the worker as a URL so Vite handles it correctly
+// @ts-ignore
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+// @ts-ignore
 import openjpegWasm from 'pdfjs-dist/wasm/openjpeg.wasm?url';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -180,7 +182,7 @@ export const loadPdfDocument = async (file: File) => {
   const arrayBuffer = await file.arrayBuffer();
   try {
     const loadingTask = getDocumentWithWasm({
-      data: arrayBuffer,
+      data: arrayBuffer.slice(0),
     });
     return await loadingTask.promise;
   } catch (error: any) {
@@ -188,7 +190,7 @@ export const loadPdfDocument = async (file: File) => {
       throw error;
     }
     const loadingTask = getDocumentWithWasm({
-      data: arrayBuffer,
+      data: arrayBuffer.slice(0),
       stopAtErrors: false,
     });
     return await loadingTask.promise;
@@ -217,7 +219,7 @@ export const renderPageThumbnail = async (pdf: any, pageNum: number, scale = 1.0
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, canvas.width, canvas.height);
     
-    await page.render({ canvasContext: context, viewport: thumbViewport, intent: 'print' }).promise;
+    await page.render({ canvasContext: context, viewport: thumbViewport }).promise;
     const dataUrl = canvas.toDataURL('image/webp', 0.8) || canvas.toDataURL('image/jpeg', 0.9);
     
     // Memory cleanup
@@ -307,36 +309,36 @@ export const flattenPdf = async (pdf: any): Promise<Uint8Array> => {
   const numPages = pdf.numPages;
 
   for (let i = 1; i <= numPages; i++) {
-    // Render page to high-quality image
+    // Render page to ultra-high-quality image
     const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 2.0 }); // 2x scale for good quality
+    const viewport = page.getViewport({ scale: 2.5 }); // 2.5x scale for excellent text clarity
     
     const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext('2d', { alpha: false });
     if (!context) throw new Error('Canvas context unavailable');
     
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     
-    // Fill white background (transparent PDFs turn black otherwise)
+    // Fill white background
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, canvas.width, canvas.height);
     
     await page.render({
       canvasContext: context,
-      viewport: viewport
+      viewport: viewport,
+      intent: 'print'
     }).promise;
     
-    // Convert to JPG (smaller than PNG, good enough for documents)
-    const imgDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    // Convert to high-quality JPG (0.95) for better text preservation than standard 0.9
+    const imgBlob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+    if (!imgBlob) throw new Error('Failed to generate image from canvas');
     
-    // Fetch the data URL to get the bytes
-    const res = await fetch(imgDataUrl);
-    const imgBytes = await res.arrayBuffer();
+    const imgBytes = await imgBlob.arrayBuffer();
     
     // Embed into new PDF
     const jpgImage = await newPdf.embedJpg(imgBytes);
-    const jpgDims = jpgImage.scale(0.5); // Scale back down to original size (since we rendered at 2x)
+    const jpgDims = jpgImage.scale(1/2.5); // Scale back down to original size
     
     const newPage = newPdf.addPage([jpgDims.width, jpgDims.height]);
     newPage.drawImage(jpgImage, {
@@ -364,18 +366,28 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
     console.log('pdf-decrypt-lite: read buffer, length:', pdfBytes.length);
 
     const decryptedBytes = await decryptPDF(pdfBytes, password);
+    if (!decryptedBytes || decryptedBytes.length === 0) {
+      throw new Error('Decryption returned empty data.');
+    }
     console.log('pdf-decrypt-lite: successfully decrypted, bytes:', decryptedBytes.length);
     
-    // Manual byte-by-byte copy to a new buffer
+    // Copy the decrypted bytes IMMEDIATELY. 
+    // This is required because if the library returns a view into WASM memory, 
+    // it will be detached/invalidated shortly after.
     const safeBytes = new Uint8Array(decryptedBytes.length);
-    for (let i = 0; i < decryptedBytes.length; i++) {
-      safeBytes[i] = decryptedBytes[i];
+    safeBytes.set(decryptedBytes instanceof Uint8Array ? decryptedBytes : new Uint8Array(decryptedBytes));
+    
+    // Validate PDF header (%PDF-)
+    if (safeBytes.length < 4 || safeBytes[0] !== 0x25 || safeBytes[1] !== 0x50 || safeBytes[2] !== 0x44 || safeBytes[3] !== 0x46) {
+      console.error('Decryption failed: Invalid PDF header in decrypted data');
+      throw new Error('Decryption failed: The resulting data is not a valid PDF document.');
     }
     
     let firstPageThumb = '';
     try {
+      // Pass a copy of the bytes to prevent pdf.js from detaching the original ArrayBuffer
       const loadingTask = getDocumentWithWasm({
-        data: new Uint8Array(safeBytes),
+        data: safeBytes.slice(0),
       });
       const pdf = await loadingTask.promise;
       firstPageThumb = await renderPageThumbnail(pdf, 1);
@@ -386,10 +398,31 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
     // Get page count
     let pageCount = 0;
     try {
-      const tempLoadingTask = getDocumentWithWasm({ data: new Uint8Array(safeBytes) });
+      // Pass a copy of the bytes here as well
+      const tempLoadingTask = getDocumentWithWasm({ data: safeBytes.slice(0) });
       const tempPdf = await tempLoadingTask.promise;
       pageCount = tempPdf.numPages;
     } catch {}
+
+    // CRITICAL: Attempt to "clean" the PDF using pdf-lib.
+    // This often fixes "buggy" text caused by corrupted content streams or 
+    // invalid cross-reference tables after decryption.
+    // We use useObjectStreams: false to potentially improve parsing speed in some viewers,
+    // and ensure we are not over-processing.
+    let cleanedBytes = safeBytes;
+    try {
+      console.log('pdf-decrypt-lite: attempting to clean PDF with pdf-lib...');
+      const pdfDoc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
+      
+      // Optimization: If the PDF is small, we can use object streams. 
+      // For larger files, sometimes disabling them helps with initial parse time in pdf.js
+      const useObjectStreams = safeBytes.length < 5 * 1024 * 1024; 
+      
+      cleanedBytes = await pdfDoc.save({ useObjectStreams });
+      console.log('pdf-decrypt-lite: successfully cleaned and re-serialized PDF');
+    } catch (cleanError) {
+      console.warn('pdf-decrypt-lite: cleaning failed, using raw decrypted bytes:', cleanError);
+    }
     
     return {
       thumbnail: firstPageThumb,
@@ -398,7 +431,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       success: true,
       isDecrypted: true,
       pdfDoc: undefined, 
-      pdfData: safeBytes
+      pdfData: cleanedBytes
     };
   } catch (libError: any) {
     const libErrorMsg = libError?.message || '';
@@ -425,7 +458,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       const fallbackBytes = new Uint8Array(fallbackBuffer);
       
       const loadingTask = getDocumentWithWasm({
-        data: fallbackBytes,
+        data: fallbackBytes.slice(0),
         password: password,
         stopAtErrors: false
       });

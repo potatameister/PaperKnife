@@ -1,15 +1,17 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { 
-  Trash2, Clock, Moon, Sun, Monitor,
+  Trash2, Clock, Moon, Sun, Monitor, Smartphone,
   ChevronRight, Info, Zap, User, DownloadCloud, ListFilter,
   RotateCcw, ShieldCheck, Bug, Heart as HeartIcon, Settings2, Award, Library
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { Capacitor } from '@capacitor/core'
 import { clearActivity } from '../utils/recentActivity'
 import { toast } from 'sonner'
 import { Theme } from '../types'
 import { NativeToolLayout } from './tools/shared/NativeToolLayout'
 import { hapticImpact } from '../utils/haptics'
+import { useViewMode } from '../utils/viewModeContext'
 
 // --- Custom UI Components ---
 
@@ -72,7 +74,9 @@ const SettingGroup = ({ title, children }: { title: string, children: React.Reac
 )
 
 export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: (t: Theme) => void }) {
+  const { viewMode, setViewMode } = useViewMode()
   const navigate = useNavigate()
+  const isNative = Capacitor.isNativePlatform()
   
   const [autoWipe, setAutoWipe] = useState(localStorage.getItem('autoWipe') === 'true')
   const [wipeTimer, setWipeTimer] = useState(localStorage.getItem('autoWipeTimer') || '15')
@@ -140,6 +144,18 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
               </button>
             ))}
           </div>
+          {import.meta.env.DEV && !isNative && (
+            <SettingItem 
+              icon={viewMode === 'web' ? Smartphone : Monitor} 
+              title="View Mode" 
+              subtitle={viewMode === 'web' ? 'Switch to Android UI' : 'Switch to Web UI'}
+              action={<ToggleSwitch checked={viewMode === 'android'} onChange={() => {
+                hapticImpact()
+                setViewMode(viewMode === 'web' ? 'android' : 'web')
+                toast.success(`Switched to ${viewMode === 'web' ? 'Android' : 'Web'} UI`)
+              }} />}
+            />
+          )}
           <SettingItem 
             icon={Zap} 
             title="Haptic Feedback" 

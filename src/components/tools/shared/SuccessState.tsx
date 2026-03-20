@@ -1,5 +1,5 @@
 import { Download, Eye, CheckCircle2, Share2, RotateCcw } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { downloadFile, shareFile } from '../../../utils/pdfHelpers'
 import { Capacitor } from '@capacitor/core'
@@ -26,11 +26,20 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
     if (shouldAutoDownload) {
       const triggerAutoDownload = async () => {
         try {
-          const response = await fetch(downloadUrl)
-          const blob = await response.blob()
-          const buffer = await blob.arrayBuffer()
-          const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
-          await downloadFile(new Uint8Array(buffer), fileName, mimeType)
+          if (isNative) {
+            const response = await fetch(downloadUrl)
+            const blob = await response.blob()
+            const buffer = await blob.arrayBuffer()
+            const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
+            await downloadFile(new Uint8Array(buffer), fileName, mimeType)
+          } else {
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
           toast.success(`Auto-saved as ${fileName}`)
         } catch (e) {
           console.error('Auto-download failed:', e)
@@ -48,18 +57,26 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
     }
     try {
       toast.loading(`Saving ${fileName}...`, { id: 'save-action' })
-      const response = await fetch(downloadUrl)
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`)
-      }
-      const blob = await response.blob()
-      if (blob.size === 0) {
-        throw new Error('File is empty')
-      }
-      const buffer = await blob.arrayBuffer()
-      const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
       
-      await downloadFile(new Uint8Array(buffer), fileName, mimeType)
+      if (isNative) {
+        // Native needs the actual bytes to write to the filesystem
+        const response = await fetch(downloadUrl)
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`)
+        const blob = await response.blob()
+        if (blob.size === 0) throw new Error('File is empty')
+        const buffer = await blob.arrayBuffer()
+        const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
+        await downloadFile(new Uint8Array(buffer), fileName, mimeType)
+      } else {
+        // Web can just trigger the download directly using the object URL
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
       toast.success(`Saved to Documents as ${fileName}`, { id: 'save-action' })
     } catch (err: any) {
       console.error('Download error:', err)

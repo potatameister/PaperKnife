@@ -1,0 +1,264 @@
+DOES NOT VERIFY
+ERROR: APK Signature Scheme v3 signer #1: APK integrity check failed. CHUNKED_SHA256 digest mismatch. Expected: <9630b62baf476b6ee8639a08e48dfbdcb8bb3f7ae5551b0dfef7474c2343b7ec>, actual: <ab74459bfbc5399275ce1116e930a8761391ef848cc2a390cd5168ecd5b930af>
+Error: failed to verify /tmp/tmptwkl7pv7/output.apk.
+
+Not reproducible, going for the zipInfo diff of the APKs.
+If the following shows the signature files as the only difference, try the 'zipalignment' helper to look for alignment, padding etc.
+
+(perms: file permissions; ver: zipinfo create-version; tt: type (text/binary) and whether it's encrypted ('t-' = text, not encrypted; bx = binary, encrypted))
+
+  perms       ver FSys Size    tt CompSize Algo Timestamp           CRC      FileName
+  ----------+----+----+-------+--+--------+----+-------------------+--------+-----------
+@@ -1,26 +1,26 @@
+- Archive:  ./fcde496e172e9e53bf94e5f4fdd4cfb985bb5f76887050e35f977470940f4c51-com.paperknife.app-v1.0.9-upstream.apk
+- Zip file size: 5446980 bytes, number of entries: 597
++ Archive:  ./5bd3302c0917fb14db214ddd6e7843a17c9f87c7d5b7432be1fccf40461d0cfb-com.paperknife.app-v1.0.9-unsigned.apk
++ Zip file size: 5316689 bytes, number of entries: 603
+  -rw-r--r--  0.0 unx       57 b-       53 defN 1981-01-01 01:01:02 5ef26ee3 META-INF/com/android/build/gradle/app-metadata.properties
+  -rw-r--r--  0.0 unx       46 b-       48 defN 1981-01-01 01:01:02 b8ff6554 META-INF/version-control-info.textproto
+- -rw-r--r--  0.0 unx     2507 b-     2507 stor 1981-01-01 01:01:02 03071877 assets/dexopt/baseline.prof
++ -rw-r--r--  0.0 unx     2507 b-     2507 stor 1981-01-01 01:01:02 24c7fd1b assets/dexopt/baseline.prof
+  -rw-r--r--  0.0 unx      233 b-      233 stor 1981-01-01 01:01:02 1921866b assets/dexopt/baseline.profm
+- -rw-r--r--  0.0 unx  7393060 b-  2573373 defN 1981-01-01 01:01:02 1a26a3c2 classes.dex
++ -rw-r--r--  0.0 unx  7393076 b-  2573368 defN 1981-01-01 01:01:02 59954c2b classes.dex
+  -rw-r--r--  0.0 unx       80 b-       65 defN 1981-01-01 01:01:02 974f9e7e assets/capacitor.config.json
+  -rw-r--r--  0.0 unx      398 b-      135 defN 1981-01-01 01:01:02 5fd8e42f assets/capacitor.plugins.json
+  -rw-r--r--  0.0 unx    53180 b-     9587 defN 1981-01-01 01:01:02 55455f2e assets/native-bridge.js
+- -rw-r--r--  0.0 unx   254908 b-    55155 defN 1981-01-01 01:01:02 0d993a3b assets/public/assets/index-knR6iaEz.js
+- -rw-r--r--  0.0 unx    62065 b-    10074 defN 1981-01-01 01:01:02 27c73543 assets/public/assets/index-zLdAXDEf.css
++ -rw-r--r--  0.0 unx   254908 b-    55155 defN 1981-01-01 01:01:02 044c0693 assets/public/assets/index-B9G4Xb2l.js
++ -rw-r--r--  0.0 unx    61910 b-    10052 defN 1981-01-01 01:01:02 eca89c99 assets/public/assets/index-thjyjfjv.css
+  -rw-r--r--  0.0 unx   436350 b-   181241 defN 1981-01-01 01:01:02 07d1245e assets/public/assets/pdf-lib-core-Zs0HL52P.js
+  -rw-r--r--  0.0 unx  1072841 b-   296460 defN 1981-01-01 01:01:02 58954c96 assets/public/assets/pdf.worker.min-LyOxJPrg.mjs
+  -rw-r--r--  0.0 unx   429397 b-   178183 defN 1981-01-01 01:01:02 65dc262c assets/public/assets/pdfWorker-DTSgDFeA.js
+  -rw-r--r--  0.0 unx   405425 b-   118256 defN 1981-01-01 01:01:02 4cb562c2 assets/public/assets/pdfjs-viewer-BENO9Ct1.js
+- -rw-r--r--  0.0 unx    12134 b-     4969 defN 1981-01-01 01:01:02 075a315a assets/public/assets/tesseract-core-BD2yz_5F.js
++ -rw-r--r--  0.0 unx      239 b-      175 defN 1981-01-01 01:01:02 d0751ee3 assets/public/assets/tesseract-core-TDtrdbi3.js
+  -rw-r--r--  0.0 unx   241952 b-    73671 defN 1981-01-01 01:01:02 c5af0f2a assets/public/assets/vendor-ui-MinRSViP.js
+- -rw-r--r--  0.0 unx   142531 b-    44936 defN 1981-01-01 01:01:02 3a6915b5 assets/public/assets/vendor-utils-W0_1XDLP.js
+- -rw-r--r--  0.0 unx     1070 b-      520 defN 1981-01-01 01:01:02 a85f0648 assets/public/assets/web-BiFzdRHp.js
+- -rw-r--r--  0.0 unx      932 b-      424 defN 1981-01-01 01:01:02 5239fade assets/public/assets/web-BpIprNGW.js
+- -rw-r--r--  0.0 unx     8860 b-     3047 defN 1981-01-01 01:01:02 a7bca313 assets/public/assets/web-BvKteGkr.js
+- -rw-r--r--  0.0 unx      535 b-      318 defN 1981-01-01 01:01:02 93da43fa assets/public/assets/web-ByZMojJK.js
++ -rw-r--r--  0.0 unx   142531 b-    44935 defN 1981-01-01 01:01:02 fa1d9804 assets/public/assets/vendor-utils-7TDIE9Tr.js
++ -rw-r--r--  0.0 unx     1070 b-      519 defN 1981-01-01 01:01:02 42d75751 assets/public/assets/web-BwJSxUpe.js
++ -rw-r--r--  0.0 unx      932 b-      424 defN 1981-01-01 01:01:02 b2e09ff7 assets/public/assets/web-BwpL2ImQ.js
++ -rw-r--r--  0.0 unx      535 b-      318 defN 1981-01-01 01:01:02 ce1f448f assets/public/assets/web-CkikNHJg.js
++ -rw-r--r--  0.0 unx     8860 b-     3047 defN 1981-01-01 01:01:02 c3fe5bea assets/public/assets/web-DAi5N6qj.js
+  -rw-r--r--  0.0 unx     2404 b-     2112 defN 1981-01-01 01:01:02 aef88825 assets/public/cmaps/78-EUC-H.bcmap
+  -rw-r--r--  0.0 unx      173 b-      146 defN 1981-01-01 01:01:02 48759238 assets/public/cmaps/78-EUC-V.bcmap
+  -rw-r--r--  0.0 unx     2379 b-     2048 defN 1981-01-01 01:01:02 2b55fa19 assets/public/cmaps/78-H.bcmap
+@@ -198,7 +198,7 @@
+  -rw-r--r--  0.0 unx    94756 b-    42592 defN 1981-01-01 01:01:02 a744f039 assets/public/fonts/PlusJakartaSans-Regular.ttf
+  -rw-r--r--  0.0 unx      318 b-      202 defN 1981-01-01 01:01:02 7c914c77 assets/public/icons/logo-github.svg
+  -rw-r--r--  0.0 unx      178 b-      133 defN 1981-01-01 01:01:02 89cd3fae assets/public/icons/logo.svg
+- -rw-r--r--  0.0 unx     3022 b-     1121 defN 1981-01-01 01:01:02 2f72e7ad assets/public/index.html
++ -rw-r--r--  0.0 unx     3022 b-     1119 defN 1981-01-01 01:01:02 9b7d0b21 assets/public/index.html
+  -rw----     2.4 fat       54 b-       50 defN 1981-01-01 01:01:02 8f594b50 META-INF/services/kotlinx.coroutines.CoroutineExceptionHandler
+  -rw----     2.4 fat       52 b-       49 defN 1981-01-01 01:01:02 4b95597f META-INF/services/kotlinx.coroutines.internal.MainDispatcherFactory
+  -rw----     2.4 fat     1006 b-      533 defN 1981-01-01 01:01:02 05ba09ef kotlin/annotation/annotation.kotlin_builtins
+@@ -211,12 +211,12 @@
+  -rw----     2.4 fat     4827 b-     1435 defN 1981-01-01 01:01:02 ddb416ef kotlin/reflect/reflect.kotlin_builtins
+  -rw----     2.4 fat     2109 b-      981 defN 1981-01-01 01:01:02 5859a3ab org/apache/cordova/allowlist/index.html
+  -rw----     2.4 fat     1683 b-      829 defN 1981-01-01 01:01:02 ea49b326 org/apache/cordova/allowlist/index2.html
+- -rw----     0.0 fat     7224 b-     1964 defN 1981-01-01 01:01:02 48160e71 AndroidManifest.xml
++ -rw----     0.0 fat     7224 b-     1965 defN 1981-01-01 01:01:02 af776df3 AndroidManifest.xml
+  -rw----     0.0 fat      281 b-      281 stor 1981-01-01 01:01:02 ead36c57 res/-B.png
+  -rw----     0.0 fat      318 b-      318 stor 1981-01-01 01:01:02 5390d72d res/-N.png
+  -rw----     0.0 fat     9214 b-     9214 stor 1981-01-01 01:01:02 0c2c566f res/-j.png
+  -rw----     0.0 fat     3127 b-     3127 stor 1981-01-01 01:01:02 85af3cc1 res/-u.png
+- -rw----     0.0 fat      548 b-      241 defN 1981-01-01 01:01:02 c3f1bc4d res/0K.xml
++ -rw----     0.0 fat      636 b-      264 defN 1981-01-01 01:01:02 cbb059cf res/0K.xml
+  -rw----     0.0 fat     1064 b-      337 defN 1981-01-01 01:01:02 b895059d res/0M.xml
+  -rw----     0.0 fat      267 b-      267 stor 1981-01-01 01:01:02 95bbccff res/0c.9.png
+  -rw----     0.0 fat      568 b-      299 defN 1981-01-01 01:01:02 4fb9455f res/0w.xml
+@@ -233,6 +233,7 @@
+  -rw----     0.0 fat      541 b-      541 stor 1981-01-01 01:01:02 c5fedfaf res/33.9.png
+  -rw----     0.0 fat     1056 b-      500 defN 1981-01-01 01:01:02 ce09653b res/3A.xml
+  -rw----     0.0 fat      258 b-      258 stor 1981-01-01 01:01:02 cff461f2 res/3u.9.png
++ -rw----     0.0 fat       91 b-       91 stor 1981-01-01 01:01:02 1b94c04c res/3z.png
+  -rw----     0.0 fat      214 b-      214 stor 1981-01-01 01:01:02 84a788a6 res/42.9.png
+  -rw----     0.0 fat      780 b-      381 defN 1981-01-01 01:01:02 3ebf46f1 res/46.xml
+  -rw----     0.0 fat      595 b-      595 stor 1981-01-01 01:01:02 01847edd res/49.png
+@@ -249,6 +250,7 @@
+  -rw----     0.0 fat      210 b-      210 stor 1981-01-01 01:01:02 5418f824 res/62.9.png
+  -rw----     0.0 fat      235 b-      235 stor 1981-01-01 01:01:02 30459f98 res/65.9.png
+  -rw----     0.0 fat      688 b-      302 defN 1981-01-01 01:01:02 9eb43daa res/6Q.xml
++ -rw----     0.0 fat      118 b-      118 stor 1981-01-01 01:01:02 50976dc3 res/6h.png
+  -rw----     0.0 fat      227 b-      227 stor 1981-01-01 01:01:02 55e57039 res/6t.png
+  -rw----     0.0 fat      430 b-      430 stor 1981-01-01 01:01:02 c7c65396 res/7C.9.png
+  -rw----     0.0 fat     1116 b-      523 defN 1981-01-01 01:01:02 7b0ae61d res/7G.xml
+@@ -260,7 +262,7 @@
+  -rw----     0.0 fat      525 b-      525 stor 1981-01-01 01:01:02 c8e02261 res/7o.9.png
+  -rw----     0.0 fat     2688 b-      841 defN 1981-01-01 01:01:02 c8a001bd res/80.xml
+  -rw----     0.0 fat      532 b-      247 defN 1981-01-01 01:01:02 7b79f8b6 res/8K.xml
+- -rw----     0.0 fat     4341 b-     4341 stor 1981-01-01 01:01:02 f13b53dc res/8c.png
++ -rw----     0.0 fat      664 b-      664 stor 1981-01-01 01:01:02 8063e3ec res/8c.png
+  -rw----     0.0 fat      207 b-      207 stor 1981-01-01 01:01:02 7219c8a8 res/8h.9.png
+  -rw----     0.0 fat      946 b-      946 stor 1981-01-01 01:01:02 600e5975 res/8h.png
+  -rw----     0.0 fat      187 b-      187 stor 1981-01-01 01:01:02 52c5a6c3 res/9N.9.png
+@@ -272,7 +274,7 @@
+  -rw----     0.0 fat      192 b-      192 stor 1981-01-01 01:01:02 296f3744 res/9X.9.png
+  -rw----     0.0 fat      304 b-      172 defN 1981-01-01 01:01:02 57364e5b res/9m.xml
+  -rw----     0.0 fat      178 b-      178 stor 1981-01-01 01:01:02 aad3c65d res/9n.9.png
+- -rw----     0.0 fat     1869 b-     1869 stor 1981-01-01 01:01:02 760e5f57 res/9w.png
++ -rw----     0.0 fat      908 b-      908 stor 1981-01-01 01:01:02 54f56191 res/9w.png
+  -rw----     0.0 fat      593 b-      593 stor 1981-01-01 01:01:02 c02d00e1 res/9z.png
+  -rw----     0.0 fat      388 b-      231 defN 1981-01-01 01:01:02 c5291faf res/9z.xml
+  -rw----     0.0 fat      872 b-      388 defN 1981-01-01 01:01:02 c423e5a2 res/A1.xml
+@@ -284,7 +286,7 @@
+  -rw----     0.0 fat     1128 b-      392 defN 1981-01-01 01:01:02 17e8fb23 res/BJ2.xml
+  -rw----     0.0 fat      229 b-      229 stor 1981-01-01 01:01:02 63663bff res/BL.9.png
+  -rw----     0.0 fat      159 b-      159 stor 1981-01-01 01:01:02 52c2e8e3 res/BM.png
+- -rw----     0.0 fat      548 b-      241 defN 1981-01-01 01:01:02 c3f1bc4d res/BW.xml
++ -rw----     0.0 fat      636 b-      264 defN 1981-01-01 01:01:02 cbb059cf res/BW.xml
+  -rw----     0.0 fat      616 b-      311 defN 1981-01-01 01:01:02 bb8682ca res/Bb.xml
+  -rw----     0.0 fat      388 b-      218 defN 1981-01-01 01:01:02 748bb31c res/Bd.xml
+  -rw----     0.0 fat     2648 b-      835 defN 1981-01-01 01:01:02 e0194235 res/Be.xml
+@@ -302,9 +304,9 @@
+  -rw----     0.0 fat      310 b-      310 stor 1981-01-01 01:01:02 40bc4240 res/EP.png
+  -rw----     0.0 fat      396 b-      228 defN 1981-01-01 01:01:02 f068f605 res/EZ.xml
+  -rw----     0.0 fat     1716 b-      551 defN 1981-01-01 01:01:02 23136bc0 res/Eg.xml
+- -rw----     0.0 fat     4306 b-     4306 stor 1981-01-01 01:01:02 57315dbd res/Em.png
++ -rw----     0.0 fat      758 b-      758 stor 1981-01-01 01:01:02 1f8eb2ab res/Em.png
+  -rw----     0.0 fat     1684 b-      595 defN 1981-01-01 01:01:02 3c1f6662 res/F8.xml
+- -rw----     0.0 fat     3981 b-     3981 stor 1981-01-01 01:01:02 0abb5be2 res/FS.png
++ -rw----     0.0 fat     2228 b-     2228 stor 1981-01-01 01:01:02 35ec0d6b res/FS.png
+  -rw----     0.0 fat     1304 b-      566 defN 1981-01-01 01:01:02 5b095039 res/FT.xml
+  -rw----     0.0 fat      307 b-      307 stor 1981-01-01 01:01:02 33d55ad0 res/FW.png
+  -rw----     0.0 fat     1352 b-      550 defN 1981-01-01 01:01:02 49ad7d89 res/Fu.xml
+@@ -315,12 +317,14 @@
+  -rw----     0.0 fat      440 b-      250 defN 1981-01-01 01:01:02 7dae939a res/GF.xml
+  -rw----     0.0 fat     1172 b-      461 defN 1981-01-01 01:01:02 70f29fc2 res/GK.xml
+  -rw----     0.0 fat     1208 b-      470 defN 1981-01-01 01:01:02 21122fb3 res/GR.xml
+- -rw----     0.0 fat    15916 b-    15916 stor 1981-01-01 01:01:02 47066da0 res/Gc.png
++ -rw----     0.0 fat     1350 b-     1350 stor 1981-01-01 01:01:02 546255f3 res/Gc.png
+  -rw----     0.0 fat      984 b-      984 stor 1981-01-01 01:01:02 f7245981 res/Gf.png
+  -rw----     0.0 fat      202 b-      202 stor 1981-01-01 01:01:02 a404393e res/Gt.9.png
+  -rw----     0.0 fat     1012 b-      319 defN 1981-01-01 01:01:02 b3fcc2f8 res/Gt.xml
++ -rw----     0.0 fat      228 b-      228 stor 1981-01-01 01:01:02 2af98fdb res/Gx.png
+  -rw----     0.0 fat      203 b-      203 stor 1981-01-01 01:01:02 214dfcbe res/H-.png
+  -rw----     0.0 fat      464 b-      269 defN 1981-01-01 01:01:02 3d372b32 res/Hd.xml
++ -rw----     0.0 fat      103 b-      103 stor 1981-01-01 01:01:02 66d1875e res/I2.png
+  -rw----     0.0 fat     1076 b-      393 defN 1981-01-01 01:01:02 d0762d8f res/II.xml
+  -rw----     0.0 fat     1544 b-     1544 stor 1981-01-01 01:01:02 3d40754b res/IX.9.png
+  -rw----     0.0 fat      468 b-      232 defN 1981-01-01 01:01:02 292bc2c1 res/In.xml
+@@ -332,7 +336,7 @@
+  -rw----     0.0 fat      216 b-      216 stor 1981-01-01 01:01:02 4f558efa res/K_.9.png
+  -rw----     0.0 fat     2360 b-      660 defN 1981-01-01 01:01:02 0882fa05 res/Ke.xml
+  -rw----     0.0 fat     1064 b-      338 defN 1981-01-01 01:01:02 1f929045 res/L_.xml
+- -rw----     0.0 fat     9793 b-     9793 stor 1981-01-01 01:01:02 2dc80fe3 res/Lf.png
++ -rw----     0.0 fat     1024 b-     1024 stor 1981-01-01 01:01:02 0364e2cc res/Lf.png
+  -rw----     0.0 fat     1656 b-      421 defN 1981-01-01 01:01:02 7a03a080 res/Lf.xml
+  -rw----     0.0 fat     1779 b-     1779 stor 1981-01-01 01:01:02 e97125d2 res/Li.9.png
+  -rw----     0.0 fat     1196 b-      397 defN 1981-01-01 01:01:02 91c0d808 res/M7.xml
+@@ -342,6 +346,7 @@
+  -rw----     0.0 fat      513 b-      513 stor 1981-01-01 01:01:02 6eddf9de res/MQ.png
+  -rw----     0.0 fat      247 b-      247 stor 1981-01-01 01:01:02 c29ac558 res/Ma.9.png
+  -rw----     0.0 fat      792 b-      376 defN 1981-01-01 01:01:02 4a01d4eb res/Mp.xml
++ -rw----     0.0 fat      595 b-      595 stor 1981-01-01 01:01:02 fad0dd44 res/N3.png
+  -rw----     0.0 fat      736 b-      401 defN 1981-01-01 01:01:02 4484223e res/N3.xml
+  -rw----     0.0 fat     2505 b-     2505 stor 1981-01-01 01:01:02 7c75d46d res/NA.9.png
+  -rw----     0.0 fat      328 b-      190 defN 1981-01-01 01:01:02 ecacd32e res/NF.xml
+@@ -356,13 +361,14 @@
+  -rw----     0.0 fat      631 b-      631 stor 1981-01-01 01:01:02 83a904b8 res/Pb.png
+  -rw----     0.0 fat      207 b-      207 stor 1981-01-01 01:01:02 0ec632f8 res/Pg.9.png
+  -rw----     0.0 fat      189 b-      189 stor 1981-01-01 01:01:02 3408a58b res/QJ.9.png
+- -rw----     0.0 fat     1876 b-     1876 stor 1981-01-01 01:01:02 8442e7b6 res/QZ.png
++ -rw----     0.0 fat      451 b-      451 stor 1981-01-01 01:01:02 46553aac res/QR.png
++ -rw----     0.0 fat      511 b-      511 stor 1981-01-01 01:01:02 48a88612 res/QZ.png
+  -rw----     0.0 fat      124 b-       68 defN 1981-01-01 01:01:02 5c4c55b0 res/QZ.xml
+  -rw----     0.0 fat      796 b-      435 defN 1981-01-01 01:01:02 5b72ebd5 res/Qd.xml
+  -rw----     0.0 fat      980 b-      514 defN 1981-01-01 01:01:02 20a74973 res/Qt.xml
+  -rw----     0.0 fat      396 b-      227 defN 1981-01-01 01:01:02 eeb0006b res/RD.xml
+  -rw----     0.0 fat      832 b-      395 defN 1981-01-01 01:01:02 fc16e963 res/RH.xml
+- -rw----     0.0 fat     6644 b-     6644 stor 1981-01-01 01:01:02 5310ff8d res/RJ.png
++ -rw----     0.0 fat     3494 b-     3494 stor 1981-01-01 01:01:02 22d1ed0a res/RJ.png
+  -rw----     0.0 fat      563 b-      563 stor 1981-01-01 01:01:02 9b1429bf res/RV.png
+  -rw----     0.0 fat     1052 b-      485 defN 1981-01-01 01:01:02 16c9f582 res/S8.xml
+  -rw----     0.0 fat      211 b-      211 stor 1981-01-01 01:01:02 78c37895 res/SV.9.png
+@@ -379,6 +385,7 @@
+  -rw----     0.0 fat      508 b-      259 defN 1981-01-01 01:01:02 53704157 res/UX.xml
+  -rw----     0.0 fat      864 b-      443 defN 1981-01-01 01:01:02 143a4b14 res/V1.xml
+  -rw----     0.0 fat      304 b-      175 defN 1981-01-01 01:01:02 f11bfae2 res/V7.xml
++ -rw----     0.0 fat       85 b-       85 stor 1981-01-01 01:01:02 6b12b715 res/VA.png
+  -rw----     0.0 fat      328 b-      190 defN 1981-01-01 01:01:02 ecacd32e res/VM.xml
+  -rw----     0.0 fat      684 b-      359 defN 1981-01-01 01:01:02 c5c570de res/VN.xml
+  -rw----     0.0 fat      640 b-      350 defN 1981-01-01 01:01:02 73d68bbb res/VT.xml
+@@ -421,7 +428,7 @@
+  -rw----     0.0 fat      720 b-      342 defN 1981-01-01 01:01:02 6a93cf4b res/aU.xml
+  -rw----     0.0 fat      124 b-       68 defN 1981-01-01 01:01:02 5c4c55b0 res/aW.xml
+  -rw----     0.0 fat      391 b-      391 stor 1981-01-01 01:01:02 4fcf3d5b res/ar.png
+- -rw----     0.0 fat    15529 b-    15529 stor 1981-01-01 01:01:02 46b0f96c res/as.png
++ -rw----     0.0 fat     1192 b-     1192 stor 1981-01-01 01:01:02 58bb794c res/as.png
+  -rw----     0.0 fat     1408 b-      423 defN 1981-01-01 01:01:02 04d8fa9c res/bL.xml
+  -rw----     0.0 fat      244 b-      244 stor 1981-01-01 01:01:02 8e4da209 res/bX.9.png
+  -rw----     0.0 fat     1356 b-      663 defN 1981-01-01 01:01:02 e718162c res/bX.xml
+@@ -430,6 +437,7 @@
+  -rw----     0.0 fat      316 b-      187 defN 1981-01-01 01:01:02 45cb4331 res/c5.xml
+  -rw----     0.0 fat      372 b-      184 defN 1981-01-01 01:01:02 e8c4172f res/c6.xml
+  -rw----     0.0 fat      640 b-      361 defN 1981-01-01 01:01:02 41bec4b4 res/cL.xml
++ -rw----     0.0 fat      166 b-      166 stor 1981-01-01 01:01:02 41e5472d res/cV.png
+  -rw----     0.0 fat      440 b-      263 defN 1981-01-01 01:01:02 24c97856 res/cV.xml
+  -rw----     0.0 fat      920 b-      471 defN 1981-01-01 01:01:02 72fae916 res/cm.xml
+  -rw----     0.0 fat      500 b-      242 defN 1981-01-01 01:01:02 35d0539e res/color-v23/abc_btn_colored_borderless_text_material.xml
+@@ -467,7 +475,7 @@
+  -rw----     0.0 fat      167 b-      167 stor 1981-01-01 01:01:02 35642324 res/ej.9.png
+  -rw----     0.0 fat      228 b-      228 stor 1981-01-01 01:01:02 e28c1958 res/ev.9.png
+  -rw----     0.0 fat      825 b-      825 stor 1981-01-01 01:01:02 2c7b277c res/fM.9.png
+- -rw----     0.0 fat    10455 b-    10455 stor 1981-01-01 01:01:02 eb223c5c res/fO.png
++ -rw----     0.0 fat     1126 b-     1126 stor 1981-01-01 01:01:02 c0be78b0 res/fO.png
+  -rw----     0.0 fat      640 b-      296 defN 1981-01-01 01:01:02 370f4943 res/fj.xml
+  -rw----     0.0 fat      585 b-      585 stor 1981-01-01 01:01:02 1361e44f res/g-.png
+  -rw----     0.0 fat      215 b-      215 stor 1981-01-01 01:01:02 d9fa55b7 res/gK.9.png
+@@ -513,7 +521,7 @@
+  -rw----     0.0 fat     1160 b-      409 defN 1981-01-01 01:01:02 a0d00e3f res/nT.xml
+  -rw----     0.0 fat     1208 b-     1208 stor 1981-01-01 01:01:02 b3414d08 res/nf.png
+  -rw----     0.0 fat      532 b-      252 defN 1981-01-01 01:01:02 bce88acc res/nz.xml
+- -rw----     0.0 fat     9441 b-     9441 stor 1981-01-01 01:01:02 cb7b937a res/o-.png
++ -rw----     0.0 fat     4924 b-     4924 stor 1981-01-01 01:01:02 6edb86a5 res/o-.png
+  -rw----     0.0 fat      260 b-      260 stor 1981-01-01 01:01:02 1b0c989d res/o9.9.png
+  -rw----     0.0 fat      816 b-      343 defN 1981-01-01 01:01:02 febae0bb res/oP.xml
+  -rw----     0.0 fat      252 b-      252 stor 1981-01-01 01:01:02 c8900a8e res/o_.9.png
+@@ -550,6 +558,7 @@
+  -rw----     0.0 fat      208 b-      208 stor 1981-01-01 01:01:02 e01fa47a res/tU.9.png
+  -rw----     0.0 fat      198 b-      198 stor 1981-01-01 01:01:02 18ddec29 res/tZ.9.png
+  -rw----     0.0 fat      278 b-      278 stor 1981-01-01 01:01:02 a0d3c543 res/te.png
++ -rw----     0.0 fat      466 b-      466 stor 1981-01-01 01:01:02 02f640e1 res/tw.png
+  -rw----     0.0 fat     1196 b-      397 defN 1981-01-01 01:01:02 da7dbc91 res/u0.xml
+  -rw----     0.0 fat      513 b-      513 stor 1981-01-01 01:01:02 c4f21d8f res/u3.png
+  -rw----     0.0 fat      848 b-      430 defN 1981-01-01 01:01:02 08073925 res/uJ.xml
+@@ -568,7 +577,7 @@
+  -rw----     0.0 fat      437 b-      437 stor 1981-01-01 01:01:02 3b70c5f0 res/wL.9.png
+  -rw----     0.0 fat      225 b-      225 stor 1981-01-01 01:01:02 a1d68cd0 res/wN.9.png
+  -rw----     0.0 fat      214 b-      214 stor 1981-01-01 01:01:02 6a5cd9b8 res/w_.png
+- -rw----     0.0 fat     6593 b-     6593 stor 1981-01-01 01:01:02 4dd36990 res/wb.png
++ -rw----     0.0 fat      799 b-      799 stor 1981-01-01 01:01:02 3edc7ece res/wb.png
+  -rw----     0.0 fat     7668 b-     7668 stor 1981-01-01 01:01:02 7e6b5dda res/wv.png
+  -rw----     0.0 fat      212 b-      212 stor 1981-01-01 01:01:02 3bde0e3f res/x3.9.png
+  -rw----     0.0 fat     1528 b-      734 defN 1981-01-01 01:01:02 8e9ea254 res/x4.xml
+@@ -584,17 +593,14 @@
+  -rw----     0.0 fat      576 b-      294 defN 1981-01-01 01:01:02 54e02f01 res/yV.xml
+  -rw----     0.0 fat      186 b-      186 stor 1981-01-01 01:01:02 f52e9e15 res/yY.9.png
+  -rw----     0.0 fat      395 b-      395 stor 1981-01-01 01:01:02 972e3ff3 res/yg.9.png
+- -rw----     0.0 fat     2786 b-     2786 stor 1981-01-01 01:01:02 db8cd183 res/yn.png
++ -rw----     0.0 fat     1565 b-     1565 stor 1981-01-01 01:01:02 96a2b906 res/yn.png
+  -rw----     0.0 fat      221 b-      221 stor 1981-01-01 01:01:02 9944f31a res/z-.9.png
+  -rw----     0.0 fat      417 b-      417 stor 1981-01-01 01:01:02 3c853cf4 res/z9.9.png
+  -rw----     0.0 fat      324 b-      324 stor 1981-01-01 01:01:02 fe749af3 res/zE.png
+- -rw----     0.0 fat     2725 b-     2725 stor 1981-01-01 01:01:02 00133603 res/zR.png
++ -rw----     0.0 fat      529 b-      529 stor 1981-01-01 01:01:02 e785ab40 res/zR.png
+  -rw----     0.0 fat     2463 b-     2463 stor 1981-01-01 01:01:02 abacf2d2 res/zV.9.png
+  -rw----     0.0 fat      448 b-      217 defN 1981-01-01 01:01:02 36c75243 res/zp.xml
+  -rw----     0.0 fat      464 b-      268 defN 1981-01-01 01:01:02 87d58c52 res/zq.xml
+- -rw----     0.0 fat     3064 b-     3064 stor 1981-01-01 01:01:02 b75dae30 res/zr.png
+- -rw----     0.0 fat   276492 b-   276492 stor 1981-01-01 01:01:02 c77f0659 resources.arsc
+- -rw----     2.0 fat    55638 b-    23628 defN 1981-01-01 01:01:02 5bf20ec7 META-INF/PAPERKNI.SF
+- -rw----     2.0 fat     1382 b-     1058 defN 1981-01-01 01:01:02 08f80578 META-INF/PAPERKNI.RSA
+- -rw----     2.0 fat    55511 b-    23169 defN 1981-01-01 01:01:02 f1d74f1c META-INF/MANIFEST.MF
+- 597 files, 12941440 bytes uncompressed, 5371215 bytes compressed:  58.5%
++ -rw----     0.0 fat      638 b-      638 stor 1981-01-01 01:01:02 7b57830a res/zr.png
++ -rw----     0.0 fat   276920 b-   276920 stor 1981-01-01 01:01:02 f596f4e7 resources.arsc
++ 603 files, 12742173 bytes uncompressed, 5243704 bytes compressed:  58.8%
+
+also see: [Debug & fix failed Reproducible Builds](https://izzyondroid.org/docs/reproducibleBuilds/DebugFailedRBs/)

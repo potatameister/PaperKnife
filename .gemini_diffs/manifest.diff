@@ -1,0 +1,11 @@
+--- /dev/fd/63	2026-02-16 12:50:22.954620718 -0800
++++ /dev/fd/62	2026-02-16 12:50:22.958620746 -0800
+@@ -32,7 +32,7 @@
+         ATTR: http://schemas.android.com/apk/res/android:allowBackup=true
+         ATTR: http://schemas.android.com/apk/res/android:supportsRtl=true
+         ATTR: http://schemas.android.com/apk/res/android:extractNativeLibs=false
+-        ATTR: http://schemas.android.com/apk/res/android:roundIcon=@0x7f0c0002
++        ATTR: http://schemas.android.com/apk/res/android:roundIcon=@0x7f0c0003
+         ATTR: http://schemas.android.com/apk/res/android:appComponentFactory='androidx.core.app.CoreComponentFactory'
+         XML ELEM START [lineno=27, name='activity', #attributes=6]
+           ATTR: http://schemas.android.com/apk/res/android:theme=@0x7f0e0007

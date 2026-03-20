@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Loader2, Lock, Image as ImageIcon, ArrowRight } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'

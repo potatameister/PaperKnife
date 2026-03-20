@@ -1,0 +1,5 @@
+{
+  "name": "PaperKnife",
+  "description": "Privacy-first PDF utility. Merge, split, compress, and edit PDFs 100% locally.",
+  "requestFramePermissions": []
+}

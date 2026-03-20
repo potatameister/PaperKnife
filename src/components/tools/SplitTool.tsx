@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Loader2, Scissors, Check, Plus, Lock, ArrowRight, X, Zap } from 'lucide-react'
 import JSZip from 'jszip'
 import { toast } from 'sonner'

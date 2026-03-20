@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Lock, Unlock, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -28,6 +28,25 @@ export default function UnlockTool() {
   const [password, setPassword] = useState('')
   const [customFileName, setCustomFileName] = useState('paperknife-unlocked')
 
+  const [isLoadingFile, setIsLoadingFile] = useState(false)
+
+  const handleFile = async (file: File) => {
+    if (file.type !== 'application/pdf') return
+    setIsLoadingFile(true)
+    try {
+      await new Promise(resolve => setTimeout(resolve, 50)) // Allow UI to render loading state
+      const meta = await getPdfMetaData(file)
+      setPdfData({ file, thumbnail: meta.thumbnail, pageCount: meta.pageCount, isLocked: meta.isLocked })
+      setCustomFileName(`${file.name.replace('.pdf', '')}-unlocked`)
+      clearUrls(); setPassword('')
+    } catch (e) {
+      console.error('Error reading PDF:', e)
+      toast.error('Failed to read PDF file.')
+    } finally {
+      setIsLoadingFile(false)
+    }
+  }
+
   useEffect(() => {
     const pipelined = consumePipelineFile()
     if (pipelined) {
@@ -35,14 +54,6 @@ export default function UnlockTool() {
       handleFile(file)
     }
   }, [])
-
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') return
-    const meta = await getPdfMetaData(file)
-    setPdfData({ file, thumbnail: meta.thumbnail, pageCount: meta.pageCount, isLocked: meta.isLocked })
-    setCustomFileName(`${file.name.replace('.pdf', '')}-unlocked`)
-    clearUrls(); setPassword('')
-  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) handleFile(e.target.files[0])
@@ -73,11 +84,13 @@ export default function UnlockTool() {
       if (!finalBytes) throw new Error('Failed to generate unlocked file.')
 
       // Belt-and-suspenders: always copy to a fresh buffer before Blob creation
-      const safeFinalBytes = new Uint8Array(finalBytes!);
+      const safeFinalBytes = new Uint8Array(finalBytes.length);
+      safeFinalBytes.set(finalBytes instanceof Uint8Array ? finalBytes : new Uint8Array(finalBytes));
+      
       const blob = new Blob([safeFinalBytes as BlobPart], { type: 'application/pdf' })
 
       const url = createUrl(blob)
-      addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url, buffer: finalBytes })
+      addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url, buffer: safeFinalBytes })
     } catch (error: any) { 
       console.error('Unlock error:', error)
       toast.error(error.message || 'Error.') 
@@ -95,7 +108,13 @@ export default function UnlockTool() {
   return (
     <NativeToolLayout title="Unlock PDF" description="Remove passwords and restrictions permanently. Processed locally." actions={pdfData && !objectUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
-      {!pdfData ? (
+      {isLoadingFile ? (
+        <div className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center flex flex-col items-center justify-center animate-in fade-in duration-500">
+          <Loader2 className="w-12 h-12 text-rose-500 animate-spin mb-4" />
+          <h3 className="text-xl font-bold dark:text-white mb-2">Reading PDF...</h3>
+          <p className="text-sm text-gray-400">This might take a moment for large files</p>
+        </div>
+      ) : !pdfData ? (
         <button 
           onClick={() => !isProcessing && fileInputRef.current?.click()} 
           className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group"

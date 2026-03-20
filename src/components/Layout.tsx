@@ -18,13 +18,16 @@ import {
   Settings as SettingsIcon,
   Github as GHIcon,
   Heart as HeartIcon,
-  Download
+  Download,
+  Smartphone as SmartphoneIcon,
+  Monitor as MonitorIcon
 } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { Theme, Tool, ToolCategory, ViewMode } from '../types'
 import { PaperKnifeLogo } from './Logo'
 import { ActivityEntry, getRecentActivity, clearActivity } from '../utils/recentActivity'
 import { hapticImpact } from '../utils/haptics'
+import { useViewMode } from '../utils/viewModeContext'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -43,6 +46,7 @@ const categoryColors: Record<ToolCategory, { bg: string, text: string, hover: st
 }
 
 export default function Layout({ children, theme, toggleTheme, tools, onFileDrop, viewMode }: LayoutProps) {
+  const { setViewMode } = useViewMode()
   const navigate = useNavigate()
   const location = useLocation()
   const [isDragging, setIsDragging] = useState(false)
@@ -186,6 +190,18 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
               <InfoIcon size={18} />
               <span className="hidden sm:block">About</span>
             </Link>
+            {import.meta.env.DEV && !isNative && (
+              <button 
+                onClick={() => {
+                  hapticImpact()
+                  setViewMode(viewMode === 'web' ? 'android' : 'web')
+                }} 
+                className="p-2 text-gray-400 hover:text-rose-500 transition-colors"
+                title={viewMode === 'web' ? 'Switch to Android UI' : 'Switch to Web UI'}
+              >
+                {viewMode === 'web' ? <SmartphoneIcon size={20} /> : <MonitorIcon size={20} />}
+              </button>
+            )}
             <button onClick={toggleTheme} className="p-2 text-gray-400 hover:text-rose-500 transition-colors">
               {theme === 'light' ? <MoonIcon size={20} /> : <SunIcon size={20} />}
             </button>
