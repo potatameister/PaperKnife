@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { Theme, Tool, ViewMode } from './types'
 import Layout from './components/Layout'
 import WebView from './components/WebView'
@@ -59,7 +60,7 @@ const tools: Tool[] = [
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>('system')
-  const [viewMode, setViewMode] = useState<ViewMode>('web')
+  const [viewMode, setViewMode] = useState<ViewMode>(Capacitor.isNativePlatform() ? 'android' : 'web')
 
   useEffect(() => {
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
