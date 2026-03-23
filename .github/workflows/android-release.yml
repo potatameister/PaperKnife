@@ -20,20 +20,6 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Fetch OCR Binaries (Global Version Only)
-        run: |
-          mkdir -p public/tesseract
-          curl -Lo public/tesseract/tesseract-core.wasm https://unpkg.com/tesseract.js-core@v5.1.1/tesseract-core.wasm
-          curl -Lo public/tesseract/tesseract-core-simd.wasm https://unpkg.com/tesseract.js-core@v5.1.1/tesseract-core-simd.wasm
-          curl -Lo public/tesseract/tesseract-core-lstm.wasm https://unpkg.com/tesseract.js-core@v5.1.1/tesseract-core-lstm.wasm
-          curl -Lo public/tesseract/tesseract-core.wasm.js https://unpkg.com/tesseract.js-core@v5.1.1/tesseract-core.wasm.js
-          curl -Lo public/tesseract/worker.min.js https://unpkg.com/tesseract.js@v5.1.1/dist/worker.min.js
-          curl -Lo public/tesseract/eng.traineddata.gz https://raw.githubusercontent.com/naptha/tessdata/gh-pages/4.0.0/eng.traineddata.gz
-          gunzip public/tesseract/eng.traineddata.gz
-
-      - name: Build Web Assets (Global)
-        run: npm run build
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -46,31 +32,18 @@ jobs:
           gradle-version: wrapper
           cache-disabled: true
 
-      - name: Sync Capacitor
-        run: npx cap sync android
-
-      - name: Build Global APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease
-          mv app/build/outputs/apk/release/app-release-unsigned.apk ../paperknife-global-unsigned.apk
-
       - name: Build F-Droid Lite APK (No OCR)
         run: |
-          # Clean assets
-          rm -rf public/tesseract/
-          
-          # Rebuild without OCR using environment variable
           export VITE_DISABLE_OCR=true
           npm run build
           npx cap sync android
           
           cd android
+          chmod +x gradlew
           ./gradlew assembleRelease
-          mv app/build/outputs/apk/release/app-release-unsigned.apk ../paperknife-fdroid-unsigned.apk
+          mv app/build/outputs/apk/release/app-release-unsigned.apk ../paperknife-lite-unsigned.apk
 
-      - name: Sign Both APKs
+      - name: Sign APK
         id: sign_app
         uses: ilharp/sign-android-release@v2
         with:
@@ -84,15 +57,12 @@ jobs:
       - name: Rename & Prepare Artifacts
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          cp paperknife-global-unsigned-signed.apk "paperknife-v${VERSION}.apk"
-          cp paperknife-fdroid-unsigned-signed.apk "paperknife-lite-v${VERSION}.apk"
+          cp paperknife-lite-unsigned-signed.apk "paperknife-lite-v${VERSION}.apk"
           echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: PaperKnife-v${{ env.APP_VERSION }}
-          path: |
-            paperknife-v${{ env.APP_VERSION }}.apk
-            paperknife-lite-v${{ env.APP_VERSION }}.apk
+          name: PaperKnife-lite-v${{ env.APP_VERSION }}
+          path: paperknife-lite-v${{ env.APP_VERSION }}.apk
           if-no-files-found: error
