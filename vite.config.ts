@@ -1,18 +1,24 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    tailwindcss(),
     react()
   ],
+  resolve: {
+    alias: {
+      'pdf-lib': 'pdf-lib/dist/pdf-lib.min.js'
+    }
+  },
   base: process.env.VITE_BASE || './',
   server: {
     host: true,
     port: 3000,
     hmr: process.env.DISABLE_HMR !== 'true',
+    watch: {
+      ignored: ['**/android/**']
+    }
   },
   build: {
     target: 'esnext',
