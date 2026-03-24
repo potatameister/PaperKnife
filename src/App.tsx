@@ -16,6 +16,7 @@ import Libraries from './components/Libraries'
 import Thanks from './components/Thanks'
 import { PipelineProvider } from './utils/pipelineContext'
 import { ViewModeProvider } from './utils/viewModeContext'
+import { setSystemUI } from './utils/systemUI'
 import { Toaster } from 'sonner'
 
 // Tools
@@ -63,8 +64,19 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>(Capacitor.isNativePlatform() ? 'android' : 'web')
 
   useEffect(() => {
-    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-    document.documentElement.classList.toggle('dark', isDark)
+    const updateTheme = () => {
+      const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      document.documentElement.classList.toggle('dark', isDark)
+      setSystemUI(isDark ? 'dark' : 'light')
+    }
+    
+    updateTheme()
+    
+    // Listen for system theme changes when in 'system' mode
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = () => theme === 'system' && updateTheme()
+    mediaQuery.addEventListener('change', handler)
+    return () => mediaQuery.removeEventListener('change', handler)
   }, [theme])
 
   const toggleTheme = () => {
