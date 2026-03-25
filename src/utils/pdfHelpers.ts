@@ -388,21 +388,22 @@ export const flattenPdf = async (pdf: any): Promise<Uint8Array> => {
 export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, isDecrypted: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
   console.log('unlockPdf: attempting to unlock file with password length:', password?.length || 0);
   
-  // Try @pdfsmaller/pdf-decrypt-lite first (supports more encryption types)
   try {
-    const libBuffer = await file.slice(0, file.size).arrayBuffer();
-    const pdfBytes = new Uint8Array(libBuffer);
-    console.log('pdf-decrypt-lite: read buffer, length:', pdfBytes.length);
-
-    const decryptedBytes = await decryptPDF(pdfBytes, password);
-    if (!decryptedBytes || decryptedBytes.length === 0) {
-      throw new Error('Decryption returned empty data.');
-    }
-    console.log('pdf-decrypt-lite: successfully decrypted, bytes:', decryptedBytes.length);
+    const arrayBuffer = await file.arrayBuffer();
     
-    // Copy the decrypted bytes IMMEDIATELY. 
-    // This is required because if the library returns a view into WASM memory, 
-    // it will be detached/invalidated shortly after.
+    // Attempt to load and decrypt using pdf-lib
+    // pdf-lib's load() will handle decryption if a password is provided
+    const pdfDoc = await PDFDocument.load(arrayBuffer, { 
+      password: password,
+      ignoreEncryption: false 
+    });
+
+    // If we reach here, the password was correct (or the file wasn't encrypted)
+    // Now we save it UNENCRYPTED
+    const decryptedBytes = await pdfDoc.save();
+    
+    console.log('pdf-lib: successfully decrypted, bytes:', decryptedBytes.length);
+    
     const safeBytes = new Uint8Array(decryptedBytes.length);
     safeBytes.set(decryptedBytes instanceof Uint8Array ? decryptedBytes : new Uint8Array(decryptedBytes));
     
@@ -417,7 +418,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
     let pdfDocResult = undefined;
 
     try {
-      // Pass a copy of the bytes to prevent pdf.js from detaching the original ArrayBuffer
+      // Load into pdf.js for preview/metadata
       const loadingTask = getDocumentWithWasm({
         data: safeBytes.slice(0),
       });
@@ -425,13 +426,8 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       firstPageThumb = await renderPageThumbnail(pdfDocResult, 1);
       pageCount = pdfDocResult.numPages;
     } catch (thumbError) {
-      console.warn('pdf-decrypt-lite: pdf.js load or thumbnail rendering failed after decryption:', thumbError);
+      console.warn('pdf-lib: pdf.js load or thumbnail rendering failed after decryption:', thumbError);
     }
-    
-    // SKIP CLEANING: We are disabling the pdf-lib cleaning step because it was 
-    // causing blank pages and image corruption on some files.
-    // The raw decrypted bytes from pdf-decrypt-lite are usually sufficient.
-    const cleanedBytes = safeBytes;
     
     return {
       thumbnail: firstPageThumb,
@@ -440,17 +436,17 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       success: true,
       isDecrypted: true,
       pdfDoc: pdfDocResult, 
-      pdfData: cleanedBytes
+      pdfData: safeBytes
     };
   } catch (libError: any) {
     const libErrorMsg = libError?.message || '';
     const libErrorName = libError?.name || '';
-    console.log('pdf-decrypt-lite unlock failed:', libErrorName, libErrorMsg);
+    console.log('pdf-lib unlock failed:', libErrorName, libErrorMsg);
 
     // Check if it's a wrong password error
-    if (libErrorMsg.toLowerCase().includes('incorrect') || 
-        libErrorMsg.toLowerCase().includes('password') ||
-        libErrorName === 'PasswordException') {
+    if (libErrorMsg.toLowerCase().includes('password') || 
+        libErrorName === 'PasswordException' ||
+        libErrorMsg.includes('decrypt')) {
       return {
         thumbnail: '',
         pageCount: 0,
@@ -460,7 +456,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       };
     }
 
-    // If pdf-decrypt-lite failed (unsupported encryption), try pdfjs for viewing fallback
+    // Fallback to pdf.js for encrypted viewing only (if pdf-lib failed)
     try {
       console.log('pdfjs: attempting fallback unlock...');
       const fallbackBuffer = await file.slice(0, file.size).arrayBuffer();

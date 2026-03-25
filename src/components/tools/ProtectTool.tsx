@@ -88,9 +88,32 @@ export default function ProtectTool() {
     
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfBytes = new Uint8Array(arrayBuffer)
       
-      const encryptedBytes = await encryptPDF(pdfBytes, password)
+      // Load the PDF with pdf-lib
+      const pdfDoc = await PDFDocument.load(arrayBuffer)
+      
+      // Protect the PDF with a password. 
+      // Note: encrypt() is available in pdf-lib to set user/owner passwords and permissions.
+      // We set both passwords to the same value for simplicity in this tool.
+      pdfDoc.encrypt({
+        userPassword: password,
+        ownerPassword: password,
+        permissions: {
+          printing: 'highResolution',
+          modifying: true,
+          copying: true,
+          annotating: true,
+          fillingForms: true,
+          contentAccessibility: true,
+          documentAssembly: true,
+        },
+      })
+
+      // Optimization: For larger files, disabling object streams can sometimes 
+      // speed up the initial parse in pdf.js after encryption.
+      const useObjectStreams = arrayBuffer.byteLength < 5 * 1024 * 1024;
+      const encryptedBytes = await pdfDoc.save({ useObjectStreams })
+      
       if (!encryptedBytes || encryptedBytes.length === 0) {
         throw new Error('Encryption returned empty data.')
       }
