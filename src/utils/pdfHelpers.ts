@@ -280,15 +280,44 @@ export const generateThumbnail = async (file: File, pageNum: number = 1): Promis
 
 export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
   try {
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // 1. First check: Try loading with pdf.js
+    // This is fast and handles most standard password protection
     const loadingTask = getDocumentWithWasm({
-      data: await file.arrayBuffer(),
+      data: arrayBuffer.slice(0), // Copy buffer
     });
     
     loadingTask.onPassword = () => { throw new Error('PASSWORD_REQUIRED'); };
     
     const pdf = await loadingTask.promise;
+    
+    // 2. Second check: Fallback to pdf-lib if pdf.js didn't complain
+    // Some PDFs have encryption dictionaries but empty user passwords that pdf.js auto-opens,
+    // or use encryption algorithms pdf.js handles silently but we might want to flag.
+    // However, for our "Unlock" tool, if pdf.js can read it, it's effectively unlocked for viewing.
+    // But if we want to be strict about "Is this file encrypted?", we should check pdf-lib.
+    
+    let isEncrypted = false;
+    try {
+       // We load WITHOUT throwing on encryption to check the metadata
+       const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+       isEncrypted = pdfDoc.isEncrypted;
+    } catch (e) {
+       // If pdf-lib fails to parse, trust pdf.js result or assume locked if suspicious
+       console.warn('pdf-lib metadata check failed:', e);
+    }
+
     const firstPageThumb = await renderPageThumbnail(pdf, 1);
     
+    if (isEncrypted) {
+       // It has an encryption dictionary. 
+       // If pdf.js opened it, it might have a default owner password or empty user password.
+       // We'll consider it "Locked" if we can't edit it, or if the user wants to "Unlock" it.
+       // We return the thumbnail because pdf.js COULD read it, which is helpful context.
+       return { thumbnail: firstPageThumb, pageCount: pdf.numPages, isLocked: true };
+    }
+
     return {
       thumbnail: firstPageThumb,
       pageCount: pdf.numPages,
@@ -399,26 +428,10 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       console.warn('pdf-decrypt-lite: pdf.js load or thumbnail rendering failed after decryption:', thumbError);
     }
     
-    // CRITICAL: Attempt to "clean" the PDF using pdf-lib.
-    // This often fixes "buggy" text caused by corrupted content streams or 
-    // invalid cross-reference tables after decryption.
-    // However, if it fails, we should still return the raw decrypted bytes.
-    let cleanedBytes = safeBytes;
-    try {
-      console.log('pdf-decrypt-lite: attempting to clean PDF with pdf-lib...');
-      const pdfDoc = await PDFDocument.load(safeBytes, { ignoreEncryption: true });
-      
-      // Optimization: If the PDF is small, we can use object streams. 
-      // For larger files, sometimes disabling them helps with initial parse time in pdf.js
-      const useObjectStreams = safeBytes.length < 5 * 1024 * 1024; 
-      
-      cleanedBytes = await pdfDoc.save({ useObjectStreams });
-      console.log('pdf-decrypt-lite: successfully cleaned and re-serialized PDF');
-    } catch (cleanError) {
-      console.warn('pdf-decrypt-lite: cleaning failed, using raw decrypted bytes:', cleanError);
-      // Fallback to safeBytes if cleaning fails for any reason
-      cleanedBytes = safeBytes;
-    }
+    // SKIP CLEANING: We are disabling the pdf-lib cleaning step because it was 
+    // causing blank pages and image corruption on some files.
+    // The raw decrypted bytes from pdf-decrypt-lite are usually sufficient.
+    const cleanedBytes = safeBytes;
     
     return {
       thumbnail: firstPageThumb,
