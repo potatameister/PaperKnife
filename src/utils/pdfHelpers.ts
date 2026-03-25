@@ -407,8 +407,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
     // CRITICAL: Attempt to "clean" the PDF using pdf-lib.
     // This often fixes "buggy" text caused by corrupted content streams or 
     // invalid cross-reference tables after decryption.
-    // We use useObjectStreams: false to potentially improve parsing speed in some viewers,
-    // and ensure we are not over-processing.
+    // However, if it fails, we should still return the raw decrypted bytes.
     let cleanedBytes = safeBytes;
     try {
       console.log('pdf-decrypt-lite: attempting to clean PDF with pdf-lib...');
@@ -422,6 +421,8 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       console.log('pdf-decrypt-lite: successfully cleaned and re-serialized PDF');
     } catch (cleanError) {
       console.warn('pdf-decrypt-lite: cleaning failed, using raw decrypted bytes:', cleanError);
+      // Fallback to safeBytes if cleaning fails for any reason
+      cleanedBytes = safeBytes;
     }
     
     return {

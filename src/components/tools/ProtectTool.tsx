@@ -88,17 +88,9 @@ export default function ProtectTool() {
     
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
+      const pdfBytes = new Uint8Array(arrayBuffer)
       
-      // Sanitize the PDF using pdf-lib before encryption.
-      // pdf-encrypt-lite's parser is much faster on pdf-lib's normalized output.
-      const pdfDoc = await PDFDocument.load(arrayBuffer)
-      
-      // Optimization: For larger files, disabling object streams can sometimes 
-      // speed up the initial parse in pdf.js after encryption.
-      const useObjectStreams = arrayBuffer.byteLength < 5 * 1024 * 1024;
-      const cleanPdfBytes = await pdfDoc.save({ useObjectStreams })
-      
-      const encryptedBytes = await encryptPDF(cleanPdfBytes, password)
+      const encryptedBytes = await encryptPDF(pdfBytes, password)
       if (!encryptedBytes || encryptedBytes.length === 0) {
         throw new Error('Encryption returned empty data.')
       }
