@@ -212,7 +212,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
         </header>
       )}
 
-      <main className={`flex-1 min-w-0 ${shouldShowNav ? 'pb-32' : ''} ${isNative ? 'pt-safe' : ''}`}>
+      <main className={`flex-1 min-w-0 ${shouldShowNav ? 'pb-32' : ''}`}>
         {children}
       </main>
 

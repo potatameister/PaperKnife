@@ -11,12 +11,12 @@ export async function setSystemUI(theme: 'light' | 'dark') {
       style: theme === 'dark' ? Style.Dark : Style.Light
     })
     
+    // Set to transparent so it blends with the app's header
     await StatusBar.setBackgroundColor({
-      color: theme === 'dark' ? '#000000' : '#FAFAFA'
+      color: 'transparent'
     })
 
-    // Ensuring the app content draws behind the status bar if needed, 
-    // but the pt-safe class will handle the padding.
+    // Enable overlay so the app content draws behind the status bar icons
     await StatusBar.setOverlaysWebView({ overlay: true })
 
     // 2. Navigation Bar (Bottom)
