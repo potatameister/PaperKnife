@@ -110,14 +110,23 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
     try {
       const result = await unlockPdf(file, password)
       if (result.success) {
-        setPdfDoc(result.pdfDoc)
-        setTotalPages(result.pageCount)
+        if (result.isDecrypted && result.pdfData) {
+          // If decrypted into bytes, we need to load the new document
+          const newDoc = await loadPdfDocument(new File([result.pdfData], file.name, { type: 'application/pdf' }))
+          setPdfDoc(newDoc)
+          setTotalPages(newDoc.numPages)
+        } else {
+          // Fallback or standard pdf.js unlock
+          setPdfDoc(result.pdfDoc)
+          setTotalPages(result.pageCount)
+        }
         setIsLocked(false)
         toast.success('Document unlocked')
       } else {
         toast.error('Incorrect password')
       }
     } catch (e) {
+      console.error('Unlock error:', e)
       toast.error('Failed to unlock')
     } finally {
       setIsUnlocking(false)

@@ -384,26 +384,21 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
     }
     
     let firstPageThumb = '';
+    let pageCount = 0;
+    let pdfDocResult = undefined;
+
     try {
       // Pass a copy of the bytes to prevent pdf.js from detaching the original ArrayBuffer
       const loadingTask = getDocumentWithWasm({
         data: safeBytes.slice(0),
       });
-      const pdf = await loadingTask.promise;
-      firstPageThumb = await renderPageThumbnail(pdf, 1);
+      pdfDocResult = await loadingTask.promise;
+      firstPageThumb = await renderPageThumbnail(pdfDocResult, 1);
+      pageCount = pdfDocResult.numPages;
     } catch (thumbError) {
-      console.warn('pdf-decrypt-lite: thumbnail rendering failed after decryption:', thumbError);
+      console.warn('pdf-decrypt-lite: pdf.js load or thumbnail rendering failed after decryption:', thumbError);
     }
     
-    // Get page count
-    let pageCount = 0;
-    try {
-      // Pass a copy of the bytes here as well
-      const tempLoadingTask = getDocumentWithWasm({ data: safeBytes.slice(0) });
-      const tempPdf = await tempLoadingTask.promise;
-      pageCount = tempPdf.numPages;
-    } catch {}
-
     // CRITICAL: Attempt to "clean" the PDF using pdf-lib.
     // This often fixes "buggy" text caused by corrupted content streams or 
     // invalid cross-reference tables after decryption.
@@ -431,7 +426,7 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
       isLocked: false,
       success: true,
       isDecrypted: true,
-      pdfDoc: undefined, 
+      pdfDoc: pdfDocResult, 
       pdfData: cleanedBytes
     };
   } catch (libError: any) {
