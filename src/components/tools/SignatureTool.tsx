@@ -11,7 +11,14 @@ import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
-type SignaturePdfData = { file: File, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
+type SignaturePdfData = { 
+  file: File, 
+  pageCount: number, 
+  isLocked: boolean, 
+  pdfDoc?: any, 
+  password?: string,
+  unlockedBuffer?: Uint8Array
+}
 
 export default function SignatureTool() {
   const fileInputRef = useRef<HTMLInputElement>(null); const signatureInputRef = useRef<HTMLInputElement>(null); const previewRef = useRef<HTMLDivElement>(null)
@@ -36,12 +43,15 @@ export default function SignatureTool() {
     try {
       const result = await unlockPdf(pdfData.file, unlockPassword)
       if (result.success) {
-        if (!result.isDecrypted) {
-          toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
-          setIsProcessing(false)
-          return
-        }
-        setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }); const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb)
+        setPdfData({ 
+          ...pdfData, 
+          isLocked: false, 
+          pageCount: result.pageCount, 
+          pdfDoc: result.pdfDoc, 
+          password: unlockPassword,
+          unlockedBuffer: result.pdfData
+        })
+        const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb)
       }
       else { toast.error('Incorrect password') }
     } finally { setIsProcessing(false) }
@@ -69,7 +79,11 @@ export default function SignatureTool() {
   const saveSignedPdf = async () => {
     if (!pdfData || !signatureFile) return; setIsProcessing(true)
     try {
-      const arrayBuffer = await pdfData.file.arrayBuffer(); const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password } as any)
+      const buffer = pdfData.unlockedBuffer || new Uint8Array(await pdfData.file.arrayBuffer())
+      const pdfDoc = await PDFDocument.load(buffer, { 
+        password: pdfData.unlockedBuffer ? undefined : pdfData.password,
+        ignoreEncryption: !!pdfData.unlockedBuffer
+      } as any)
       const sigBytes = await signatureFile.arrayBuffer(); let sigImage = signatureFile.type === 'image/png' ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes)
       const page = pdfDoc.getPages()[activePage - 1]; const { width, height } = page.getSize(); const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width))
       page.drawImage(sigImage, { x: pdfX, y: pdfY, width: size, height: size * (sigImage.height / sigImage.width) })

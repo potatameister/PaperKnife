@@ -260,10 +260,6 @@ export default function MergeTool() {
 
     const result = await unlockPdf(pdfFile.file, pass)
     if (result.success) {
-      if (!result.isDecrypted) {
-        toast.error('This PDF uses a modern encryption (AES-256) which is currently not supported for merging. Only standard encryption is supported.')
-        return
-      }
       setFiles(prev => prev.map(f => f.id === id ? {
         ...f,
         isLocked: false,

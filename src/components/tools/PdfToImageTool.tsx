@@ -14,7 +14,15 @@ import { NativeToolLayout } from './shared/NativeToolLayout'
 type ImageFormat = 'jpg' | 'png'
 type DpiOption = 72 | 144 | 216 | 300
 type SaveMode = 'zip' | 'individual'
-type PdfData = { file: File, thumbnail?: string, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
+type PdfData = { 
+  file: File, 
+  thumbnail?: string, 
+  pageCount: number, 
+  isLocked: boolean, 
+  pdfDoc?: any, 
+  password?: string,
+  unlockedBuffer?: Uint8Array
+}
 
 export default function PdfToImageTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -47,7 +55,15 @@ export default function PdfToImageTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail, password: unlockPassword })
+      setPdfData({ 
+        ...pdfData, 
+        isLocked: false, 
+        pageCount: result.pageCount, 
+        pdfDoc: result.pdfDoc, 
+        thumbnail: result.thumbnail, 
+        password: unlockPassword,
+        unlockedBuffer: result.pdfData
+      })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-images`)
     } else { toast.error('Incorrect password') }
     setIsProcessing(false)

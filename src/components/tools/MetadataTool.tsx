@@ -16,6 +16,7 @@ type MetadataPdfData = {
   isLocked: boolean
   password?: string
   currentMeta: { title?: string, author?: string, subject?: string, keywords?: string, creator?: string, producer?: string }
+  unlockedBuffer?: Uint8Array
 }
 
 export default function MetadataTool() {
@@ -62,15 +63,10 @@ export default function MetadataTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      if (!result.isDecrypted) {
-        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
-        setIsProcessing(false)
-        return
-      }
-      const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: unlockPassword } as any)
+      const arrayBuffer = result.pdfData || await pdfData.file.arrayBuffer()
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: result.isDecrypted ? undefined : unlockPassword } as any)
       const currentMeta = { title: pdfDoc.getTitle() || '', author: pdfDoc.getAuthor() || '', subject: pdfDoc.getSubject() || '', keywords: pdfDoc.getKeywords() || '', creator: pdfDoc.getCreator() || '', producer: pdfDoc.getProducer() || '' }
-      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, password: unlockPassword, currentMeta })
+      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, password: unlockPassword, currentMeta, unlockedBuffer: result.pdfData })
       setMeta(currentMeta)
     } else { toast.error('Incorrect password') }
     setIsProcessing(false)
@@ -105,8 +101,11 @@ export default function MetadataTool() {
     setIsProcessing(true); if (deepClean) setIsDeepCleaning(true)
     await new Promise(resolve => setTimeout(resolve, 300))
     try {
-      const arrayBuffer = await pdfData.file.arrayBuffer()
-      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined } as any)
+      const arrayBuffer = pdfData.unlockedBuffer || await pdfData.file.arrayBuffer()
+      const sourcePdf = await PDFDocument.load(arrayBuffer, { 
+        password: pdfData.unlockedBuffer ? undefined : pdfData.password,
+        ignoreEncryption: !!pdfData.unlockedBuffer
+      } as any)
       let targetPdf: PDFDocument
       
       if (deepClean) {

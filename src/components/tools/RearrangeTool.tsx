@@ -13,19 +13,37 @@ import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
-type RearrangePdfData = { file: File, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string, thumbnail?: string }
+type RearrangePdfData = { 
+  file: File, 
+  pageCount: number, 
+  isLocked: boolean, 
+  pdfDoc?: any, 
+  password?: string, 
+  thumbnail?: string,
+  unlockedBuffer?: Uint8Array
+}
 
 const LazyThumbnail = ({ pdfDoc, pageNum }: { pdfDoc: any, pageNum: number }) => {
   const [src, setSrc] = useState<string | null>(null); const imgRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
-    if (!pdfDoc || src) return
+    setSrc(null)
+  }, [pdfDoc])
+
+  useEffect(() => {
+    if (!pdfDoc || src !== null) return
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) { renderGridThumbnail(pdfDoc, pageNum).then(setSrc); observer.disconnect() }
+      if (entries[0].isIntersecting) { 
+        renderGridThumbnail(pdfDoc, pageNum).then(res => setSrc(res || 'error')).catch(() => setSrc('error'))
+        observer.disconnect() 
+      }
     }, { rootMargin: '200px' })
     if (imgRef.current) observer.observe(imgRef.current)
     return () => observer.disconnect()
   }, [pdfDoc, pageNum, src])
-  if (src) return <img src={src} className="w-full h-full object-contain bg-white pointer-events-none" alt={`P${pageNum}`} />
+
+  if (src && src !== 'error') return <img src={src} className="w-full h-full object-contain bg-white pointer-events-none" alt={`P${pageNum}`} />
+  if (src === 'error') return <div className="w-full h-full bg-rose-50 dark:bg-rose-900/10 flex items-center justify-center text-[8px] font-bold text-rose-500 uppercase">Error</div>
   return <div ref={imgRef} className="w-full h-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" /></div>
 }
 
@@ -57,6 +75,8 @@ export default function RearrangeTool() {
   const [customFileName, setCustomFileName] = useState('paperknife-rearranged')
   const [unlockPassword, setUnlockPassword] = useState('')
 
+  const [isLoadingFile, setIsLoadingFile] = useState(false)
+
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
@@ -73,34 +93,45 @@ export default function RearrangeTool() {
 
   const handleUnlock = async () => {
     if (!pdfData || !unlockPassword) return
-    setIsProcessing(true)
+    setIsLoadingFile(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      if (!result.isDecrypted) {
-        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
-        setIsProcessing(false)
-        return
-      }
-      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword, thumbnail: result.thumbnail })
+      setPdfData({ 
+        ...pdfData, 
+        isLocked: false, 
+        pageCount: result.pageCount, 
+        pdfDoc: result.pdfDoc, 
+        password: unlockPassword, 
+        thumbnail: result.thumbnail,
+        unlockedBuffer: result.pdfData
+      })
       setPageOrder(Array.from({ length: result.pageCount }, (_, i) => (i + 1).toString()))
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-rearranged`)
-    } else { toast.error('Incorrect password') }
-    setIsProcessing(false)
+    } else { 
+      toast.error('Incorrect password') 
+    }
+    setIsLoadingFile(false)
   }
 
   const handleFile = async (file: File) => {
     if (file.type !== 'application/pdf') return
-    setIsProcessing(true)
+    setIsLoadingFile(true)
     try {
       const meta = await getPdfMetaData(file)
-      if (meta.isLocked) { setPdfData({ file, pageCount: 0, isLocked: true }) }
-      else {
+      if (meta.isLocked) { 
+        setPdfData({ file, pageCount: 0, isLocked: true }) 
+      } else {
         const pdfDoc = await loadPdfDocument(file)
         setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc, thumbnail: meta.thumbnail })
         setPageOrder(Array.from({ length: meta.pageCount }, (_, i) => (i + 1).toString()))
         setCustomFileName(`${file.name.replace('.pdf', '')}-rearranged`)
       }
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+    } catch (err) { 
+      console.error(err) 
+    } finally { 
+      setIsLoadingFile(false); 
+      setDownloadUrl(null) 
+    }
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -118,8 +149,11 @@ export default function RearrangeTool() {
     if (!pdfData) return
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
-      const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined } as any)
+      const arrayBuffer = pdfData.unlockedBuffer || await pdfData.file.arrayBuffer()
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { 
+        password: pdfData.unlockedBuffer ? undefined : pdfData.password,
+        ignoreEncryption: !!pdfData.unlockedBuffer
+      } as any)
       const newPdf = await PDFDocument.create()
       const indices = pageOrder.map(id => parseInt(id) - 1)
       const copiedPages = await newPdf.copyPages(pdfDoc, indices)

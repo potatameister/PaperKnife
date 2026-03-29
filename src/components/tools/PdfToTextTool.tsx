@@ -9,7 +9,15 @@ import { usePipeline } from '../../utils/pipelineContext'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
-type PdfToTextData = { file: File, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
+type PdfToTextData = { 
+  file: File, 
+  pageCount: number, 
+  isLocked: boolean, 
+  pdfDoc?: any, 
+  password?: string,
+  unlockedBuffer?: Uint8Array
+}
+
 type ExtractionMode = 'text' | 'ocr'
 
 export default function PdfToTextTool() {
@@ -40,8 +48,18 @@ export default function PdfToTextTool() {
     if (!pdfData || !unlockPassword) return
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
-    if (result.success) { setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }) }
-    else { toast.error('Incorrect password') }
+    if (result.success) { 
+      setPdfData({ 
+        ...pdfData, 
+        isLocked: false, 
+        pageCount: result.pageCount, 
+        pdfDoc: result.pdfDoc, 
+        password: unlockPassword,
+        unlockedBuffer: result.pdfData
+      }) 
+    } else { 
+      toast.error('Incorrect password') 
+    }
     setIsProcessing(false)
   }
 
@@ -50,14 +68,19 @@ export default function PdfToTextTool() {
     setIsProcessing(true)
     try {
       const meta = await getPdfMetaData(file)
-      if (meta.isLocked) { setPdfData({ file, pageCount: 0, isLocked: true }) }
-      else { 
+      if (meta.isLocked) { 
+        setPdfData({ file, pageCount: 0, isLocked: true }) 
+      } else { 
         const pdfDoc = await loadPdfDocument(file)
         setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc }) 
         setCustomFileName(`${file.name.replace('.pdf', '')}-extracted`)
       }
       setExtractedText('')
-    } catch (err) { console.error(err) } finally { setIsProcessing(false) }
+    } catch (err) { 
+      console.error(err) 
+    } finally { 
+      setIsProcessing(false) 
+    }
   }
 
   const handleStartExtraction = async () => {

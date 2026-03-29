@@ -11,7 +11,15 @@ import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
-type PdfData = { file: File, thumbnail?: string, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
+type PdfData = { 
+  file: File, 
+  thumbnail?: string, 
+  pageCount: number, 
+  isLocked: boolean, 
+  pdfDoc?: any, 
+  password?: string,
+  unlockedBuffer?: Uint8Array
+}
 
 export default function ExtractImagesTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -25,6 +33,8 @@ export default function ExtractImagesTool() {
   const [unlockPassword, setUnlockPassword] = useState('')
   const isNative = Capacitor.isNativePlatform()
 
+  const [isLoadingFile, setIsLoadingFile] = useState(false)
+
   useEffect(() => {
     const pipelined = consumePipelineFile()
     if (pipelined) {
@@ -35,27 +45,43 @@ export default function ExtractImagesTool() {
 
   const handleUnlock = async () => {
     if (!pdfData || !unlockPassword) return
-    setIsProcessing(true)
+    setIsLoadingFile(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail, password: unlockPassword })
+      setPdfData({ 
+        ...pdfData, 
+        isLocked: false, 
+        pageCount: result.pageCount, 
+        pdfDoc: result.pdfDoc, 
+        thumbnail: result.thumbnail, 
+        password: unlockPassword,
+        unlockedBuffer: result.pdfData
+      })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-extracted`)
-    } else { toast.error('Incorrect password') }
-    setIsProcessing(false)
+    } else { 
+      toast.error('Incorrect password') 
+    }
+    setIsLoadingFile(false)
   }
 
   const handleFile = async (file: File) => {
     if (file.type !== 'application/pdf') return
-    setIsProcessing(true)
+    setIsLoadingFile(true)
     try {
       const meta = await getPdfMetaData(file)
-      if (meta.isLocked) { setPdfData({ file, pageCount: 0, isLocked: true }) }
-      else {
+      if (meta.isLocked) { 
+        setPdfData({ file, pageCount: 0, isLocked: true }) 
+      } else {
         const pdfDoc = await loadPdfDocument(file)
         setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc, thumbnail: meta.thumbnail })
         setCustomFileName(`${file.name.replace('.pdf', '')}-extracted`)
       }
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+    } catch (err) { 
+      console.error(err) 
+    } finally { 
+      setIsLoadingFile(false); 
+      setDownloadUrl(null) 
+    }
   }
 
   const extractImages = async () => {

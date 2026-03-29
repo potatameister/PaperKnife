@@ -10,7 +10,15 @@ import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
-type PageNumberPdfData = { file: File, pageCount: number, isLocked: boolean, password?: string, pdfDoc?: any, thumbnail?: string }
+type PageNumberPdfData = { 
+  file: File, 
+  pageCount: number, 
+  isLocked: boolean, 
+  password?: string, 
+  pdfDoc?: any, 
+  thumbnail?: string,
+  unlockedBuffer?: Uint8Array
+}
 type Position = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
 
 export default function PageNumberTool() {
@@ -40,12 +48,15 @@ export default function PageNumberTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      if (!result.isDecrypted) {
-        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
-        setIsProcessing(false)
-        return
-      }
-      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, password: unlockPassword, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail })
+      setPdfData({ 
+        ...pdfData, 
+        isLocked: false, 
+        pageCount: result.pageCount, 
+        password: unlockPassword, 
+        pdfDoc: result.pdfDoc, 
+        thumbnail: result.thumbnail,
+        unlockedBuffer: result.pdfData
+      })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-numbered`)
     } else { toast.error('Incorrect password') }
     setIsProcessing(false)
@@ -75,8 +86,11 @@ export default function PageNumberTool() {
     if (!pdfData) return
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
-      const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined } as any)
+      const buffer = pdfData.unlockedBuffer || new Uint8Array(await pdfData.file.arrayBuffer())
+      const pdfDoc = await PDFDocument.load(buffer, { 
+        password: pdfData.unlockedBuffer ? undefined : pdfData.password,
+        ignoreEncryption: !!pdfData.unlockedBuffer
+      } as any)
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica); const pages = pdfDoc.getPages(); const textColor = hexToRgb(color)
       pages.forEach((page, idx) => {
         const { width, height } = page.getSize(); const n = idx + startFrom; const total = pages.length + (startFrom - 1)

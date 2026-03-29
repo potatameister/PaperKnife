@@ -19,6 +19,7 @@ type ProtectPdfFile = {
   pageCount: number
   isLocked: boolean
   sourcePassword?: string
+  unlockedBuffer?: Uint8Array
 }
 
 export default function ProtectTool() {
@@ -88,43 +89,19 @@ export default function ProtectTool() {
     
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
+      const pdfBytes = new Uint8Array(arrayBuffer)
       
-      // Load the PDF with pdf-lib
-      const pdfDoc = await PDFDocument.load(arrayBuffer)
-      
-      // Protect the PDF with a password. 
-      // Note: encrypt() is available in pdf-lib to set user/owner passwords and permissions.
-      // We set both passwords to the same value for simplicity in this tool.
-      pdfDoc.encrypt({
-        userPassword: password,
-        ownerPassword: password,
-        permissions: {
-          printing: 'highResolution',
-          modifying: true,
-          copying: true,
-          annotating: true,
-          fillingForms: true,
-          contentAccessibility: true,
-          documentAssembly: true,
-        },
-      })
-
-      // Optimization: For larger files, disabling object streams can sometimes 
-      // speed up the initial parse in pdf.js after encryption.
-      const useObjectStreams = arrayBuffer.byteLength < 5 * 1024 * 1024;
-      const encryptedBytes = await pdfDoc.save({ useObjectStreams })
+      // Use the ultra-lightweight encryption engine from @pdfsmaller/pdf-encrypt-lite
+      // This is necessary because pdf-lib v1.x doesn't support native encryption
+      const encryptedBytes = await encryptPDF(pdfBytes, password)
       
       if (!encryptedBytes || encryptedBytes.length === 0) {
         throw new Error('Encryption returned empty data.')
       }
       
-      // Copy the encrypted bytes IMMEDIATELY to prevent detached buffer errors
-      const safeEncryptedBytes = new Uint8Array(encryptedBytes.length);
-      safeEncryptedBytes.set(encryptedBytes instanceof Uint8Array ? encryptedBytes : new Uint8Array(encryptedBytes));
-      
-      const blob = new Blob([safeEncryptedBytes as BlobPart], { type: 'application/pdf' })
+      const blob = new Blob([encryptedBytes], { type: 'application/pdf' })
       const url = createUrl(blob)
-      addActivity({ name: `${customFileName || 'protected'}.pdf`, tool: 'Protect', size: blob.size, resultUrl: url, buffer: safeEncryptedBytes })
+      addActivity({ name: `${customFileName || 'protected'}.pdf`, tool: 'Protect', size: blob.size, resultUrl: url, buffer: encryptedBytes })
     } catch (error: any) { 
       console.error('Encryption error:', error)
       toast.error(`Encryption failed: ${error.message}`) 

@@ -68,15 +68,13 @@ const QualityCompare = ({ originalBuffer, compressedBuffer }: { originalBuffer: 
 }
 
 type CompressPdfFile = {
-  id: string
   file: File
   thumbnail?: string
   pageCount: number
   isLocked: boolean
   pdfDoc?: any
   password?: string
-  status: 'pending' | 'processing' | 'completed' | 'error'
-  resultUrl?: string
+  unlockedBuffer?: Uint8Array
   resultSize?: number
 }
 
@@ -86,273 +84,242 @@ export default function CompressTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { consumePipelineFile, setPipelineFile, lastPipelinedFile } = usePipeline()
   const { objectUrl, createUrl, clearUrls } = useObjectURL()
-  const [files, setFiles] = useState<CompressPdfFile[]>([])
+  const [pdfData, setPdfData] = useState<CompressPdfFile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [globalProgress, setGlobalProgress] = useState(0)
+  const [progress, setProgress] = useState(0)
   const [quality, setQuality] = useState<CompressionQuality>('medium')
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [unlockPassword, setUnlockPassword] = useState('')
   const isNative = Capacitor.isNativePlatform()
+
+  const [isLoadingFile, setIsLoadingFile] = useState(false)
+
+  const handleFile = async (file: File) => {
+    if (file.type !== 'application/pdf') return
+    setIsLoadingFile(true)
+    try {
+      await new Promise(resolve => setTimeout(resolve, 50))
+      const meta = await getPdfMetaData(file)
+      setPdfData({ file, thumbnail: meta.thumbnail, pageCount: meta.pageCount, isLocked: meta.isLocked })
+      clearUrls()
+    } catch (e) {
+      console.error('Error reading PDF:', e)
+      toast.error('Failed to read PDF file.')
+    } finally {
+      setIsLoadingFile(false)
+    }
+  }
 
   useEffect(() => {
     const pipelined = consumePipelineFile()
     if (pipelined) {
-      if (pipelined.type && pipelined.type !== 'application/pdf') {
-        toast.error('The file from the previous tool is not a PDF and cannot be used here.')
-        return
-      }
       const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
-      handleFiles([file])
+      handleFile(file)
     }
   }, [])
 
-  const handleFiles = async (selectedFiles: FileList | File[]) => {
-    const newFiles = Array.from(selectedFiles).filter(f => f.type === 'application/pdf').map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      file, pageCount: 0, isLocked: false, status: 'pending' as const
-    }))
-    setFiles(prev => [...prev, ...newFiles]); setShowSuccess(false); clearUrls()
-    
-    // Clear input value to allow selecting the same file again
-    if (fileInputRef.current) fileInputRef.current.value = ''
-
-    for (const f of newFiles) {
-      getPdfMetaData(f.file).then(meta => {
-        setFiles(prev => prev.map(item => item.id === f.id ? { ...item, pageCount: meta.pageCount, isLocked: meta.isLocked, thumbnail: meta.thumbnail } : item))
-      })
-    }
-  }
-
-  const handleUnlock = async (id: string, password: string) => {
-    const item = files.find(f => f.id === id)
-    if (!item) return
-    const result = await unlockPdf(item.file, password)
+  const handleUnlock = async () => {
+    if (!pdfData || !unlockPassword) return
+    setIsLoadingFile(true)
+    const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      setFiles(prev => prev.map(f => f.id === id ? { 
-        ...f, 
+      setPdfData({ 
+        ...pdfData, 
         isLocked: false, 
         pageCount: result.pageCount, 
         pdfDoc: result.pdfDoc, 
         thumbnail: result.thumbnail, 
-        password 
-      } : f))
-    } else { toast.error('Incorrect password') }
+        password: unlockPassword,
+        unlockedBuffer: result.pdfData
+      })
+    } else { 
+      toast.error('Incorrect password') 
+    }
+    setIsLoadingFile(false)
   }
 
-  const compressSingleFile = async (item: CompressPdfFile, quality: CompressionQuality, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array, method: string }> => {
-    const originalBuffer = new Uint8Array(await item.file.arrayBuffer())
-    const originalSize = originalBuffer.byteLength
+  const compressPDF = async () => {
+    if (!pdfData || isProcessing) return
+    setIsProcessing(true)
+    setProgress(0)
     
-    // First try: pdf-lib compression (preserves vectors, smaller for image-heavy PDFs)
     try {
-      if (onProgress) onProgress(10)
+      const originalBuffer = pdfData.unlockedBuffer || new Uint8Array(await pdfData.file.arrayBuffer())
+      const originalSize = originalBuffer.byteLength
       
+      // Step 1: Smart Compression (Vector-preserving)
       const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
       worker.postMessage({ 
         type: 'COMPRESS_PDF_SAFE', 
         payload: { 
           buffer: originalBuffer, 
-          password: item.password,
+          password: pdfData.password,
           quality 
         } 
-      }, [originalBuffer.buffer] as any)
-      
-      const compressedResult = await new Promise<{ buffer: Uint8Array, size: number }>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          worker.terminate()
-          reject(new Error('Compression timeout'))
-        }, 120000) // 2 minute timeout
-        
-        worker.onmessage = (e) => {
-          if (e.data.type === 'PROGRESS') {
-            if (onProgress) onProgress(10 + Math.round(e.data.payload * 0.4))
-          } else if (e.data.type === 'SUCCESS') {
-            clearTimeout(timeout)
-            const buffer = e.data.payload
-            worker.terminate()
-            resolve({ buffer, size: buffer.byteLength })
-          } else if (e.data.type === 'ERROR') {
-            clearTimeout(timeout)
-            worker.terminate()
-            reject(new Error(e.data.payload))
-          }
-        }
-        
-        worker.onerror = (_e) => {
-          clearTimeout(timeout)
-          worker.terminate()
-          reject(new Error('Worker failed'))
-        }
       })
       
-      if (onProgress) onProgress(60)
+      const compressedResult = await new Promise<{ buffer: Uint8Array, size: number, method: string }>((resolve, reject) => {
+        worker.onmessage = async (e) => {
+          if (e.data.type === 'PROGRESS') {
+            setProgress(10 + Math.round(e.data.payload * 0.4))
+          } else if (e.data.type === 'SUCCESS') {
+            const buffer = e.data.payload
+            worker.terminate()
+            
+            if (buffer.byteLength < originalSize) {
+              resolve({ buffer, size: buffer.byteLength, method: 'smart' })
+            } else {
+              // Fallback to rasterization if smart didn't help enough
+              resolve(performRasterization(pdfData, quality, originalBuffer, originalSize))
+            }
+          } else if (e.data.type === 'ERROR') {
+            worker.terminate()
+            resolve(performRasterization(pdfData, quality, originalBuffer, originalSize))
+          }
+        }
+      })
+
+      const blob = new Blob([compressedResult.buffer], { type: 'application/pdf' })
+      const url = createUrl(blob)
+      const fileName = pdfData.file.name.replace('.pdf', '-compressed.pdf')
       
-      // If pdf-lib compression made it smaller, use it
-      if (compressedResult.size < originalSize) {
-        const blob = new Blob([compressedResult.buffer as any], { type: 'application/pdf' })
-        return { url: createUrl(blob), size: compressedResult.size, buffer: compressedResult.buffer, method: 'smart' }
+      setPdfData({ ...pdfData, resultSize: compressedResult.size })
+      
+      setPipelineFile({ 
+        buffer: compressedResult.buffer, 
+        name: fileName, 
+        type: 'application/pdf',
+        originalBuffer: originalBuffer 
+      })
+      
+      addActivity({ name: fileName, tool: 'Compress', size: compressedResult.size, resultUrl: url, buffer: compressedResult.buffer })
+      
+      if (compressedResult.method === 'original') {
+        toast.info('This PDF is already optimized.')
+      } else {
+        toast.success('PDF compressed successfully!')
       }
-      
-      // If pdf-lib made it larger, fall back to original buffer for rasterization approach
-      console.log('pdf-lib compression made file larger, falling back to rasterization')
-    } catch (err) {
-      console.error('pdf-lib compression failed:', err)
+    } catch (error: any) {
+      toast.error('Compression failed.')
+    } finally {
+      setIsProcessing(false)
     }
-    
-    // Second try: rasterization (original approach)
-    if (onProgress) onProgress(65)
-    
+  }
+
+  const performRasterization = async (item: CompressPdfFile, q: CompressionQuality, originalBuffer: Uint8Array, originalSize: number): Promise<{ buffer: Uint8Array, size: number, method: string }> => {
     let pdfDoc = item.pdfDoc || await loadPdfDocument(item.file)
-    const scaleMap = { high: 2.0, medium: 1.5, low: 1.0 }; const qualityMap = { high: 0.85, medium: 0.6, low: 0.35 }
-    const scale = scaleMap[quality]; const jpegQuality = qualityMap[quality]
-    const pagesData: { imageBytes: Uint8Array, width: number, height: number }[] = []
+    const scaleMap = { high: 2.0, medium: 1.5, low: 1.0 }
+    const qualityMap = { high: 0.85, medium: 0.6, low: 0.35 }
+    const scale = scaleMap[q]
+    const jpegQuality = qualityMap[q]
+    
+    const pagesData = []
     for (let i = 1; i <= item.pageCount; i++) {
-      const page = await pdfDoc.getPage(i); const viewport = page.getViewport({ scale })
-      const canvas = document.createElement('canvas'); const context = canvas.getContext('2d')
+      const page = await pdfDoc.getPage(i)
+      const viewport = page.getViewport({ scale })
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
       if (!context) continue
-      canvas.height = viewport.height; canvas.width = viewport.width
+      
+      canvas.height = viewport.height
+      canvas.width = viewport.width
       await page.render({ canvasContext: context, viewport }).promise
+      
       const imgData = canvas.toDataURL('image/jpeg', jpegQuality)
-      const base64 = imgData.split(',')[1]; const binaryString = window.atob(base64)
+      const base64 = imgData.split(',')[1]
+      const binaryString = window.atob(base64)
       const bytes = new Uint8Array(binaryString.length)
       for (let j = 0; j < binaryString.length; j++) bytes[j] = binaryString.charCodeAt(j)
       pagesData.push({ imageBytes: bytes, width: viewport.width, height: viewport.height })
       
-      if (onProgress) onProgress(65 + Math.round((i / item.pageCount) * 25))
+      setProgress(50 + Math.round((i / item.pageCount) * 40))
       canvas.width = 0; canvas.height = 0
     }
-    
-    return new Promise((resolve, reject) => {
-      try {
-        const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
-        worker.postMessage({ type: 'COMPRESS_PDF_ASSEMBLY', payload: { pages: pagesData, quality } }, pagesData.map(p => p.imageBytes.buffer) as any)
-        
-        worker.onmessage = (e) => {
-          if (e.data.type === 'PROGRESS') {
-             if (onProgress) onProgress(90 + Math.round(e.data.payload * 0.1))
-} else if (e.data.type === 'SUCCESS') {
-  worker.terminate()
-  const rasterizedBuffer = e.data.payload as any
-  // Guardrail: if rasterization made it larger, return original instead
-  if (rasterizedBuffer.byteLength >= originalSize) {
-    const originalBlob = new Blob([originalBuffer], { type: 'application/pdf' })
-    resolve({ url: createUrl(originalBlob), size: originalSize, buffer: originalBuffer, method: 'original' })
-  } else {
-    const blob = new Blob([rasterizedBuffer], { type: 'application/pdf' })
-    resolve({ url: createUrl(blob), size: blob.size, buffer: rasterizedBuffer, method: 'rasterize' })
-  }
-          } else if (e.data.type === 'ERROR') {
-            reject(new Error(e.data.payload)); worker.terminate()
+
+    return new Promise((resolve) => {
+      const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
+      worker.postMessage({ type: 'COMPRESS_PDF_ASSEMBLY', payload: { pages: pagesData, quality: q } })
+      
+      worker.onmessage = (e) => {
+        if (e.data.type === 'SUCCESS') {
+          worker.terminate()
+          const buffer = e.data.payload
+          if (buffer.byteLength >= originalSize) {
+            resolve({ buffer: originalBuffer, size: originalSize, method: 'original' })
+          } else {
+            resolve({ buffer, size: buffer.byteLength, method: 'rasterize' })
           }
         }
-
-        worker.onerror = () => {
-          reject(new Error('Worker failed to start or execution error.')); worker.terminate()
-        }
-      } catch (e: any) {
-        reject(new Error(`Failed to start worker: ${e.message}`))
       }
     })
   }
 
-  const startBatchCompression = async () => {
-    const pendingFiles = files.filter(f => !f.isLocked && f.status === 'pending')
-    if (pendingFiles.length === 0) return
-    setIsProcessing(true); setGlobalProgress(0)
-    const results = []
-    
-    // If single file, track detailed progress
-    const isSingle = pendingFiles.length === 1
-    
-    for (let i = 0; i < pendingFiles.length; i++) {
-      const item = pendingFiles[i]
-      setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f))
-      try {
-        const { url, size, buffer, method } = await compressSingleFile(item, quality, isSingle ? setGlobalProgress : undefined)
-        results.push({ name: item.file.name.replace('.pdf', '-compressed.pdf'), buffer })
-        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: url, resultSize: size } : f))
-        if (method === 'original') {
-          toast.info('This PDF is already optimized and cannot be reduced further.')
-        }
-        addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size, resultUrl: url, buffer: buffer })
-        if (pendingFiles.length === 1) {
-           const originalBuffer = await pendingFiles[0].file.arrayBuffer()
-           setPipelineFile({ 
-             buffer, 
-             name: item.file.name.replace('.pdf', '-compressed.pdf'), 
-             type: 'application/pdf',
-             originalBuffer: new Uint8Array(originalBuffer) 
-           })
-        }
-      } catch { setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error' } : f)) }
-      
-      if (!isSingle) setGlobalProgress(Math.round(((i + 1) / pendingFiles.length) * 100))
-    }
-    if (results.length > 1) {
-      const zip = new JSZip(); results.forEach(res => zip.file(res.name, res.buffer))
-      const zipBlob = await zip.generateAsync({ type: 'blob' }); createUrl(zipBlob)
-    }
-    setIsProcessing(false); setShowSuccess(true)
-  }
-
-  const handleDownloadBatch = async () => {
-    if (objectUrl && files.length > 1) {
-        const zip = new JSZip()
-        for (const f of files) {
-            if (f.resultUrl) {
-                const res = await fetch(f.resultUrl)
-                zip.file(f.file.name.replace('.pdf', '-compressed.pdf'), await res.arrayBuffer())
-            }
-        }
-        const blob = await zip.generateAsync({ type: 'blob' })
-        await downloadFile(new Uint8Array(await blob.arrayBuffer()), 'paperknife-compressed.zip', 'application/zip')
-    }
-  }
-
   const ActionButton = () => (
     <button 
-      onClick={startBatchCompression}
-      disabled={isProcessing || files.filter(f => !f.isLocked).length === 0}
+      onClick={compressPDF}
+      disabled={isProcessing || !pdfData || pdfData.isLocked}
       className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg shadow-rose-500/20 py-4 rounded-2xl text-sm md:p-6 md:rounded-3xl md:text-xl`}
     >
-      {isProcessing ? <><Loader2 className="animate-spin" /> {globalProgress}%</> : <>Compress {files.length > 1 ? `${files.length} Files` : 'PDF'} <ArrowRight size={18} /></>}
+      {isProcessing ? <><Loader2 className="animate-spin" /> {progress}%</> : <>Compress PDF <ArrowRight size={18} /></>}
     </button>
   )
 
   return (
-    <NativeToolLayout title="Compress PDF" description="Reduce file size while maintaining quality. Everything stays on your device." actions={files.length > 0 && !showSuccess && <ActionButton />}>
-      <input type="file" multiple accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files && handleFiles(e.target.files)} />
+    <NativeToolLayout title="Compress PDF" description="Reduce file size while maintaining quality. Everything stays on your device." actions={pdfData && !pdfData.isLocked && !objectUrl && <ActionButton />}>
+      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
       
-      {files.length === 0 ? (
+      {isLoadingFile ? (
+        <div className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center flex flex-col items-center justify-center animate-in fade-in duration-500">
+          <Loader2 className="w-12 h-12 text-rose-500 animate-spin mb-4" />
+          <h3 className="text-xl font-bold dark:text-white mb-2">Reading PDF...</h3>
+          <p className="text-sm text-gray-400">This might take a moment</p>
+        </div>
+      ) : !pdfData ? (
         <button 
           onClick={() => !isProcessing && fileInputRef.current?.click()} 
           className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group"
         >
           <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-inner"><Zap size={32} /></div>
-          <h3 className="text-xl font-bold dark:text-white mb-2">Select PDFs</h3>
-          <p className="text-sm text-gray-400 font-medium">Tap to start batch compression</p>
+          <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF</h3>
+          <p className="text-sm text-gray-400 font-medium">Tap to start compression</p>
         </button>
-      ) : !showSuccess ? (
-        <div className="space-y-6 animate-in fade-in duration-500">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {files.map(f => (
-              <div key={f.id} className="bg-white dark:bg-zinc-900 p-4 rounded-[1.5rem] border border-gray-100 dark:border-white/5 flex items-center gap-4 relative group shadow-sm">
-                <div className="w-12 h-16 bg-gray-50 dark:bg-black rounded-lg overflow-hidden shrink-0 border border-gray-100 dark:border-zinc-800">
-                  {f.thumbnail ? <img src={f.thumbnail} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><FileIcon className="text-gray-300" size={16} /></div>}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-black truncate dark:text-white">{f.file.name}</p>
-                  {f.isLocked ? (
-                    <div className="flex gap-1 mt-1">
-                       <input type="password" placeholder="Locked..." className="flex-1 bg-gray-50 dark:bg-black text-[10px] p-1.5 rounded-lg outline-none w-full border border-gray-100 dark:border-zinc-800 focus:border-rose-500" onKeyDown={(e) => { if(e.key === 'Enter') handleUnlock(f.id, e.currentTarget.value) }} />
-                    </div>
-                  ) : <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{(f.file.size / (1024*1024)).toFixed(2)} MB • {f.pageCount} Pages</p>}
-                </div>
-                <button onClick={() => setFiles(prev => prev.filter(item => item.id !== f.id))} className="p-2 text-gray-300 hover:text-rose-500 transition-colors"><X size={16} /></button>
-              </div>
-            ))}
-            <button onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-gray-100 dark:border-zinc-800 rounded-[1.5rem] p-4 text-gray-400 flex flex-col items-center justify-center gap-1 hover:border-rose-500 hover:text-rose-500 transition-all">
-              <Plus size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Add More</span>
+      ) : pdfData.isLocked ? (
+        <div className="max-w-md mx-auto">
+          <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 text-center">
+            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FileIcon size={32} />
+            </div>
+            <h3 className="text-2xl font-bold mb-2 dark:text-white">Protected File</h3>
+            <p className="text-xs text-gray-400 mb-6 font-medium">This document is encrypted. Enter the password to compress it.</p>
+            <input 
+              type="password" 
+              value={unlockPassword}
+              onChange={(e) => setUnlockPassword(e.target.value)}
+              placeholder="Current Password"
+              className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white"
+              autoFocus
+            />
+            <button 
+              onClick={handleUnlock}
+              disabled={!unlockPassword || isLoadingFile}
+              className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95"
+            >
+              {isLoadingFile ? '...' : 'Unlock & Proceed'}
             </button>
+          </div>
+        </div>
+      ) : !objectUrl ? (
+        <div className="space-y-6 animate-in fade-in duration-500">
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-gray-100 dark:border-white/5 flex items-center gap-6 shadow-sm">
+            <div className="w-16 h-20 bg-gray-50 dark:bg-black rounded-xl overflow-hidden shrink-0 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-rose-500 shadow-inner">
+              {pdfData.thumbnail ? <img src={pdfData.thumbnail} className="w-full h-full object-cover" /> : <FileIcon size={24} />}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <h3 className="font-bold text-sm truncate dark:text-white">{pdfData.file.name}</h3>
+              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">
+                {(pdfData.file.size / (1024*1024)).toFixed(2)} MB • {pdfData.pageCount} Pages
+              </p>
+            </div>
+            <button onClick={() => setPdfData(null)} className="p-2 text-gray-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
           </div>
 
           <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
@@ -363,75 +330,56 @@ export default function CompressTool() {
                 { id: 'medium', label: 'Standard', desc: 'Recommended' },
                 { id: 'low', label: 'Smallest', desc: 'Max Save' }
               ].map((lvl) => (
-                <button key={lvl.id} onClick={() => setQuality(lvl.id as CompressionQuality)} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 ${quality === lvl.id ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}>
+                <button 
+                  key={lvl.id} 
+                  onClick={() => setQuality(lvl.id as CompressionQuality)} 
+                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 ${quality === lvl.id ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10 shadow-sm' : 'border-gray-50 dark:border-white/5'}`}
+                >
                   <span className={`font-black uppercase text-[9px] text-center leading-tight ${quality === lvl.id ? 'text-rose-500' : 'text-gray-400'}`}>{lvl.label}</span>
                   <span className="text-[8px] text-gray-400 font-bold uppercase">{lvl.desc}</span>
                 </button>
               ))}
             </div>
             
-            <div className="mt-6 p-6 bg-gray-50 dark:bg-black rounded-2xl border border-gray-100 dark:border-white/5">
+            <div className="mt-6 p-6 bg-gray-50 dark:bg-black rounded-2xl border border-gray-50 dark:border-white/5 text-left">
                <div className="flex items-center gap-3 mb-3">
-                 <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center">
-                   <Zap size={16} />
-                 </div>
+                 <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center"><Zap size={16} /></div>
                  <h5 className="text-xs font-black uppercase tracking-widest dark:text-white">Strategy Details</h5>
                </div>
-               <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed">
-                 {quality === 'high' && (
-                   <>
-                     <strong>High Quality:</strong> Retains maximum text clarity and image resolution. 
-                     Best for official documents and high-fidelity reports. 
-                     Expected reduction: <span className="text-rose-500 font-bold">10-30%</span>.
-                   </>
-                 )}
-                 {quality === 'medium' && (
-                   <>
-                     <strong>Standard:</strong> Balanced optimization for everyday sharing and email attachments. 
-                     The perfect middle ground for most users. 
-                     Expected reduction: <span className="text-rose-500 font-bold">40-60%</span>.
-                   </>
-                 )}
-                 {quality === 'low' && (
-                   <>
-                     <strong>Smallest Size:</strong> Aggressive downsampling for the lowest possible file size. 
-                     Ideal for quick mobile viewing or meeting strict upload limits. 
-                     Expected reduction: <span className="text-rose-500 font-bold">70-90%</span>.
-                   </>
-                 )}
+               <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed font-medium">
+                 {quality === 'high' ? 'High Quality: Retains maximum text clarity. Best for official documents. (10-30% saving)' : 
+                  quality === 'medium' ? 'Standard: Balanced optimization for everyday sharing. Perfect middle ground. (40-60% saving)' : 
+                  'Smallest Size: Aggressive compression for max space saving. (70-90% saving)'}
                </p>
             </div>
 
             {isProcessing && (
               <div className="mt-8 space-y-3">
                 <div className="w-full bg-gray-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden shadow-inner">
-                   <div className="bg-rose-500 h-full transition-all" style={{ width: `${globalProgress}%` }} />
+                   <div className="bg-rose-500 h-full transition-all" style={{ width: `${progress}%` }} />
                 </div>
-                <p className="text-[10px] text-center font-black uppercase text-gray-400 tracking-widest animate-pulse">Rasterizing Document...</p>
+                <p className="text-[10px] text-center font-black uppercase text-gray-400 tracking-widest animate-pulse">Processing on Device...</p>
               </div>
             )}
+            
+            {!isProcessing && isNative && <div className="mt-8"><ActionButton /></div>}
           </div>
         </div>
       ) : (
         <div className="space-y-6 animate-in zoom-in duration-300">
-          {objectUrl && files.length > 1 && (
-            <button onClick={handleDownloadBatch} className="block w-full bg-zinc-900 dark:bg-white text-white dark:text-black p-10 rounded-[2.5rem] text-center shadow-2xl transition-all group active:scale-[0.98]">
-              <div className="w-16 h-16 bg-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg"><Download className="text-white" size={32} /></div>
-              <h3 className="text-2xl font-black tracking-tight mb-1">{isNative ? 'Save ZIP Archive' : 'Download ZIP Archive'}</h3>
-              <p className="text-xs font-bold opacity-60 uppercase tracking-widest">{files.length} Optimized PDFs</p>
-            </button>
-          )}
-          {objectUrl && files.length === 1 && (
-            <div className="space-y-8">
-              {lastPipelinedFile?.originalBuffer && lastPipelinedFile?.buffer && <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm"><QualityCompare originalBuffer={lastPipelinedFile.originalBuffer} compressedBuffer={lastPipelinedFile.buffer} /></div>}
-              <SuccessState 
-                message={`Reduced by ${Math.max(0, ((1 - (files[0].resultSize || 0) / files[0].file.size) * 100)).toFixed(0)}%`}
-                downloadUrl={objectUrl} 
-                fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} 
-                onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} 
-              />
-            </div>
-          )}
+          <div className="space-y-8">
+            {lastPipelinedFile?.originalBuffer && lastPipelinedFile?.buffer && (
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm">
+                <QualityCompare originalBuffer={lastPipelinedFile.originalBuffer} compressedBuffer={lastPipelinedFile.buffer} />
+              </div>
+            )}
+            <SuccessState 
+              message={`Reduced by ${Math.max(0, ((1 - (pdfData.resultSize || 0) / pdfData.file.size) * 100)).toFixed(0)}%`}
+              downloadUrl={objectUrl} 
+              fileName={pdfData.file.name.replace('.pdf', '-compressed.pdf')} 
+              onStartOver={() => { setPdfData(null); clearUrls(); setIsProcessing(false); setUnlockPassword(''); }} 
+            />
+          </div>
         </div>
       )}
       <PrivacyBadge />

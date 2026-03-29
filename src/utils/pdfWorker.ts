@@ -23,7 +23,8 @@ self.onmessage = async (e: MessageEvent) => {
         const { buffer, rotation, password } = files[i]
         
         const pdf = await PDFDocument.load(buffer, { 
-          password: password || undefined
+          password: password || undefined,
+          ignoreEncryption: !!password
         } as any)
         
         const pageIndices = pdf.getPageIndices()
@@ -45,7 +46,8 @@ self.onmessage = async (e: MessageEvent) => {
     else if (type === 'SPLIT_PDF') {
       const { buffer, password, selectedPages, mode, customFileName } = payload
       const originalPdf = await PDFDocument.load(buffer, { 
-        password: password || undefined
+        password: password || undefined,
+        ignoreEncryption: !!password
       } as any)
 
       if (mode === 'single') {
@@ -103,7 +105,8 @@ self.onmessage = async (e: MessageEvent) => {
       const { buffer, password } = payload as { buffer: Uint8Array, password?: string }
       
       const originalPdf = await PDFDocument.load(buffer, { 
-        password: password || undefined
+        password: password || undefined,
+        ignoreEncryption: !!password
       } as any)
 
       const newPdf = await PDFDocument.create()

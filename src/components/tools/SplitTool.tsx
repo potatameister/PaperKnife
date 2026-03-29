@@ -18,6 +18,7 @@ type SplitPdfFile = {
   pdfDoc?: any
   password?: string
   thumbnail?: string
+  unlockedBuffer?: Uint8Array
 }
 
 const LazyThumbnail = ({ pdfDoc, pageNum }: { pdfDoc: any, pageNum: number }) => {
@@ -25,19 +26,23 @@ const LazyThumbnail = ({ pdfDoc, pageNum }: { pdfDoc: any, pageNum: number }) =>
   const imgRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!pdfDoc || src) return
+    setSrc(null)
+  }, [pdfDoc])
+
+  useEffect(() => {
+    if (!pdfDoc || src !== null) return
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
-        // Use optimized grid thumbnail for faster loading/lower memory
-        renderGridThumbnail(pdfDoc, pageNum).then(setSrc)
+        renderGridThumbnail(pdfDoc, pageNum).then(res => setSrc(res || 'error')).catch(() => setSrc('error'))
         observer.disconnect()
       }
-    }, { rootMargin: '400px' }) // Load ahead for smoother scrolling
+    }, { rootMargin: '400px' }) 
     if (imgRef.current) observer.observe(imgRef.current)
     return () => observer.disconnect()
   }, [pdfDoc, pageNum, src])
 
-  if (src) return <img src={src} className="w-full h-full object-cover animate-in fade-in duration-300" alt={`Page ${pageNum}`} />
+  if (src && src !== 'error') return <img src={src} className="w-full h-full object-cover animate-in fade-in duration-300" alt={`Page ${pageNum}`} />
+  if (src === 'error') return <div className="w-full h-full bg-rose-50 dark:bg-rose-900/10 flex items-center justify-center text-[8px] font-bold text-rose-500 uppercase">Error</div>
   return (
     <div ref={imgRef} className="w-full h-full bg-gray-50 dark:bg-zinc-900 flex items-center justify-center text-xs font-bold text-gray-400">
       <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent dark:border-zinc-700 rounded-full animate-spin" />
@@ -71,12 +76,15 @@ export default function SplitTool() {
     setIsLoadingMeta(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      if (!result.isDecrypted) {
-        toast.error('Unsupported encryption (AES-256). We currently only support standard encryption for this tool.')
-        setIsLoadingMeta(false)
-        return
-      }
-      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword, thumbnail: result.thumbnail })
+      setPdfData({ 
+        ...pdfData, 
+        isLocked: false, 
+        pageCount: result.pageCount, 
+        pdfDoc: result.pdfDoc, 
+        password: unlockPassword, 
+        thumbnail: result.thumbnail,
+        unlockedBuffer: result.pdfData
+      })
       const all = new Set<number>(); for (let i = 1; i <= result.pageCount; i++) all.add(i)
       setSelectedPages(all); setRangeInput(`1-${result.pageCount}`)
     } else {
@@ -141,7 +149,7 @@ export default function SplitTool() {
     if (!pdfData || selectedPages.size === 0) return
     setIsProcessing(true)
     try {
-      const buffer = await pdfData.file.arrayBuffer()
+      const buffer = pdfData.unlockedBuffer || await pdfData.file.arrayBuffer()
       const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
       worker.postMessage({ type: 'SPLIT_PDF', payload: { buffer, password: pdfData.password, selectedPages: Array.from(selectedPages), mode: splitMode, customFileName } })
       worker.onmessage = async (e) => {

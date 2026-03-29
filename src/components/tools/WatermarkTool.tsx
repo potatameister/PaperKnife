@@ -10,7 +10,15 @@ import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
-type WatermarkPdfData = { file: File, pageCount: number, isLocked: boolean, password?: string, pdfDoc?: any, thumbnail?: string }
+type WatermarkPdfData = { 
+  file: File, 
+  pageCount: number, 
+  isLocked: boolean, 
+  password?: string, 
+  pdfDoc?: any, 
+  thumbnail?: string,
+  unlockedBuffer?: Uint8Array
+}
 
 export default function WatermarkTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -39,12 +47,15 @@ export default function WatermarkTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      if (!result.isDecrypted) {
-        toast.error('This PDF uses a modern encryption (AES-256) which is currently not supported for watermarking. Only standard encryption is supported.')
-        setIsProcessing(false)
-        return
-      }
-      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, password: unlockPassword, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail })
+      setPdfData({ 
+        ...pdfData, 
+        isLocked: false, 
+        pageCount: result.pageCount, 
+        password: unlockPassword, 
+        pdfDoc: result.pdfDoc, 
+        thumbnail: result.thumbnail,
+        unlockedBuffer: result.pdfData
+      })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-watermarked`)
     } else { toast.error('Incorrect password') }
     setIsProcessing(false)
@@ -76,8 +87,11 @@ export default function WatermarkTool() {
     if (!pdfData) return
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
-      const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined } as any)
+      const buffer = pdfData.unlockedBuffer || new Uint8Array(await pdfData.file.arrayBuffer())
+      const pdfDoc = await PDFDocument.load(buffer, { 
+        password: pdfData.unlockedBuffer ? undefined : pdfData.password,
+        ignoreEncryption: !!pdfData.unlockedBuffer
+      } as any)
       const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
       const pages = pdfDoc.getPages()
       const watermarkColor = hexToRgb(color)
