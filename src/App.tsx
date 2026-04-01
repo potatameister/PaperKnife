@@ -9,10 +9,10 @@
  */
 
 import { useState, useEffect, Suspense } from 'react'
-import { 
-  Layers, Scissors, Zap, Smartphone as SmartphoneIcon, Monitor as MonitorIcon, Lock, Unlock, 
-  RotateCw, Type, Hash, Tags, FileText, ArrowUpDown, PenTool, 
-  Wrench, ImagePlus, FileImage, Palette, X, ChevronDown
+import {
+  Layers, Scissors, Zap, Smartphone as SmartphoneIcon, Monitor as MonitorIcon, Lock, Unlock,
+  RotateCw, Type, Hash, Tags, FileText, ArrowUpDown, PenTool,
+  Wrench, ImagePlus, FileImage, Palette, X, ChevronDown, FileCode
 } from 'lucide-react'
 import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Toaster, toast } from 'sonner'
@@ -54,6 +54,7 @@ import SignatureTool from './components/tools/SignatureTool'
 import RepairTool from './components/tools/RepairTool'
 import ExtractImagesTool from './components/tools/ExtractImagesTool'
 import GrayscaleTool from './components/tools/GrayscaleTool'
+import MarkdownToPdfTool from './components/tools/MarkdownToPdfTool'
 
 const tools: Tool[] = [
   { title: 'Merge PDF', desc: 'Combine multiple PDF files into one document.', icon: Layers, implemented: true, path: '/merge', category: 'Edit', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
@@ -72,6 +73,7 @@ const tools: Tool[] = [
   { title: 'Image to PDF', desc: 'Convert JPG, PNG, and WebP into a professional PDF.', icon: ImagePlus, implemented: true, path: '/image-to-pdf', category: 'Convert', color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-900/20' },
   { title: 'Extract Images', desc: 'Pull out all original images embedded in a PDF.', icon: FileImage, implemented: true, path: '/extract-images', category: 'Convert', color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
   { title: 'PDF to Text', desc: 'Extract plain text from your PDF documents.', icon: FileText, implemented: true, path: '/pdf-to-text', category: 'Convert', color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/20' },
+  { title: 'Markdown to PDF', desc: 'Convert Markdown text into a professional PDF.', icon: FileCode, implemented: true, path: '/markdown-to-pdf', category: 'Convert', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
   { title: 'Repair PDF', desc: 'Attempt to fix corrupted or unreadable documents.', icon: Wrench, implemented: true, path: '/repair', category: 'Optimize', color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
 ]
 
@@ -364,6 +366,7 @@ function App() {
                 <Route path="/pdf-to-image" element={<PdfToImageTool />} />
                 <Route path="/rotate-pdf" element={<RotateTool />} />
                 {!IS_OCR_DISABLED && <Route path="/pdf-to-text" element={<PdfToTextTool />} />}
+                <Route path="/markdown-to-pdf" element={<MarkdownToPdfTool />} />
                 <Route path="/rearrange-pdf" element={<RearrangeTool />} />
                 <Route path="/watermark" element={<WatermarkTool />} />
                 <Route path="/page-numbers" element={<PageNumberTool />} />

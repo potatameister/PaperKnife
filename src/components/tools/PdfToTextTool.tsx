@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Loader2, Copy, FileText, Lock, Check, Download, Zap, ScanSearch, ArrowRight, X } from 'lucide-react'
+import { Loader2, Copy, FileText, Lock, Check, Download, Zap, ScanSearch, ArrowRight, X, Hash } from 'lucide-react'
 import { toast } from 'sonner'
 import Tesseract from 'tesseract.js'
 import { Capacitor } from '@capacitor/core'
@@ -11,6 +11,7 @@ import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type PdfToTextData = { file: File, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
 type ExtractionMode = 'text' | 'ocr'
+type OutputFormat = 'text' | 'markdown'
 
 export default function PdfToTextTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -23,6 +24,7 @@ export default function PdfToTextTool() {
   const [unlockPassword, setUnlockPassword] = useState('')
   const [customFileName, setCustomFileName] = useState('paperknife-extracted')
   const [copied, setCopied] = useState(false)
+  const [outputFormat, setOutputFormat] = useState<OutputFormat>('text')
   const isNative = Capacitor.isNativePlatform()
 
   // F-Droid compliance check
@@ -68,7 +70,12 @@ export default function PdfToTextTool() {
       if (extractionMode === 'text') {
         for (let i = 1; i <= pdfData.pageCount; i++) {
           const page = await pdfData.pdfDoc.getPage(i); const textContent = await page.getTextContent()
-          result += `--- Page ${i} ---\n${textContent.items.map((item: any) => item.str).join(' ')}\n\n`
+          const pageText = textContent.items.map((item: any) => item.str).join(' ')
+          if (outputFormat === 'markdown') {
+            result += `# Page ${i}\n\n${pageText}\n\n---\n\n`
+          } else {
+            result += `--- Page ${i} ---\n${pageText}\n\n`
+          }
           setProgress(Math.round((i / pdfData.pageCount) * 100))
         }
       } else {
@@ -92,7 +99,12 @@ export default function PdfToTextTool() {
           if (!ctx) continue; canvas.height = viewport.height; canvas.width = viewport.width
           await page.render({ canvasContext: ctx, viewport }).promise
           const { data: { text } } = await worker.recognize(canvas)
-          result += `--- Page ${i} (OCR) ---\n${text}\n\n`; canvas.width = 0; canvas.height = 0
+          if (outputFormat === 'markdown') {
+            result += `# Page ${i} (OCR)\n\n${text}\n\n---\n\n`
+          } else {
+            result += `--- Page ${i} (OCR) ---\n${text}\n\n`
+          }
+          canvas.width = 0; canvas.height = 0
         }
         await worker.terminate()
       }
@@ -101,7 +113,9 @@ export default function PdfToTextTool() {
   }
 
   const handleDownload = async () => {
-    await downloadFile(extractedText, `${customFileName}.txt`, 'text/plain')
+    const ext = outputFormat === 'markdown' ? 'md' : 'txt'
+    const mime = outputFormat === 'markdown' ? 'text/markdown' : 'text/plain'
+    await downloadFile(extractedText, `${customFileName}.${ext}`, mime)
   }
 
   const ActionButton = () => (
@@ -149,6 +163,13 @@ export default function PdfToTextTool() {
                     <span className="font-black uppercase text-[10px] mt-1">{isOcrDisabled ? 'No OCR' : 'Deep OCR'}</span>
                   </button>
                 </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 px-1">Output Format</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => setOutputFormat('text')} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center ${outputFormat === 'text' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}><FileText size={20} className={outputFormat === 'text' ? 'text-rose-500' : 'text-gray-400'} /><span className="font-black uppercase text-[10px] mt-1">Plain Text</span></button>
+                    <button onClick={() => setOutputFormat('markdown')} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center ${outputFormat === 'markdown' ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}><Hash size={20} className={outputFormat === 'markdown' ? 'text-rose-500' : 'text-gray-400'} /><span className="font-black uppercase text-[10px] mt-1">Markdown</span></button>
+                  </div>
+                </div>
                 {isProcessing && (
                   <div className="space-y-2"><div className="w-full bg-gray-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden shadow-inner"><div className="bg-rose-500 h-full transition-all" style={{ width: `${progress}%` }} /></div><p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse px-1">Scanning Document...</p></div>
                 )}
@@ -188,7 +209,7 @@ export default function PdfToTextTool() {
                 <textarea readOnly value={extractedText} className="w-full h-80 bg-gray-50 dark:bg-black border border-gray-100 dark:border-white/5 rounded-2xl p-4 font-mono text-[10px] resize-none outline-none focus:border-rose-500 dark:text-gray-300 shadow-inner" />
                 <div className="flex gap-3">
                   <button onClick={() => { navigator.clipboard.writeText(extractedText); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="flex-1 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white border border-gray-100 dark:border-white/5 p-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all active:scale-95">{copied ? <Check size={18} className="text-emerald-500" /> : <Copy size={18} />} Copy</button>
-                  <button onClick={handleDownload} className="flex-[2] bg-gray-900 dark:bg-white text-white dark:text-black p-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all"><Download size={18} /> {isNative ? 'Save .txt' : 'Download'}</button>
+                  <button onClick={handleDownload} className="flex-[2] bg-gray-900 dark:bg-white text-white dark:text-black p-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all"><Download size={18} /> {isNative ? `Save .${outputFormat === 'markdown' ? 'md' : 'txt'}` : 'Download'}</button>
                 </div>
                 <button onClick={() => { setExtractedText(''); setProgress(0); setPdfData(null); }} className="w-full py-2 text-gray-400 uppercase font-black text-[10px] hover:text-rose-500 transition-colors">Close File</button>
               </div>
