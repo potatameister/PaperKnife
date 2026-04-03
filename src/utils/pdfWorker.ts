@@ -24,7 +24,7 @@ self.onmessage = async (e: MessageEvent) => {
         
         const pdf = await PDFDocument.load(buffer, { 
           password: password || undefined,
-          ignoreEncryption: !!password
+          ignoreEncryption: true
         } as any)
         
         const pageIndices = pdf.getPageIndices()
@@ -47,7 +47,7 @@ self.onmessage = async (e: MessageEvent) => {
       const { buffer, password, selectedPages, mode, customFileName } = payload
       const originalPdf = await PDFDocument.load(buffer, { 
         password: password || undefined,
-        ignoreEncryption: !!password
+        ignoreEncryption: true
       } as any)
 
       if (mode === 'single') {
@@ -106,7 +106,7 @@ self.onmessage = async (e: MessageEvent) => {
       
       const originalPdf = await PDFDocument.load(buffer, { 
         password: password || undefined,
-        ignoreEncryption: !!password
+        ignoreEncryption: true
       } as any)
 
       const newPdf = await PDFDocument.create()

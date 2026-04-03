@@ -37,12 +37,15 @@ export interface PdfMetaData {
 }
 
 const bytesToBase64 = (bytes: Uint8Array): string => {
-  const chunkSize = 32768;
+  const chunkSize = 16384;
   const chunks = [];
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const chunk = bytes.subarray(i, i + chunkSize);
-    // @ts-ignore
-    chunks.push(String.fromCharCode.apply(null, chunk));
+    let s = '';
+    for (let j = 0; j < chunk.length; j++) {
+      s += String.fromCharCode(chunk[j]);
+    }
+    chunks.push(s);
   }
   return btoa(chunks.join(''));
 };
@@ -108,7 +111,7 @@ export const renderPageThumbnail = async (pdf: any, pageNum: number, scale = 0.5
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     await page.render({ canvasContext: ctx, viewport }).promise;
-    const url = canvas.toDataURL('image/jpeg', 0.75);
+    const url = canvas.toDataURL('image/jpeg', 0.7);
     canvas.width = 0; canvas.height = 0;
     return url;
   } catch (e) { return ''; }
@@ -123,20 +126,16 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     
-    // Check if definitely locked via pdf-lib
     let isLocked = false;
     try {
       const pdfDoc = await PDFDocument.load(bytes.slice(0), { ignoreEncryption: true });
       isLocked = pdfDoc.isEncrypted;
     } catch (e) {}
 
-    // Try loading with pdf.js to get thumbnail/pageCount
     try {
       const pdf = await loadPdfDocument(bytes.slice(0));
-      const thumb = await renderPageThumbnail(pdf, 1);
-      return { thumbnail: thumb, pageCount: pdf.numPages, isLocked };
+      return { thumbnail: await renderPageThumbnail(pdf, 1), pageCount: pdf.numPages, isLocked };
     } catch (e) {
-      // If pdf.js also fails, it's definitely locked or corrupt
       return { thumbnail: '', pageCount: 0, isLocked: true };
     }
   } catch (error: any) {
@@ -146,40 +145,79 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
 
 export const flattenPdf = async (pdf: any): Promise<Uint8Array> => {
   const newPdf = await PDFDocument.create();
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  if (!ctx) throw new Error('Canvas unavailable');
+
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
-    const scale = 1.2; 
+    
+    // Safety: Cap dimensions to prevent memory crashes
+    const rawViewport = page.getViewport({ scale: 1.0 });
+    const maxDim = 1500; 
+    const scale = Math.min(1.0, maxDim / Math.max(rawViewport.width, rawViewport.height));
     const viewport = page.getViewport({ scale });
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
-    if (!ctx) continue;
+    
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
     await page.render({ canvasContext: ctx, viewport, intent: 'print' }).promise;
     
-    const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), 'image/jpeg', 0.8));
+    // Use toBlob for better memory handling than toDataURL
+    const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), 'image/jpeg', 0.75));
     const img = await newPdf.embedJpg(await blob.arrayBuffer());
-    const newPage = newPdf.addPage([viewport.width / scale, viewport.height / scale]);
-    newPage.drawImage(img, { x: 0, y: 0, width: viewport.width / scale, height: viewport.height / scale });
+    
+    const newPage = newPdf.addPage([viewport.width, viewport.height]);
+    newPage.drawImage(img, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+    
+    // Clean up current page
     canvas.width = 0; canvas.height = 0;
   }
-  return await newPdf.save();
+  
+  return await newPdf.save({ useObjectStreams: false });
 };
 
-export const unlockPdf = async (file: File, password: string): Promise<PdfMetaData & { success: boolean, isDecrypted: boolean, pdfDoc?: any, pdfData?: Uint8Array }> => {
+export type UnlockResult = PdfMetaData & { 
+  success: boolean, 
+  isDecrypted: boolean, 
+  pdfDoc?: any, 
+  pdfData?: Uint8Array,
+  error?: 'PASSWORD' | 'PROCESS' 
+}
+
+export const unlockPdf = async (file: File, password: string): Promise<UnlockResult> => {
+  await new Promise(res => setTimeout(res, 100));
+  const arrayBuffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    
-    // 1. Try Standard
+    // TIER 1: Native pdf-lib Unlock (Instant, highest quality)
+    try {
+      const libDoc = await PDFDocument.load(bytes.slice(0), { password });
+      const decryptedBytes = await libDoc.save({ useObjectStreams: false });
+      const pdf = await loadPdfDocument(decryptedBytes);
+      return { 
+        thumbnail: await renderPageThumbnail(pdf, 1), 
+        pageCount: pdf.numPages, 
+        isLocked: false, 
+        success: true, 
+        isDecrypted: true, 
+        pdfDoc: pdf, 
+        pdfData: decryptedBytes 
+      };
+    } catch (e) {
+      console.log('Tier 1 failed, trying Tier 2...');
+    }
+
+    // TIER 2: Specialized Decryption Engine
     try {
       const decrypted = await decryptPDF(bytes.slice(0), password);
-      // Extra safety: slice the result
-      const safeDecrypted = new Uint8Array(decrypted);
-      if (safeDecrypted[0] === 0x25) {
-        const pdf = await loadPdfDocument(safeDecrypted.slice(0));
+      if (decrypted && decrypted[0] === 0x25) {
+        const libDoc = await PDFDocument.load(decrypted, { ignoreEncryption: true });
+        const cleanDecrypted = await libDoc.save({ useObjectStreams: false });
+        const pdf = await loadPdfDocument(cleanDecrypted);
         return { 
           thumbnail: await renderPageThumbnail(pdf, 1), 
           pageCount: pdf.numPages, 
@@ -187,17 +225,18 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
           success: true, 
           isDecrypted: true, 
           pdfDoc: pdf, 
-          pdfData: safeDecrypted 
+          pdfData: cleanDecrypted 
         };
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log('Tier 2 failed, trying Tier 3...');
+    }
 
-    // 2. Try Modern
+    // TIER 3: Reconstruction Fallback (For AES-256)
     try {
       const pdf = await getDocumentWithWasm({ data: bytes.slice(0), password, stopAtErrors: false }).promise;
       const flattened = await flattenPdf(pdf);
-      const safeFlattened = new Uint8Array(flattened);
-      const newPdf = await loadPdfDocument(safeFlattened.slice(0));
+      const newPdf = await loadPdfDocument(flattened);
       return { 
         thumbnail: await renderPageThumbnail(newPdf, 1), 
         pageCount: newPdf.numPages, 
@@ -205,13 +244,21 @@ export const unlockPdf = async (file: File, password: string): Promise<PdfMetaDa
         success: true, 
         isDecrypted: true, 
         pdfDoc: newPdf, 
-        pdfData: safeFlattened 
+        pdfData: flattened 
       };
-    } catch (e2) {
-      return { thumbnail: '', pageCount: 0, isLocked: true, success: false, isDecrypted: false };
+    } catch (e2: any) {
+      const isPasswordError = e2.name === 'PasswordException' || e2.message?.toLowerCase().includes('password');
+      return { 
+        thumbnail: '', 
+        pageCount: 0, 
+        isLocked: true, 
+        success: false, 
+        isDecrypted: false, 
+        error: isPasswordError ? 'PASSWORD' : 'PROCESS' 
+      };
     }
   } catch (err) {
-    return { thumbnail: '', pageCount: 0, isLocked: true, success: false, isDecrypted: false };
+    return { thumbnail: '', pageCount: 0, isLocked: true, success: false, isDecrypted: false, error: 'PROCESS' };
   }
 };
 
@@ -229,7 +276,7 @@ export const renderPdfPage = async (pdf: any, pageNum: number, container: HTMLEl
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     container.innerHTML = '';
     container.appendChild(canvas);
-    await page.render({ canvasContext: ctx, viewport }).promise;
+    await page.render({ canvasContext: ctx, viewport, intent: 'display' }).promise;
   } catch (e) { console.error(e); }
 };
 

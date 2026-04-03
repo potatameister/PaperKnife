@@ -65,35 +65,36 @@ export default function UnlockTool() {
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
       const result = await unlockPdf(pdfData.file, password)
-      if (!result.success) throw new Error('Incorrect password.')
+      
+      if (!result.success) {
+        if (result.error === 'PASSWORD') {
+          throw new Error('Incorrect password.')
+        } else {
+          throw new Error('Reconstruction failed. The file may be too large or complex for this device.')
+        }
+      }
       
       let finalBytes: Uint8Array | undefined = result.pdfData;
 
-      if (!result.isDecrypted || !result.pdfData) {
-        // Modern encryption detected. Fallback to rasterization.
-        toast.info('Modern encryption detected. Smart-unlocking via reconstruction... (this may take a moment)', { duration: 5000 })
-        
-        if (!result.pdfDoc) {
-           throw new Error('Unlock failed: Document could not be opened for reconstruction.')
-        }
-        
-        // This is the "magic" step: we rebuild the PDF from the viewable pages
-        finalBytes = await flattenPdf(result.pdfDoc);
+      if (!result.isDecrypted) {
+        // Standard encryption. Use pdf-lib to fast-decrypt the original file.
+        const arrayBuffer = await pdfData.file.arrayBuffer();
+        const libDoc = await PDFDocument.load(arrayBuffer, { password });
+        finalBytes = await libDoc.save();
       }
 
       if (!finalBytes) throw new Error('Failed to generate unlocked file.')
 
-      // Belt-and-suspenders: always copy to a fresh buffer before Blob creation
+      // Copy to fresh buffer for safety
       const safeFinalBytes = new Uint8Array(finalBytes.length);
-      safeFinalBytes.set(finalBytes instanceof Uint8Array ? finalBytes : new Uint8Array(finalBytes));
+      safeFinalBytes.set(finalBytes);
       
-      const blob = new Blob([safeFinalBytes as BlobPart], { type: 'application/pdf' })
-
+      const blob = new Blob([safeFinalBytes], { type: 'application/pdf' })
       const url = createUrl(blob)
       addActivity({ name: `${customFileName || 'unlocked'}.pdf`, tool: 'Unlock', size: blob.size, resultUrl: url, buffer: safeFinalBytes })
     } catch (error: any) { 
       console.error('Unlock error:', error)
-      toast.error(error.message || 'Error.') 
+      toast.error(error.message || 'An error occurred during unlocking.') 
     } finally { 
       setIsProcessing(false) 
     }
