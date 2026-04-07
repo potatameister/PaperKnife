@@ -1,16 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Zap, Loader2, Plus, X, FileIcon, Download, ChevronLeft, ChevronRight, Maximize2, ArrowRight } from 'lucide-react'
+import { Zap, Loader2, Plus, X, FileIcon, Download, ChevronLeft, ChevronRight, Maximize2, ArrowRight, FileUp } from 'lucide-react'
 import { toast } from 'sonner'
 import JSZip from 'jszip'
 import { Capacitor } from '@capacitor/core'
 
-import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf, downloadFile } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, downloadFile } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { SecurePDFGate } from '../shared/SecurePDFGate'
 
 // Compare Slider Component (Optimized)
 const QualityCompare = ({ originalBuffer, compressedBuffer }: { originalBuffer: Uint8Array, compressedBuffer: Uint8Array }) => {
@@ -69,12 +70,10 @@ const QualityCompare = ({ originalBuffer, compressedBuffer }: { originalBuffer: 
 
 type CompressPdfFile = {
   file: File
+  decryptedBuffer: Uint8Array
   thumbnail?: string
   pageCount: number
-  isLocked: boolean
   pdfDoc?: any
-  password?: string
-  unlockedBuffer?: Uint8Array
   resultSize?: number
 }
 
@@ -84,22 +83,21 @@ export default function CompressTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { consumePipelineFile, setPipelineFile, lastPipelinedFile } = usePipeline()
   const { objectUrl, createUrl, clearUrls } = useObjectURL()
+  const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [pdfData, setPdfData] = useState<CompressPdfFile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [quality, setQuality] = useState<CompressionQuality>('medium')
-  const [unlockPassword, setUnlockPassword] = useState('')
   const isNative = Capacitor.isNativePlatform()
 
   const [isLoadingFile, setIsLoadingFile] = useState(false)
 
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') return
+  const handleUnlocked = async (decryptedBuffer: Uint8Array, file: File) => {
     setIsLoadingFile(true)
     try {
       await new Promise(resolve => setTimeout(resolve, 50))
       const meta = await getPdfMetaData(file)
-      setPdfData({ file, thumbnail: meta.thumbnail, pageCount: meta.pageCount, isLocked: meta.isLocked })
+      setPdfData({ file, decryptedBuffer, thumbnail: meta.thumbnail, pageCount: meta.pageCount })
       clearUrls()
     } catch (e) {
       console.error('Error reading PDF:', e)
@@ -113,29 +111,9 @@ export default function CompressTool() {
     const pipelined = consumePipelineFile()
     if (pipelined) {
       const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
-      handleFile(file)
+      setSourceFile(file)
     }
   }, [])
-
-  const handleUnlock = async () => {
-    if (!pdfData || !unlockPassword) return
-    setIsLoadingFile(true)
-    const result = await unlockPdf(pdfData.file, unlockPassword)
-    if (result.success) {
-      setPdfData({ 
-        ...pdfData, 
-        isLocked: false, 
-        pageCount: result.pageCount, 
-        pdfDoc: result.pdfDoc, 
-        thumbnail: result.thumbnail, 
-        password: unlockPassword,
-        unlockedBuffer: result.pdfData
-      })
-    } else { 
-      toast.error('Incorrect password') 
-    }
-    setIsLoadingFile(false)
-  }
 
   const compressPDF = async () => {
     if (!pdfData || isProcessing) return
@@ -143,7 +121,7 @@ export default function CompressTool() {
     setProgress(0)
     
     try {
-      const originalBuffer = pdfData.unlockedBuffer || new Uint8Array(await pdfData.file.arrayBuffer())
+      const originalBuffer = pdfData.decryptedBuffer
       const originalSize = originalBuffer.byteLength
       
       // Step 1: Smart Compression (Vector-preserving)
@@ -151,8 +129,7 @@ export default function CompressTool() {
       worker.postMessage({ 
         type: 'COMPRESS_PDF_SAFE', 
         payload: { 
-          buffer: originalBuffer, 
-          password: pdfData.password,
+          buffer: originalBuffer,
           quality 
         } 
       })
@@ -256,7 +233,7 @@ export default function CompressTool() {
   const ActionButton = () => (
     <button 
       onClick={compressPDF}
-      disabled={isProcessing || !pdfData || pdfData.isLocked}
+      disabled={isProcessing || !pdfData}
       className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg shadow-rose-500/20 py-4 rounded-2xl text-sm md:p-6 md:rounded-3xl md:text-xl`}
     >
       {isProcessing ? <><Loader2 className="animate-spin" /> {progress}%</> : <>Compress PDF <ArrowRight size={18} /></>}
@@ -264,8 +241,8 @@ export default function CompressTool() {
   )
 
   return (
-    <NativeToolLayout title="Compress PDF" description="Reduce file size while maintaining quality. Everything stays on your device." actions={pdfData && !pdfData.isLocked && !objectUrl && <ActionButton />}>
-      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+    <NativeToolLayout title="Compress PDF" description="Reduce file size while maintaining quality. Everything stays on your device." actions={pdfData && !objectUrl && <ActionButton />}>
+      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && setSourceFile(e.target.files[0])} />
       
       {isLoadingFile ? (
         <div className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center flex flex-col items-center justify-center animate-in fade-in duration-500">
@@ -274,39 +251,20 @@ export default function CompressTool() {
           <p className="text-sm text-gray-400">This might take a moment</p>
         </div>
       ) : !pdfData ? (
-        <button 
-          onClick={() => !isProcessing && fileInputRef.current?.click()} 
-          className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group"
+        <SecurePDFGate 
+          file={sourceFile} 
+          onUnlocked={handleUnlocked} 
+          onCancel={() => setSourceFile(null)}
         >
-          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-inner"><Zap size={32} /></div>
-          <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF</h3>
-          <p className="text-sm text-gray-400 font-medium">Tap to start compression</p>
-        </button>
-      ) : pdfData.isLocked ? (
-        <div className="max-w-md mx-auto">
-          <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 text-center">
-            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FileIcon size={32} />
-            </div>
-            <h3 className="text-2xl font-bold mb-2 dark:text-white">Protected File</h3>
-            <p className="text-xs text-gray-400 mb-6 font-medium">This document is encrypted. Enter the password to compress it.</p>
-            <input 
-              type="password" 
-              value={unlockPassword}
-              onChange={(e) => setUnlockPassword(e.target.value)}
-              placeholder="Current Password"
-              className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white"
-              autoFocus
-            />
-            <button 
-              onClick={handleUnlock}
-              disabled={!unlockPassword || isLoadingFile}
-              className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95"
-            >
-              {isLoadingFile ? '...' : 'Unlock & Proceed'}
-            </button>
-          </div>
-        </div>
+          <button 
+            onClick={() => !isProcessing && fileInputRef.current?.click()} 
+            className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group"
+          >
+            <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-inner"><FileUp size={32} /></div>
+            <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF</h3>
+            <p className="text-sm text-gray-400 font-medium">Tap to start compression</p>
+          </button>
+        </SecurePDFGate>
       ) : !objectUrl ? (
         <div className="space-y-6 animate-in fade-in duration-500">
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-gray-100 dark:border-white/5 flex items-center gap-6 shadow-sm">
@@ -377,7 +335,7 @@ export default function CompressTool() {
               message={`Reduced by ${Math.max(0, ((1 - (pdfData.resultSize || 0) / pdfData.file.size) * 100)).toFixed(0)}%`}
               downloadUrl={objectUrl} 
               fileName={pdfData.file.name.replace('.pdf', '-compressed.pdf')} 
-              onStartOver={() => { setPdfData(null); clearUrls(); setIsProcessing(false); setUnlockPassword(''); }} 
+              onStartOver={() => { setPdfData(null); clearUrls(); setIsProcessing(false); }} 
             />
           </div>
         </div>

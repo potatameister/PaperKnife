@@ -1,34 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Hash, Lock, Loader2, Eye } from 'lucide-react'
+import { Hash, Loader2, Eye, FileUp } from 'lucide-react'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { toast } from 'sonner'
 
-import { getPdfMetaData, unlockPdf, loadPdfDocument } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { SecurePDFGate } from '../shared/SecurePDFGate'
 
 type PageNumberPdfData = { 
   file: File, 
+  decryptedBuffer: Uint8Array,
   pageCount: number, 
-  isLocked: boolean, 
-  password?: string, 
   pdfDoc?: any, 
   thumbnail?: string,
-  unlockedBuffer?: Uint8Array
 }
 type Position = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
 
 export default function PageNumberTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { consumePipelineFile } = usePipeline()
+  const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [pdfData, setPdfData] = useState<PageNumberPdfData | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [customFileName, setCustomFileName] = useState('paperknife-numbered')
-  const [unlockPassword, setUnlockPassword] = useState('')
   const [format, setFormat] = useState('Page {n} of {total}')
   const [position, setPosition] = useState<Position>('bottom-center')
   const [startFrom] = useState(1)
@@ -39,42 +38,24 @@ export default function PageNumberTool() {
     const pipelined = consumePipelineFile()
     if (pipelined) {
       const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
-      handleFile(file)
+      setSourceFile(file)
     }
   }, [])
 
-  const handleUnlock = async () => {
-    if (!pdfData || !unlockPassword) return
-    setIsProcessing(true)
-    const result = await unlockPdf(pdfData.file, unlockPassword)
-    if (result.success) {
-      setPdfData({ 
-        ...pdfData, 
-        isLocked: false, 
-        pageCount: result.pageCount, 
-        password: unlockPassword, 
-        pdfDoc: result.pdfDoc, 
-        thumbnail: result.thumbnail,
-        unlockedBuffer: result.pdfData
-      })
-      setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-numbered`)
-    } else { toast.error('Incorrect password') }
-    setIsProcessing(false)
-  }
-
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') return
+  const handleUnlocked = async (decryptedBuffer: Uint8Array, file: File) => {
     setIsProcessing(true)
     try {
       const meta = await getPdfMetaData(file)
-      if (meta.isLocked) {
-        setPdfData({ file, pageCount: 0, isLocked: true })
-      } else {
-        const pdfDoc = await loadPdfDocument(file)
-        setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc, thumbnail: meta.thumbnail })
-        setCustomFileName(`${file.name.replace('.pdf', '')}-numbered`)
-      }
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+      const pdfDoc = await loadPdfDocument(decryptedBuffer)
+      setPdfData({ file, decryptedBuffer, pageCount: meta.pageCount, pdfDoc, thumbnail: meta.thumbnail })
+      setCustomFileName(`${file.name.replace('.pdf', '')}-numbered`)
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to load document structure')
+    } finally {
+      setIsProcessing(false)
+      setDownloadUrl(null)
+    }
   }
 
   const hexToRgb = (hex: string) => {
@@ -86,11 +67,7 @@ export default function PageNumberTool() {
     if (!pdfData) return
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
-      const buffer = pdfData.unlockedBuffer || new Uint8Array(await pdfData.file.arrayBuffer())
-      const pdfDoc = await PDFDocument.load(buffer, { 
-        password: pdfData.unlockedBuffer ? undefined : pdfData.password,
-        ignoreEncryption: !!pdfData.unlockedBuffer
-      } as any)
+      const pdfDoc = await PDFDocument.load(pdfData.decryptedBuffer)
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica); const pages = pdfDoc.getPages(); const textColor = hexToRgb(color)
       pages.forEach((page, idx) => {
         const { width, height } = page.getSize(); const n = idx + startFrom; const total = pages.length + (startFrom - 1)
@@ -121,27 +98,25 @@ export default function PageNumberTool() {
     else { styles.left = '50%'; styles.transform = 'translateX(-50%)' }
     return styles
   }
+return (
+  <NativeToolLayout title="Page Numbers" description="Add custom numbering to your PDF automatically." actions={pdfData && !downloadUrl && <ActionButton />}>
+    <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && setSourceFile(e.target.files[0])} />
 
-  return (
-    <NativeToolLayout title="Page Numbers" description="Add custom numbering to your PDF automatically." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
-      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-      
-      {!pdfData ? (
+    {!pdfData ? (
+      <SecurePDFGate 
+        file={sourceFile} 
+        onUnlocked={handleUnlocked} 
+        onCancel={() => setSourceFile(null)}
+      >
         <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group">
-          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><Hash size={32} /></div>
+          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><FileUp size={32} /></div>
           <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF</h3>
           <p className="text-sm text-gray-400">Tap to start numbering</p>
         </div>
-      ) : pdfData.isLocked ? (
-        <div className="max-w-md mx-auto relative z-[100]">
-          <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 text-center shadow-2xl">
-            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6"><Lock size={32} /></div>
-            <input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} placeholder="Password" className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white" />
-            <button onClick={handleUnlock} disabled={!unlockPassword || isProcessing} className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase text-xs">Unlock</button>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+      </SecurePDFGate>
+    ) : (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+...
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm flex flex-col items-center">
                <div className="flex justify-between items-center w-full mb-4 px-2">

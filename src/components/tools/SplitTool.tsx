@@ -1,24 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Loader2, Scissors, Check, Plus, Lock, ArrowRight, X, Zap } from 'lucide-react'
+import { Loader2, Scissors, Check, Plus, ArrowRight, X, Zap, FileUp } from 'lucide-react'
 import JSZip from 'jszip'
 import { toast } from 'sonner'
 
-import { getPdfMetaData, loadPdfDocument, renderGridThumbnail, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, renderGridThumbnail } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { SecurePDFGate } from '../shared/SecurePDFGate'
 
 type SplitPdfFile = {
   file: File
+  decryptedBuffer: Uint8Array
   pageCount: number
-  isLocked: boolean
   pdfDoc?: any
-  password?: string
   thumbnail?: string
-  unlockedBuffer?: Uint8Array
 }
 
 const LazyThumbnail = ({ pdfDoc, pageNum }: { pdfDoc: any, pageNum: number }) => {
@@ -54,6 +53,7 @@ export default function SplitTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { consumePipelineFile } = usePipeline()
   const { objectUrl, createUrl, clearUrls } = useObjectURL()
+  const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [pdfData, setPdfData] = useState<SplitPdfFile | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isLoadingMeta, setIsLoadingMeta] = useState(false)
@@ -61,53 +61,27 @@ export default function SplitTool() {
   const [customFileName, setCustomFileName] = useState('paperknife-split')
   const [rangeInput, setRangeInput] = useState('')
   const [splitMode, setSplitMode] = useState<'single' | 'individual'>('single')
-  const [unlockPassword, setUnlockPassword] = useState('')
 
   useEffect(() => {
     const pipelined = consumePipelineFile()
     if (pipelined) {
       const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
-      handleFile(file)
+      setSourceFile(file)
     }
   }, [])
 
-  const handleUnlock = async () => {
-    if (!pdfData || !unlockPassword) return
-    setIsLoadingMeta(true)
-    const result = await unlockPdf(pdfData.file, unlockPassword)
-    if (result.success) {
-      setPdfData({ 
-        ...pdfData, 
-        isLocked: false, 
-        pageCount: result.pageCount, 
-        pdfDoc: result.pdfDoc, 
-        password: unlockPassword, 
-        thumbnail: result.thumbnail,
-        unlockedBuffer: result.pdfData
-      })
-      const all = new Set<number>(); for (let i = 1; i <= result.pageCount; i++) all.add(i)
-      setSelectedPages(all); setRangeInput(`1-${result.pageCount}`)
-    } else {
-      toast.error('Incorrect password')
-    }
-    setIsLoadingMeta(false)
-  }
-
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') return
+  const handleUnlocked = async (decryptedBuffer: Uint8Array, file: File) => {
     setIsLoadingMeta(true)
     try {
       const meta = await getPdfMetaData(file)
-      if (meta.isLocked) {
-        setPdfData({ file, pageCount: 0, isLocked: true })
-      } else {
-        const pdfDoc = await loadPdfDocument(file)
-        setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc, thumbnail: meta.thumbnail })
-        const all = new Set<number>(); for (let i = 1; i <= meta.pageCount; i++) all.add(i)
-        setSelectedPages(all); setRangeInput(`1-${meta.pageCount}`)
-      }
+      const pdfDoc = await loadPdfDocument(decryptedBuffer)
+      setPdfData({ file, decryptedBuffer, pageCount: meta.pageCount, pdfDoc, thumbnail: meta.thumbnail })
+      const all = new Set<number>(); for (let i = 1; i <= meta.pageCount; i++) all.add(i)
+      setSelectedPages(all); setRangeInput(`1-${meta.pageCount}`)
+      setCustomFileName(`${file.name.replace('.pdf', '')}-split`)
     } catch (err) {
       console.error(err)
+      toast.error('Failed to load document structure')
     } finally {
       setIsLoadingMeta(false)
       clearUrls()
@@ -115,7 +89,7 @@ export default function SplitTool() {
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) handleFile(e.target.files[0])
+    if (e.target.files?.[0]) setSourceFile(e.target.files[0])
     if (e.target) e.target.value = ''
   }
 
@@ -149,9 +123,9 @@ export default function SplitTool() {
     if (!pdfData || selectedPages.size === 0) return
     setIsProcessing(true)
     try {
-      const buffer = pdfData.unlockedBuffer || await pdfData.file.arrayBuffer()
+      const buffer = pdfData.decryptedBuffer
       const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
-      worker.postMessage({ type: 'SPLIT_PDF', payload: { buffer, password: pdfData.password, selectedPages: Array.from(selectedPages), mode: splitMode, customFileName } })
+      worker.postMessage({ type: 'SPLIT_PDF', payload: { buffer, selectedPages: Array.from(selectedPages), mode: splitMode, customFileName } })
       worker.onmessage = async (e) => {
         const { type, payload } = e.data
         if (type === 'SUCCESS') {
@@ -190,54 +164,36 @@ export default function SplitTool() {
     <NativeToolLayout
       title="Split PDF"
       description="Select pages visually or by range to extract them. Everything stays on your device."
-      actions={pdfData && !pdfData.isLocked && !objectUrl && <ActionButton />}
+      actions={pdfData && !objectUrl && <ActionButton />}
     >
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
 
       {!pdfData ? (
-        <button 
-          onClick={() => !isLoadingMeta && fileInputRef.current?.click()} 
-          className={`w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group ${isLoadingMeta ? 'opacity-50 cursor-wait' : ''}`}
+        <SecurePDFGate 
+          file={sourceFile} 
+          onUnlocked={handleUnlocked} 
+          onCancel={() => setSourceFile(null)}
         >
-          {isLoadingMeta ? (
-            <div className="flex flex-col items-center">
-              <Loader2 size={48} className="text-rose-500 animate-spin mb-4" />
-              <h3 className="text-xl font-bold mb-2">Analyzing PDF...</h3>
-            </div>
-          ) : (
-            <>
-              <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                <Scissors size={32} />
+          <button 
+            onClick={() => !isLoadingMeta && fileInputRef.current?.click()} 
+            className={`w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group ${isLoadingMeta ? 'opacity-50 cursor-wait' : ''}`}
+          >
+            {isLoadingMeta ? (
+              <div className="flex flex-col items-center">
+                <Loader2 size={48} className="text-rose-500 animate-spin mb-4" />
+                <h3 className="text-xl font-bold mb-2">Analyzing PDF...</h3>
               </div>
-              <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF File</h3>
-              <p className="text-sm text-gray-400 font-medium">Tap to start splitting</p>
-            </>
-          )}
-        </button>
-      ) : pdfData.isLocked ? (
-        <div className="max-w-md mx-auto relative z-[100]">
-          <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-2xl text-center">
-            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Lock size={32} />
-            </div>
-            <h3 className="text-2xl font-bold mb-2 dark:text-white">Protected File</h3>
-            <input 
-              type="password" 
-              value={unlockPassword}
-              onChange={(e) => setUnlockPassword(e.target.value)}
-              placeholder="Enter Password"
-              className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white"
-              autoFocus
-            />
-            <button 
-              onClick={handleUnlock}
-              disabled={!unlockPassword || isLoadingMeta}
-              className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-50"
-            >
-              Unlock PDF
-            </button>
-          </div>
-        </div>
+            ) : (
+              <>
+                <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                  <FileUp size={32} />
+                </div>
+                <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF File</h3>
+                <p className="text-sm text-gray-400 font-medium">Tap to start splitting</p>
+              </>
+            )}
+          </button>
+        </SecurePDFGate>
       ) : (
         <div className="space-y-6">
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-gray-100 dark:border-white/5 flex items-center gap-6 shadow-sm">

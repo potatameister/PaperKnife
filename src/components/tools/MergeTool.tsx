@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Plus, X, Loader2, GripVertical, Lock, RotateCw, Upload, RefreshCw, ArrowRight } from 'lucide-react'
+import { Plus, X, Loader2, GripVertical, RotateCw, Upload, RefreshCw, ArrowRight, FileUp } from 'lucide-react'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
-import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
@@ -14,17 +14,16 @@ import { saveWorkspace, getWorkspace, clearWorkspace } from '../../utils/workspa
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { SecurePDFGate } from '../shared/SecurePDFGate'
 
 // File Item Type
 type PdfFile = {
   id: string
   file: File
+  decryptedBuffer: Uint8Array
   thumbnail?: string
   pageCount: number
-  isLocked: boolean
   rotation: number
-  password?: string
-  unlockedBuffer?: Uint8Array
 }
 
 // Format File Size helper
@@ -38,26 +37,17 @@ interface SortableItemProps {
   file: PdfFile;
   onRemove: (id: string) => void;
   onRotate: (id: string) => void;
-  onUnlock: (id: string, pass: string) => void;
 }
 
 // Draggable Item Component
-const SortableItem: React.FC<SortableItemProps> = ({ id, file, onRemove, onRotate, onUnlock }) => {
+const SortableItem: React.FC<SortableItemProps> = ({ id, file, onRemove, onRotate }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
-  const [localPass, setLocalPass] = useState('')
-  const [isUnlocking, setIsUnlocking] = useState(false)
   
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 0,
     position: 'relative' as const,
-  }
-
-  const handleUnlockClick = async () => {
-    setIsUnlocking(true)
-    await onUnlock(id, localPass)
-    setIsUnlocking(false)
   }
 
   return (
@@ -67,12 +57,7 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, file, onRemove, onRotat
       </div>
       
       <div className="w-12 h-16 bg-gray-50 dark:bg-zinc-800 rounded-lg overflow-hidden shrink-0 border border-gray-100 dark:border-zinc-800 relative group-hover:shadow-md transition-shadow">
-        {file.isLocked ? (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-black text-rose-500">
-            <Lock size={16} />
-            <span className="text-[8px] font-black uppercase mt-1 text-center px-1">Locked</span>
-          </div>
-        ) : file.thumbnail ? (
+        {file.thumbnail ? (
           <img 
             src={file.thumbnail} 
             alt="Preview" 
@@ -89,49 +74,27 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, file, onRemove, onRotat
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="font-bold text-sm truncate text-gray-900 dark:text-white group-hover:text-rose-500 transition-colors">{file.file.name}</p>
-          {file.isLocked && <Lock size={12} className="text-rose-500 shrink-0" />}
         </div>
         
-        {file.isLocked ? (
-          <div className="flex gap-1 mt-1">
-            <input 
-              type="password" 
-              placeholder="Password" 
-              value={localPass}
-              onChange={(e) => setLocalPass(e.target.value)}
-              className="flex-1 bg-gray-50 dark:bg-black border border-gray-100 dark:border-zinc-800 rounded-lg px-2 py-1 text-[10px] font-bold outline-none focus:border-rose-500 text-gray-900 dark:text-white"
-            />
-            <button 
-              onClick={handleUnlockClick}
-              disabled={!localPass || isUnlocking}
-              className="bg-rose-500 text-white px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest disabled:opacity-50 hover:scale-105 active:scale-95 transition-transform"
-            >
-              {isUnlocking ? '...' : 'Unlock'}
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
-            <span>{formatSize(file.file.size)}</span>
-            {file.pageCount > 0 && (
-              <>
-                <span>•</span>
-                <span>{file.pageCount} pages</span>
-              </>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
+          <span>{formatSize(file.file.size)}</span>
+          {file.pageCount > 0 && (
+            <>
+              <span>•</span>
+              <span>{file.pageCount} pages</span>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-1">
-        {!file.isLocked && (
-          <button 
-            onClick={() => onRotate(id)}
-            className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-full text-gray-400 hover:text-rose-500 transition-all hover:rotate-90 active:scale-90"
-            title="Rotate 90°"
-          >
-            <RotateCw size={18} />
-          </button>
-        )}
+        <button 
+          onClick={() => onRotate(id)}
+          className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-full text-gray-400 hover:text-rose-500 transition-all hover:rotate-90 active:scale-90"
+          title="Rotate 90°"
+        >
+          <RotateCw size={18} />
+        </button>
         <button onClick={() => onRemove(id)} className="p-2 hover:bg-rose-500/10 rounded-full text-gray-400 hover:text-rose-500 transition-all hover:scale-110 active:scale-90">
           <X size={18} />
         </button>
@@ -145,6 +108,7 @@ export default function MergeTool() {
   const { setPipelineFile, consumePipelineFile } = usePipeline()
   const { objectUrl, createUrl, clearUrls } = useObjectURL()
   const [files, setFiles] = useState<PdfFile[]>([])
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [customFileName, setCustomFileName] = useState('paperknife-merged')
   const [progress, setProgress] = useState(0)
@@ -183,8 +147,8 @@ export default function MergeTool() {
       const save = async () => {
         const fileDatas = await Promise.all(files.map(async f => ({
           name: f.file.name,
-          buffer: new Uint8Array(await f.file.arrayBuffer()),
-          settings: { rotation: f.rotation, password: f.password }
+          buffer: f.decryptedBuffer,
+          settings: { rotation: f.rotation }
         })))
         saveWorkspace('merge', fileDatas)
       }
@@ -201,11 +165,10 @@ export default function MergeTool() {
     const restoredFiles = ws.files.map(f => ({
       id: Math.random().toString(36).substr(2, 9),
       file: new File([f.buffer as any], f.name, { type: 'application/pdf' }),
+      decryptedBuffer: f.buffer,
       thumbnail: undefined,
       pageCount: 0,
-      isLocked: false,
-      rotation: f.settings.rotation || 0,
-      password: f.settings.password
+      rotation: f.settings.rotation || 0
     }))
 
     setFiles(restoredFiles)
@@ -213,64 +176,47 @@ export default function MergeTool() {
     toast.success('Workspace restored successfully!')
 
     for (const pdfFile of restoredFiles) {
-      getPdfMetaData(pdfFile.file).then(meta => {
+      loadPdfDocument(pdfFile.decryptedBuffer).then(pdfDoc => {
+         return getPdfMetaData(pdfFile.file).then(meta => ({ pdfDoc, meta }));
+      }).then(({ pdfDoc, meta }) => {
         setFiles(prev => prev.map(f => f.id === pdfFile.id ? { 
           ...f, 
           thumbnail: meta.thumbnail,
-          pageCount: meta.pageCount,
-          isLocked: meta.isLocked
+          pageCount: meta.pageCount
         } : f))
       })
     }
   }
 
   const handleFiles = async (selectedFiles: FileList | File[]) => {
-    const newFiles = Array.from(selectedFiles).filter(f => f.type === 'application/pdf').map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      file,
-      thumbnail: undefined,
-      pageCount: 0,
-      isLocked: false,
-      rotation: 0
-    }))
-    
-    if (newFiles.length === 0) return
-
-    setFiles(prev => [...prev, ...newFiles])
-    clearUrls()
-    
-    // Clear input value to allow selecting the same file again
+    const validFiles = Array.from(selectedFiles).filter(f => f.type === 'application/pdf')
+    if (validFiles.length === 0) return
+    setPendingFiles(prev => [...prev, ...validFiles])
     if (fileInputRef.current) fileInputRef.current.value = ''
-
-    for (const pdfFile of newFiles) {
-      getPdfMetaData(pdfFile.file).then(meta => {
-        setFiles(prev => prev.map(f => f.id === pdfFile.id ? { 
-          ...f, 
-          thumbnail: meta.thumbnail,
-          pageCount: meta.pageCount,
-          isLocked: meta.isLocked
-        } : f))
-      })
-    }
   }
 
-  const handleUnlock = async (id: string, pass: string) => {
-    const pdfFile = files.find(f => f.id === id)
-    if (!pdfFile) return
-
-    const result = await unlockPdf(pdfFile.file, pass)
-    if (result.success) {
-      setFiles(prev => prev.map(f => f.id === id ? {
-        ...f,
-        isLocked: false,
-        thumbnail: result.thumbnail,
-        pageCount: result.pageCount,
-        password: pass,
-        unlockedBuffer: result.pdfData
-      } : f))
-    } else {
-      toast.error('Incorrect password for ' + pdfFile.file.name)
+  const handleUnlocked = async (decryptedBuffer: Uint8Array, file: File) => {
+    const newFile: PdfFile = {
+      id: Math.random().toString(36).substr(2, 9),
+      file,
+      decryptedBuffer,
+      thumbnail: undefined,
+      pageCount: 0,
+      rotation: 0
     }
+    
+    setFiles(prev => [...prev, newFile])
+    setPendingFiles(prev => prev.filter(f => f !== file))
+    clearUrls()
+
+    try {
+      const meta = await getPdfMetaData(file)
+      setFiles(prev => prev.map(f => f.id === newFile.id ? { 
+        ...f, 
+        thumbnail: meta.thumbnail,
+        pageCount: meta.pageCount
+      } : f))
+    } catch (e) { console.error(e) }
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,8 +263,7 @@ export default function MergeTool() {
   }
 
   const totalPages = files.reduce((sum, f) => sum + f.pageCount, 0)
-  const hasLockedFiles = files.some(f => f.isLocked)
-  const canMerge = files.length >= 2 && !hasLockedFiles
+  const canMerge = files.length >= 2
 
   const mergePDFs = async () => {
     if (!canMerge) return
@@ -331,9 +276,8 @@ export default function MergeTool() {
       const fileDatas = []
       for (const f of files) {
         fileDatas.push({
-          buffer: f.unlockedBuffer || new Uint8Array(await f.file.arrayBuffer()),
-          rotation: f.rotation,
-          password: f.unlockedBuffer ? undefined : f.password
+          buffer: f.decryptedBuffer,
+          rotation: f.rotation
         })
       }
 
@@ -400,6 +344,18 @@ export default function MergeTool() {
         onDrop={handleDrop}
         className="flex-1"
       >
+        {pendingFiles.length > 0 && (
+          <div className="fixed inset-0 z-[200] bg-zinc-950/80 backdrop-blur-md flex items-center justify-center p-6">
+            <div className="w-full max-w-md">
+              <SecurePDFGate 
+                file={pendingFiles[0]} 
+                onUnlocked={handleUnlocked}
+                onCancel={() => setPendingFiles(prev => prev.slice(1))}
+              />
+            </div>
+          </div>
+        )}
+
         {isDraggingGlobal && (
           <div className="fixed inset-0 z-[100] bg-rose-500/90 backdrop-blur-xl flex flex-col items-center justify-center text-white p-6 animate-in fade-in duration-300">
             <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mb-8 animate-bounce">
@@ -451,7 +407,7 @@ export default function MergeTool() {
                 <SortableContext items={files.map(f => f.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
                     {files.map((file) => (
-                      <SortableItem key={file.id} id={file.id} file={file} onRemove={removeFile} onRotate={rotateFile} onUnlock={handleUnlock} />
+                      <SortableItem key={file.id} id={file.id} file={file} onRemove={removeFile} onRotate={rotateFile} />
                     ))}
                   </div>
                 </SortableContext>

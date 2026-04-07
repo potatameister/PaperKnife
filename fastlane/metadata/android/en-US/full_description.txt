@@ -7,7 +7,6 @@ Core Features:
 • Merge PDF: Combine multiple documents into one.
 • Split PDF: Visually extract specific pages or ranges.
 • Compress PDF: Reduce file size without sacrificing quality.
-• Protect & Unlock: Add or remove passwords with strong encryption.
 • Convert: Images to PDF and PDF to high-quality images.
 • Edit: Rotate, rearrange, and add page numbers or watermarks.
 • Secure: Edit metadata and sign documents electronically.

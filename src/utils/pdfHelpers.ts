@@ -10,7 +10,6 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocument } from 'pdf-lib'
-import { decryptPDF } from '@pdfsmaller/pdf-decrypt-lite'
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -33,7 +32,6 @@ const getDocumentWithWasm = (params: any) => {
 export interface PdfMetaData {
   thumbnail: string
   pageCount: number
-  isLocked: boolean
 }
 
 const bytesToBase64 = (bytes: Uint8Array): string => {
@@ -126,139 +124,19 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     
-    let isLocked = false;
+    // Test native load
     try {
-      const pdfDoc = await PDFDocument.load(bytes.slice(0), { ignoreEncryption: true });
-      isLocked = pdfDoc.isEncrypted;
+      await PDFDocument.load(bytes.slice(0), { ignoreEncryption: true });
     } catch (e) {}
 
     try {
       const pdf = await loadPdfDocument(bytes.slice(0));
-      return { thumbnail: await renderPageThumbnail(pdf, 1), pageCount: pdf.numPages, isLocked };
+      return { thumbnail: await renderPageThumbnail(pdf, 1), pageCount: pdf.numPages };
     } catch (e) {
-      return { thumbnail: '', pageCount: 0, isLocked: true };
+      return { thumbnail: '', pageCount: 0 };
     }
   } catch (error: any) {
-    return { thumbnail: '', pageCount: 0, isLocked: true };
-  }
-};
-
-export const flattenPdf = async (pdf: any): Promise<Uint8Array> => {
-  const newPdf = await PDFDocument.create();
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d', { alpha: false });
-  if (!ctx) throw new Error('Canvas unavailable');
-
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    
-    // Safety: Cap dimensions to prevent memory crashes
-    const rawViewport = page.getViewport({ scale: 1.0 });
-    const maxDim = 1500; 
-    const scale = Math.min(1.0, maxDim / Math.max(rawViewport.width, rawViewport.height));
-    const viewport = page.getViewport({ scale });
-    
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    await page.render({ canvasContext: ctx, viewport, intent: 'print' }).promise;
-    
-    // Use toBlob for better memory handling than toDataURL
-    const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b!), 'image/jpeg', 0.75));
-    const img = await newPdf.embedJpg(await blob.arrayBuffer());
-    
-    const newPage = newPdf.addPage([viewport.width, viewport.height]);
-    newPage.drawImage(img, { x: 0, y: 0, width: viewport.width, height: viewport.height });
-    
-    // Clean up current page
-    canvas.width = 0; canvas.height = 0;
-  }
-  
-  return await newPdf.save({ useObjectStreams: false });
-};
-
-export type UnlockResult = PdfMetaData & { 
-  success: boolean, 
-  isDecrypted: boolean, 
-  pdfDoc?: any, 
-  pdfData?: Uint8Array,
-  error?: 'PASSWORD' | 'PROCESS' 
-}
-
-export const unlockPdf = async (file: File, password: string): Promise<UnlockResult> => {
-  await new Promise(res => setTimeout(res, 100));
-  const arrayBuffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(arrayBuffer);
-  
-  try {
-    // TIER 1: Native pdf-lib Unlock (Instant, highest quality)
-    try {
-      const libDoc = await PDFDocument.load(bytes.slice(0), { password });
-      const decryptedBytes = await libDoc.save({ useObjectStreams: false });
-      const pdf = await loadPdfDocument(decryptedBytes);
-      return { 
-        thumbnail: await renderPageThumbnail(pdf, 1), 
-        pageCount: pdf.numPages, 
-        isLocked: false, 
-        success: true, 
-        isDecrypted: true, 
-        pdfDoc: pdf, 
-        pdfData: decryptedBytes 
-      };
-    } catch (e) {
-      console.log('Tier 1 failed, trying Tier 2...');
-    }
-
-    // TIER 2: Specialized Decryption Engine
-    try {
-      const decrypted = await decryptPDF(bytes.slice(0), password);
-      if (decrypted && decrypted[0] === 0x25) {
-        const libDoc = await PDFDocument.load(decrypted, { ignoreEncryption: true });
-        const cleanDecrypted = await libDoc.save({ useObjectStreams: false });
-        const pdf = await loadPdfDocument(cleanDecrypted);
-        return { 
-          thumbnail: await renderPageThumbnail(pdf, 1), 
-          pageCount: pdf.numPages, 
-          isLocked: false, 
-          success: true, 
-          isDecrypted: true, 
-          pdfDoc: pdf, 
-          pdfData: cleanDecrypted 
-        };
-      }
-    } catch (e) {
-      console.log('Tier 2 failed, trying Tier 3...');
-    }
-
-    // TIER 3: Reconstruction Fallback (For AES-256)
-    try {
-      const pdf = await getDocumentWithWasm({ data: bytes.slice(0), password, stopAtErrors: false }).promise;
-      const flattened = await flattenPdf(pdf);
-      const newPdf = await loadPdfDocument(flattened);
-      return { 
-        thumbnail: await renderPageThumbnail(newPdf, 1), 
-        pageCount: newPdf.numPages, 
-        isLocked: false, 
-        success: true, 
-        isDecrypted: true, 
-        pdfDoc: newPdf, 
-        pdfData: flattened 
-      };
-    } catch (e2: any) {
-      const isPasswordError = e2.name === 'PasswordException' || e2.message?.toLowerCase().includes('password');
-      return { 
-        thumbnail: '', 
-        pageCount: 0, 
-        isLocked: true, 
-        success: false, 
-        isDecrypted: false, 
-        error: isPasswordError ? 'PASSWORD' : 'PROCESS' 
-      };
-    }
-  } catch (err) {
-    return { thumbnail: '', pageCount: 0, isLocked: true, success: false, isDecrypted: false, error: 'PROCESS' };
+    return { thumbnail: '', pageCount: 0 };
   }
 };
 

@@ -69,7 +69,7 @@ export default function WebView({ tools }: { tools: Tool[] }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<ToolCategory | 'All'>('All')
 
-  const categories: (ToolCategory | 'All')[] = ['All', 'Edit', 'Secure', 'Convert', 'Optimize']
+  const categories: (ToolCategory | 'All')[] = ['All', 'Edit', 'Convert', 'Optimize']
 
   const filteredTools = useMemo(() => {
     return tools.filter(tool => {

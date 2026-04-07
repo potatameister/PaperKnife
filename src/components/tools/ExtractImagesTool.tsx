@@ -1,36 +1,35 @@
 import { useState, useRef, useEffect } from 'react'
-import { Image as ImageIcon, Lock, Loader2, X, Sparkles } from 'lucide-react'
+import { Image as ImageIcon, Loader2, X, Sparkles, FileUp } from 'lucide-react'
 import JSZip from 'jszip'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
-import { getPdfMetaData, loadPdfDocument, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { SecurePDFGate } from '../shared/SecurePDFGate'
 
 type PdfData = { 
   file: File, 
+  decryptedBuffer: Uint8Array,
   thumbnail?: string, 
   pageCount: number, 
-  isLocked: boolean, 
-  pdfDoc?: any, 
-  password?: string,
-  unlockedBuffer?: Uint8Array
+  pdfDoc?: any
 }
 
 export default function ExtractImagesTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { consumePipelineFile } = usePipeline()
+  const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [pdfData, setPdfData] = useState<PdfData | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [extractedCount, setExtractedCount] = useState(0)
   const [customFileName, setCustomFileName] = useState('extracted-images')
-  const [unlockPassword, setUnlockPassword] = useState('')
   const isNative = Capacitor.isNativePlatform()
 
   const [isLoadingFile, setIsLoadingFile] = useState(false)
@@ -39,45 +38,20 @@ export default function ExtractImagesTool() {
     const pipelined = consumePipelineFile()
     if (pipelined) {
       const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
-      handleFile(file)
+      setSourceFile(file)
     }
   }, [])
 
-  const handleUnlock = async () => {
-    if (!pdfData || !unlockPassword) return
-    setIsLoadingFile(true)
-    const result = await unlockPdf(pdfData.file, unlockPassword)
-    if (result.success) {
-      setPdfData({ 
-        ...pdfData, 
-        isLocked: false, 
-        pageCount: result.pageCount, 
-        pdfDoc: result.pdfDoc, 
-        thumbnail: result.thumbnail, 
-        password: unlockPassword,
-        unlockedBuffer: result.pdfData
-      })
-      setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-extracted`)
-    } else { 
-      toast.error('Incorrect password') 
-    }
-    setIsLoadingFile(false)
-  }
-
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') return
+  const handleUnlocked = async (decryptedBuffer: Uint8Array, file: File) => {
     setIsLoadingFile(true)
     try {
       const meta = await getPdfMetaData(file)
-      if (meta.isLocked) { 
-        setPdfData({ file, pageCount: 0, isLocked: true }) 
-      } else {
-        const pdfDoc = await loadPdfDocument(file)
-        setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc, thumbnail: meta.thumbnail })
-        setCustomFileName(`${file.name.replace('.pdf', '')}-extracted`)
-      }
+      const pdfDoc = await loadPdfDocument(decryptedBuffer)
+      setPdfData({ file, decryptedBuffer, pageCount: meta.pageCount, pdfDoc, thumbnail: meta.thumbnail })
+      setCustomFileName(`${file.name.replace('.pdf', '')}-extracted`)
     } catch (err) { 
       console.error(err) 
+      toast.error('Failed to load document structure')
     } finally { 
       setIsLoadingFile(false); 
       setDownloadUrl(null) 
@@ -163,27 +137,24 @@ export default function ExtractImagesTool() {
       {isProcessing ? <><Loader2 className="animate-spin" /> {progress}%</> : <><Sparkles size={18} /> Extract Raw Images</>}
     </button>
   )
-
-  return (
-    <NativeToolLayout title="Extract Images" description="Find and save all original images embedded inside the PDF." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
-      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-      {!pdfData ? (
+return (
+  <NativeToolLayout title="Extract Images" description="Find and save all original images embedded inside the PDF." actions={pdfData && !downloadUrl && <ActionButton />}>
+    <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && setSourceFile(e.target.files[0])} />
+    {!pdfData ? (
+      <SecurePDFGate 
+        file={sourceFile} 
+        onUnlocked={handleUnlocked} 
+        onCancel={() => setSourceFile(null)}
+      >
         <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group">
-          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><ImageIcon size={32} /></div>
+          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><FileUp size={32} /></div>
           <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF</h3>
           <p className="text-sm text-gray-400">Tap to search for images</p>
         </div>
-      ) : pdfData.isLocked ? (
-        <div className="max-w-md mx-auto">
-          <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 text-center">
-            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6"><Lock size={32} /></div>
-            <h3 className="text-2xl font-bold mb-2 dark:text-white">Protected File</h3>
-            <input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} placeholder="Password" className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4" />
-            <button onClick={handleUnlock} disabled={!unlockPassword || isProcessing} className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase text-xs">Unlock</button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
+      </SecurePDFGate>
+    ) : (
+      <div className="space-y-6">
+...
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-gray-100 dark:border-white/5 flex items-center gap-6">
             <div className="w-16 h-20 bg-gray-50 dark:bg-black rounded-xl overflow-hidden shrink-0 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-rose-500">{pdfData.thumbnail ? <img src={pdfData.thumbnail} className="w-full h-full object-cover" /> : <ImageIcon size={20} />}</div>
             <div className="flex-1 min-w-0"><h3 className="font-bold text-sm truncate dark:text-white">{pdfData.file.name}</h3><p className="text-[10px] text-gray-400 uppercase font-black">{pdfData.pageCount} Pages • {(pdfData.file.size / (1024*1024)).toFixed(1)} MB</p></div>

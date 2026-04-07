@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Loader2, ShieldAlert, Upload, X, FileCheck } from 'lucide-react'
+import { Loader2, ShieldAlert, X, FileCheck, FileUp } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 
@@ -8,36 +8,36 @@ import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { SecurePDFGate } from '../shared/SecurePDFGate'
 
 export default function RepairTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { consumePipelineFile } = usePipeline()
+  const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
-  const [originalFile, setOriginalFile] = useState<File | null>(null)
+  const [pdfData, setPdfData] = useState<{ file: File, decryptedBuffer: Uint8Array } | null>(null)
   const [customFileName, setCustomFileName] = useState('')
 
   useEffect(() => {
     const pipelined = consumePipelineFile()
     if (pipelined) {
       const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
-      handleFile(file)
+      setSourceFile(file)
     }
   }, [])
 
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') return
-    setOriginalFile(file)
+  const handleUnlocked = async (decryptedBuffer: Uint8Array, file: File) => {
+    setPdfData({ file, decryptedBuffer })
     setCustomFileName(`repaired-${file.name.replace('.pdf', '')}`)
     setDownloadUrl(null)
   }
 
   const startRepair = async () => {
-    if (!originalFile) return
+    if (!pdfData) return
     setIsProcessing(true)
     try {
-      const arrayBuffer = await originalFile.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { 
+      const pdfDoc = await PDFDocument.load(pdfData.decryptedBuffer, { 
         ignoreEncryption: true, 
         throwOnInvalidObject: false 
       } as any)
@@ -63,24 +63,30 @@ export default function RepairTool() {
   )
 
   return (
-    <NativeToolLayout title="Repair PDF" description="Fix corrupted or unreadable PDF files by rebuilding structure." actions={originalFile && !downloadUrl && <ActionButton />}>
-      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+    <NativeToolLayout title="Repair PDF" description="Fix corrupted or unreadable PDF files by rebuilding structure." actions={pdfData && !downloadUrl && <ActionButton />}>
+      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && setSourceFile(e.target.files[0])} />
       
-      {!originalFile ? (
-        <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group">
-          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><Upload size={32} /></div>
-          <h3 className="text-xl font-bold dark:text-white mb-2">Select Corrupted PDF</h3>
-          <p className="text-sm text-gray-400">Tap to browse local files</p>
-        </div>
+      {!pdfData ? (
+        <SecurePDFGate 
+          file={sourceFile} 
+          onUnlocked={handleUnlocked} 
+          onCancel={() => setSourceFile(null)}
+        >
+          <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group">
+            <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><FileUp size={32} /></div>
+            <h3 className="text-xl font-bold dark:text-white mb-2">Select Corrupted PDF</h3>
+            <p className="text-sm text-gray-400">Tap to browse local files</p>
+          </div>
+        </SecurePDFGate>
       ) : (
         <div className="space-y-6">
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-gray-100 dark:border-white/5 flex items-center gap-6 shadow-sm">
             <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl flex items-center justify-center shrink-0"><ShieldAlert size={24} /></div>
             <div className="flex-1 min-w-0 text-left">
-              <h3 className="font-bold text-sm truncate dark:text-white">{originalFile.name}</h3>
-              <p className="text-[10px] text-gray-400 uppercase font-black">{(originalFile.size / (1024*1024)).toFixed(2)} MB</p>
+              <h3 className="font-bold text-sm truncate dark:text-white">{pdfData.file.name}</h3>
+              <p className="text-[10px] text-gray-400 uppercase font-black">{(pdfData.file.size / (1024*1024)).toFixed(2)} MB</p>
             </div>
-            <button onClick={() => setOriginalFile(null)} className="p-2 text-gray-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
+            <button onClick={() => setPdfData(null)} className="p-2 text-gray-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
           </div>
 
           <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-gray-100 dark:border-white/5 space-y-8 shadow-sm">
@@ -97,7 +103,7 @@ export default function RepairTool() {
                 </div>
               </div>
             ) : (
-              <SuccessState message="Reconstruction Complete!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setOriginalFile(null); }} showPreview={true} />
+              <SuccessState message="Reconstruction Complete!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setPdfData(null); }} showPreview={true} />
             )}
           </div>
         </div>

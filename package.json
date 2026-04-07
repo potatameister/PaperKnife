@@ -24,8 +24,6 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@google/genai": "^1.29.0",
     "@isomorphic-git/lightning-fs": "^4.6.2",
-    "@pdfsmaller/pdf-decrypt-lite": "^1.0.0",
-    "@pdfsmaller/pdf-encrypt-lite": "^1.0.2",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.20",
     "dotenv": "^17.2.3",

@@ -1,32 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Loader2, Lock, Image as ImageIcon, ArrowRight } from 'lucide-react'
+import { Loader2, Image as ImageIcon, ArrowRight, FileUp } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
-import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, renderPageThumbnail } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { SecurePDFGate } from '../shared/SecurePDFGate'
 
 type SignaturePdfData = { 
   file: File, 
-  pageCount: number, 
-  isLocked: boolean, 
-  pdfDoc?: any, 
-  password?: string,
-  unlockedBuffer?: Uint8Array
+  decryptedBuffer: Uint8Array,
+  pageCount: number,
+  pdfDoc?: any,
 }
 
 export default function SignatureTool() {
   const fileInputRef = useRef<HTMLInputElement>(null); const signatureInputRef = useRef<HTMLInputElement>(null); const previewRef = useRef<HTMLDivElement>(null)
   const { consumePipelineFile } = usePipeline()
+  const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [pdfData, setPdfData] = useState<SignaturePdfData | null>(null); const [signatureImg, setSignatureImg] = useState<string | null>(null); const [signatureFile, setSignatureFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false); const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
-  const [customFileName, setCustomFileName] = useState('paperknife-signed')
-  const [unlockPassword, setUnlockPassword] = useState(''); const [activePage] = useState(1); const [pos, setPos] = useState({ x: 50, y: 50 })
+  const [customFileName, setCustomFileName] = useState('paperknife-signed'); const [activePage] = useState(1); const [pos, setPos] = useState({ x: 50, y: 50 })
   const [size, setSize] = useState(150); const [thumbnail, setThumbnail] = useState<string | null>(null); const [isDraggingSig, setIsDraggingSig] = useState(false); const [isResizing, setIsResizing] = useState(false)
   const isNative = Capacitor.isNativePlatform()
 
@@ -34,38 +33,24 @@ export default function SignatureTool() {
     const pipelined = consumePipelineFile()
     if (pipelined) {
       const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
-      handleFile(file)
+      setSourceFile(file)
     }
   }, [])
 
-  const handleUnlock = async () => {
-    if (!pdfData || !unlockPassword) return; setIsProcessing(true)
+  const handleUnlocked = async (decryptedBuffer: Uint8Array, file: File) => {
+    setIsProcessing(true)
     try {
-      const result = await unlockPdf(pdfData.file, unlockPassword)
-      if (result.success) {
-        setPdfData({ 
-          ...pdfData, 
-          isLocked: false, 
-          pageCount: result.pageCount, 
-          pdfDoc: result.pdfDoc, 
-          password: unlockPassword,
-          unlockedBuffer: result.pdfData
-        })
-        const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb)
-      }
-      else { toast.error('Incorrect password') }
-    } finally { setIsProcessing(false) }
-  }
-
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') return; setIsProcessing(true)
-    try {
-      const meta = await getPdfMetaData(file)
-      if (meta.isLocked) { setPdfData({ file, pageCount: 0, isLocked: true }) }
-      else { const pdfDoc = await loadPdfDocument(file); setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc }); const thumb = await renderPageThumbnail(pdfDoc, 1, 2.0); setThumbnail(thumb) }
+      const meta = await getPdfMetaData(file);
+      const pdfDoc = await loadPdfDocument(decryptedBuffer); 
+      setPdfData({ file, decryptedBuffer, pageCount: meta.pageCount, pdfDoc }); 
+      const thumb = await renderPageThumbnail(pdfDoc, 1, 2.0); 
+      setThumbnail(thumb);
+      setCustomFileName(`${file.name.replace('.pdf', '')}-signed`)
+    } catch (e) {
+      console.error(e)
+      toast.error('Failed to load document structure')
     } finally { 
       setIsProcessing(false) 
-      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -79,11 +64,7 @@ export default function SignatureTool() {
   const saveSignedPdf = async () => {
     if (!pdfData || !signatureFile) return; setIsProcessing(true)
     try {
-      const buffer = pdfData.unlockedBuffer || new Uint8Array(await pdfData.file.arrayBuffer())
-      const pdfDoc = await PDFDocument.load(buffer, { 
-        password: pdfData.unlockedBuffer ? undefined : pdfData.password,
-        ignoreEncryption: !!pdfData.unlockedBuffer
-      } as any)
+      const pdfDoc = await PDFDocument.load(pdfData.decryptedBuffer)
       const sigBytes = await signatureFile.arrayBuffer(); let sigImage = signatureFile.type === 'image/png' ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes)
       const page = pdfDoc.getPages()[activePage - 1]; const { width, height } = page.getSize(); const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width))
       page.drawImage(sigImage, { x: pdfX, y: pdfY, width: size, height: size * (sigImage.height / sigImage.width) })
@@ -97,23 +78,27 @@ export default function SignatureTool() {
       {isProcessing ? <Loader2 className="animate-spin" /> : <>Sign & Save <ArrowRight size={18} /></>}
     </button>
   )
-
-  return (
-    <NativeToolLayout title="Signature" description="Sign any PDF by dragging your signature image." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
-      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-      <input type="file" accept="image/*" className="hidden" ref={signatureInputRef} onChange={(e) => { const file = e.target.files?.[0]; if (file) { setSignatureFile(file); setSignatureImg(URL.createObjectURL(file)) } }} />
-      {!pdfData ? (
+return (
+  <NativeToolLayout title="Signature" description="Sign any PDF by dragging your signature image." actions={pdfData && !downloadUrl && <ActionButton />}>
+    <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && setSourceFile(e.target.files[0])} />
+    <input type="file" accept="image/*" className="hidden" ref={signatureInputRef} onChange={(e) => { const file = e.target.files?.[0]; if (file) { setSignatureFile(file); setSignatureImg(URL.createObjectURL(file)) } }} />
+    {!pdfData ? (
+      <SecurePDFGate 
+        file={sourceFile} 
+        onUnlocked={handleUnlocked} 
+        onCancel={() => setSourceFile(null)}
+      >
         <button 
           onClick={() => !isProcessing && fileInputRef.current?.click()} 
           className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 transition-all cursor-pointer group"
         >
-          <ImageIcon size={32} className="mx-auto mb-4 text-rose-500" />
+          <FileUp size={32} className="mx-auto mb-4 text-rose-500" />
           <h3 className="text-xl font-bold dark:text-white">Select PDF</h3>
         </button>
-      ) : pdfData.isLocked ? (
-        <div className="max-w-md mx-auto p-8 bg-white dark:bg-zinc-900 rounded-3xl text-center"><Lock size={32} className="mx-auto mb-4 text-rose-500" /><input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} className="w-full p-4 mb-4 border rounded-xl" /><button onClick={handleUnlock} className="w-full p-4 bg-rose-500 text-white rounded-xl">Unlock</button></div>
-      ) : (
-        <div className="space-y-6" onMouseMove={handleMouseMove} onTouchMove={handleMouseMove} onMouseUp={() => { setIsDraggingSig(false); setIsResizing(false); }} onTouchEnd={() => { setIsDraggingSig(false); setIsResizing(false); }}>
+      </SecurePDFGate>
+    ) : (
+      <div className="space-y-6" onMouseMove={handleMouseMove} onTouchMove={handleMouseMove} onMouseUp={() => { setIsDraggingSig(false); setIsResizing(false); }} onTouchEnd={() => { setIsDraggingSig(false); setIsResizing(false); }}>
+...
           {!downloadUrl ? (
             <>
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-3xl border border-gray-100 dark:border-white/5 relative aspect-[1/1.4] overflow-hidden touch-none" ref={previewRef} onClick={(e) => { if (!signatureImg || isDraggingSig || isResizing) return; const r = e.currentTarget.getBoundingClientRect(); setPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }) }}>

@@ -1,32 +1,31 @@
 import { useState, useRef, useEffect } from 'react'
-import { Info, Lock, Edit3, Loader2, Sparkles, X } from 'lucide-react'
+import { Info, Edit3, Loader2, Sparkles, X, FileUp } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 
-import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { SecurePDFGate } from '../shared/SecurePDFGate'
 
 type MetadataPdfData = {
   file: File
+  decryptedBuffer: Uint8Array
   pageCount: number
-  isLocked: boolean
-  password?: string
   currentMeta: { title?: string, author?: string, subject?: string, keywords?: string, creator?: string, producer?: string }
-  unlockedBuffer?: Uint8Array
 }
 
 export default function MetadataTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { consumePipelineFile } = usePipeline()
+  const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [pdfData, setPdfData] = useState<MetadataPdfData | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [customFileName, setCustomFileName] = useState('paperknife-metadata')
-  const [unlockPassword, setUnlockPassword] = useState('')
   const [isDeepCleaning, setIsDeepCleaning] = useState(false)
   const [meta, setMeta] = useState({ 
     title: '', 
@@ -54,46 +53,37 @@ export default function MetadataTool() {
     const pipelined = consumePipelineFile()
     if (pipelined) {
       const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
-      handleFile(file)
+      setSourceFile(file)
     }
   }, [])
 
-  const handleUnlock = async () => {
-    if (!pdfData || !unlockPassword) return
-    setIsProcessing(true)
-    const result = await unlockPdf(pdfData.file, unlockPassword)
-    if (result.success) {
-      const arrayBuffer = result.pdfData || await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: result.isDecrypted ? undefined : unlockPassword } as any)
-      const currentMeta = { title: pdfDoc.getTitle() || '', author: pdfDoc.getAuthor() || '', subject: pdfDoc.getSubject() || '', keywords: pdfDoc.getKeywords() || '', creator: pdfDoc.getCreator() || '', producer: pdfDoc.getProducer() || '' }
-      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, password: unlockPassword, currentMeta, unlockedBuffer: result.pdfData })
-      setMeta(currentMeta)
-    } else { toast.error('Incorrect password') }
-    setIsProcessing(false)
-  }
-
-  const handleFile = async (file: File) => {
-    if (file.type !== 'application/pdf') return
+  const handleUnlocked = async (decryptedBuffer: Uint8Array, file: File) => {
     setIsProcessing(true)
     try {
-      const metaRes = await getPdfMetaData(file); let currentMeta = { title: '', author: '', subject: '', keywords: '', creator: '', producer: '' }
-      if (!metaRes.isLocked) {
-        const arrayBuffer = await file.arrayBuffer(); const pdfDoc = await PDFDocument.load(arrayBuffer)
-        
-        // Load existing meta but prioritize non-empty settings if they exist
-        const savedAuthor = localStorage.getItem('defaultAuthor') || ''
-        currentMeta = { 
-          title: pdfDoc.getTitle() || '', 
-          author: savedAuthor || pdfDoc.getAuthor() || '', 
-          subject: pdfDoc.getSubject() || '', 
-          keywords: pdfDoc.getKeywords() || '', 
-          creator: savedAuthor || pdfDoc.getCreator() || '', 
-          producer: savedAuthor || pdfDoc.getProducer() || '' 
-        }
+      const metaRes = await getPdfMetaData(file); 
+      let currentMeta = { title: '', author: '', subject: '', keywords: '', creator: '', producer: '' }
+      const pdfDoc = await PDFDocument.load(decryptedBuffer)
+      
+      // Load existing meta but prioritize non-empty settings if they exist
+      const savedAuthor = localStorage.getItem('defaultAuthor') || ''
+      currentMeta = { 
+        title: pdfDoc.getTitle() || '', 
+        author: savedAuthor || pdfDoc.getAuthor() || '', 
+        subject: pdfDoc.getSubject() || '', 
+        keywords: pdfDoc.getKeywords() || '', 
+        creator: savedAuthor || pdfDoc.getCreator() || '', 
+        producer: savedAuthor || pdfDoc.getProducer() || '' 
       }
-      setPdfData({ file, pageCount: metaRes.pageCount, isLocked: metaRes.isLocked, currentMeta })
-      setMeta(currentMeta); setCustomFileName(`${file.name.replace('.pdf', '')}-metadata`)
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+      setPdfData({ file, decryptedBuffer, pageCount: metaRes.pageCount, currentMeta })
+      setMeta(currentMeta); 
+      setCustomFileName(`${file.name.replace('.pdf', '')}-metadata`)
+    } catch (err) { 
+      console.error(err)
+      toast.error('Failed to load document structure')
+    } finally { 
+      setIsProcessing(false); 
+      setDownloadUrl(null) 
+    }
   }
 
   const saveMetadata = async (deepClean = false) => {
@@ -101,11 +91,7 @@ export default function MetadataTool() {
     setIsProcessing(true); if (deepClean) setIsDeepCleaning(true)
     await new Promise(resolve => setTimeout(resolve, 300))
     try {
-      const arrayBuffer = pdfData.unlockedBuffer || await pdfData.file.arrayBuffer()
-      const sourcePdf = await PDFDocument.load(arrayBuffer, { 
-        password: pdfData.unlockedBuffer ? undefined : pdfData.password,
-        ignoreEncryption: !!pdfData.unlockedBuffer
-      } as any)
+      const sourcePdf = await PDFDocument.load(pdfData.decryptedBuffer)
       let targetPdf: PDFDocument
       
       if (deepClean) {
@@ -158,27 +144,24 @@ export default function MetadataTool() {
        </button>
     </div>
   )
-
-  return (
-    <NativeToolLayout title="Metadata Editor" description="Edit or wipe document properties for better privacy." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButtons />}>
-      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-      {!pdfData ? (
+return (
+  <NativeToolLayout title="Metadata Editor" description="Edit or wipe document properties for better privacy." actions={pdfData && true && !downloadUrl && <ActionButtons />}>
+    <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && setSourceFile(e.target.files[0])} />
+    {!pdfData ? (
+      <SecurePDFGate 
+        file={sourceFile} 
+        onUnlocked={handleUnlocked} 
+        onCancel={() => setSourceFile(null)}
+      >
         <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group">
-          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><Edit3 size={32} /></div>
+          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><FileUp size={32} /></div>
           <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF</h3>
           <p className="text-sm text-gray-400">Tap to start editing metadata</p>
         </div>
-      ) : pdfData.isLocked ? (
-        <div className="max-w-md mx-auto relative z-[100]">
-          <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 text-center shadow-2xl">
-            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6"><Lock size={32} /></div>
-            <h3 className="text-2xl font-bold mb-2 dark:text-white">File Protected</h3>
-            <input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} placeholder="Password" className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white" />
-            <button onClick={handleUnlock} disabled={!unlockPassword || isProcessing} className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase text-xs">Unlock</button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
+      </SecurePDFGate>
+    ) : (
+      <div className="space-y-6">
+...
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-gray-100 dark:border-white/5 flex items-center gap-6 shadow-sm">
             <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl flex items-center justify-center shrink-0"><Info size={24} /></div>
             <div className="flex-1 min-w-0 text-left">

@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom'
 import { X, Plus, Share2, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { App } from '@capacitor/app'
-import { loadPdfDocument, renderPdfPage, shareFile, unlockPdf } from '../utils/pdfHelpers'
+import { loadPdfDocument, renderPdfPage, shareFile } from '../utils/pdfHelpers'
 import { PaperKnifeLogo } from './Logo'
 
 interface PdfPreviewProps {
@@ -63,12 +63,9 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
   const [totalPages, setTotalPages] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [pdfDoc, setPdfDoc] = useState<any>(null)
-  const [isLocked, setIsLocked] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [scale, setScale] = useState(0.7)
   const [pageInput, setPageInput] = useState('1')
-  const [password, setPassword] = useState('')
-  const [isUnlocking, setIsUnlocking] = useState(false)
   
   const mainRef = useRef<HTMLElement>(null)
 
@@ -80,10 +77,8 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
         setPdfDoc(doc)
         setTotalPages(doc.numPages)
       } catch (err: any) {
-        if (err.name === 'PasswordException') {
-          setIsLocked(true)
-        }
         console.error('Preview load error:', err)
+        toast.error('Failed to load document')
       } finally {
         setIsLoading(false)
       }
@@ -103,35 +98,6 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
   useEffect(() => {
     setPageInput(String(currentPage))
   }, [currentPage])
-
-  const handleUnlock = async () => {
-    if (!password) return
-    setIsUnlocking(true)
-    try {
-      const result = await unlockPdf(file, password)
-      if (result.success) {
-        if (result.isDecrypted && result.pdfData) {
-          // If decrypted into bytes, we need to load the new document
-          const newDoc = await loadPdfDocument(new File([result.pdfData], file.name, { type: 'application/pdf' }))
-          setPdfDoc(newDoc)
-          setTotalPages(newDoc.numPages)
-        } else {
-          // Fallback or standard pdf.js unlock
-          setPdfDoc(result.pdfDoc)
-          setTotalPages(result.pageCount)
-        }
-        setIsLocked(false)
-        toast.success('Document unlocked')
-      } else {
-        toast.error('Incorrect password')
-      }
-    } catch (e) {
-      console.error('Unlock error:', e)
-      toast.error('Failed to unlock')
-    } finally {
-      setIsUnlocking(false)
-    }
-  }
 
   const handleScroll = (e: React.UIEvent<HTMLElement>) => {
     const pages = e.currentTarget.querySelectorAll('[data-page-num]')
@@ -233,54 +199,17 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
             </div>
           )}
 
-          {isLocked ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-8 py-40">
-              <div className="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-inner border border-rose-500/20">
-                <X size={32} />
-              </div>
-              <h3 className="text-2xl font-black text-white tracking-tighter mb-3">Layer Protected</h3>
-              <p className="text-sm text-zinc-500 max-w-xs mx-auto leading-relaxed mb-8">This document is encrypted. Enter the password to view the contents.</p>
-              
-              <div className="w-full max-w-xs space-y-3 mb-10">
-                 <input 
-                   type="password" 
-                   value={password}
-                   onChange={(e) => setPassword(e.target.value)}
-                   onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
-                   placeholder="Enter Password"
-                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold text-center outline-none focus:border-rose-500 transition-all"
-                   autoFocus
-                 />
-                 <button 
-                   onClick={handleUnlock}
-                   disabled={!password || isUnlocking}
-                   className="w-full py-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                 >
-                   {isUnlocking ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Unlock'} 
-                   Unlock Layer
-                 </button>
-              </div>
-
-              <button 
-                onClick={onProcess}
-                className="text-zinc-500 font-black uppercase text-[10px] tracking-[0.2em] hover:text-white transition-colors"
-              >
-                Tool Selection
-              </button>
-            </div>
-          ) : (
-            <div className="w-full">
-              {Array.from({ length: totalPages }).map((_, idx) => (
-                <PdfPage 
-                  key={idx} 
-                  pdfDoc={pdfDoc} 
-                  pageNum={idx + 1}
-                  scale={scale}
-                  isActive={Math.abs(idx + 1 - currentPage) <= 1}
-                />
-              ))}
-            </div>
-          )}
+          <div className="w-full">
+            {Array.from({ length: totalPages }).map((_, idx) => (
+              <PdfPage 
+                key={idx} 
+                pdfDoc={pdfDoc} 
+                pageNum={idx + 1}
+                scale={scale}
+                isActive={Math.abs(idx + 1 - currentPage) <= 1}
+              />
+            ))}
+          </div>
         </div>
       </main>
 
@@ -291,7 +220,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
         <div className="flex items-center justify-center gap-4 mb-2">
           <button 
             onClick={zoomOut}
-            disabled={isLoading || isLocked}
+            disabled={isLoading}
             className="w-10 h-10 flex items-center justify-center bg-white/10 text-white rounded-full active:bg-white/20 transition-all disabled:opacity-30"
           >
             <ZoomOut size={18} strokeWidth={2.5} />
@@ -303,7 +232,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
           
           <button 
             onClick={zoomIn}
-            disabled={isLoading || isLocked}
+            disabled={isLoading}
             className="w-10 h-10 flex items-center justify-center bg-white/10 text-white rounded-full active:bg-white/20 transition-all disabled:opacity-30"
           >
             <ZoomIn size={18} strokeWidth={2.5} />
@@ -314,7 +243,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
         <div className="flex items-center justify-center gap-4">
           <button 
             onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage <= 1 || isLoading || isLocked}
+            disabled={currentPage <= 1 || isLoading}
             className="w-10 h-10 flex items-center justify-center bg-white/5 text-zinc-400 rounded-xl active:bg-white/10 transition-all disabled:opacity-30"
           >
             <ChevronLeft size={20} strokeWidth={2.5} />
@@ -348,7 +277,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
                   e.currentTarget.blur()
                 }
               }}
-              disabled={isLoading || isLocked}
+              disabled={isLoading}
               className="w-14 bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-center text-white font-bold text-sm outline-none focus:border-rose-500 disabled:opacity-30"
             />
             <span className="text-zinc-500 text-sm font-medium">/ {totalPages}</span>
@@ -356,7 +285,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
           
           <button 
             onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage >= totalPages || isLoading || isLocked}
+            disabled={currentPage >= totalPages || isLoading}
             className="w-10 h-10 flex items-center justify-center bg-white/5 text-zinc-400 rounded-xl active:bg-white/10 transition-all disabled:opacity-30"
           >
             <ChevronRight size={20} strokeWidth={2.5} />
