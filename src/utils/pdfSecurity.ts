@@ -33,7 +33,7 @@ export class PdfSecurity {
 
       try {
         const nativeDoc = await PDFDocument.load(bytes, { password } as any)
-        const nativeBytes = await nativeDoc.save({ useObjectStreams: false })
+        const nativeBytes = await nativeDoc.save()
         return { success: true, data: nativeBytes }
       } catch (e) {
         console.log('Tier 1 Unlock failed, trying Tier 2...')
@@ -56,14 +56,34 @@ export class PdfSecurity {
 
   /**
    * Surgical Lock Method
-   * Reverted back to the stable @pdfsmaller/pdf-encrypt-lite for encryption.
+   * Using native pdf-lib encryption from the updated library to prevent artifacts.
    */
   static async lock(bytes: Uint8Array, password = ''): Promise<{ success: boolean; data?: Uint8Array; error?: string }> {
     try {
-      // @ts-ignore - The module exists but might not have types
-      const { encryptPDF } = await import('@pdfsmaller/pdf-encrypt-lite');
-      const data = await encryptPDF(bytes, password, password);
-      return { success: true, data };
+      const pdfDoc = await PDFDocument.load(bytes)
+      
+      // The updated library supports native encryption
+      // @ts-ignore
+      if (typeof pdfDoc.encrypt === 'function') {
+        // @ts-ignore
+        pdfDoc.encrypt({
+          userPassword: password,
+          ownerPassword: password,
+          permissions: {
+            printing: 'highResolution',
+            modifying: true,
+            copying: true,
+            annotating: true,
+            fillingForms: true,
+            contentAccessibility: true,
+            documentAssembly: true,
+          }
+        })
+        const data = await pdfDoc.save()
+        return { success: true, data }
+      }
+
+      return { success: false, error: 'ENCRYPTION_NOT_SUPPORTED' }
     } catch (e: any) {
       console.error('Lock failed:', e)
       return { success: false, error: e.message }

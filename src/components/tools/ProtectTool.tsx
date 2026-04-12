@@ -34,7 +34,9 @@ export default function ProtectTool() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
-      setSourceFile(e.target.files[0])
+      const file = e.target.files[0]
+      setSourceFile(file)
+      setProtectedName(`protected-${file.name.replace('.pdf', '')}`)
       setDownloadUrl(null)
     }
   }
@@ -56,9 +58,8 @@ export default function ProtectTool() {
       if (result.success && result.data) {
         const blob = new Blob([result.data as any], { type: 'application/pdf' })
         const url = URL.createObjectURL(blob)
-        const fileName = `protected-${sourceFile.name}`
+        const fileName = protectedName.endsWith('.pdf') ? protectedName : `${protectedName}.pdf`
         
-        setProtectedName(fileName)
         setDownloadUrl(url)
         
         addActivity({ 
@@ -120,6 +121,18 @@ export default function ProtectTool() {
 
             <div className="space-y-4">
               <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 mb-2 px-1">Output Filename</label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={protectedName}
+                    onChange={(e) => setProtectedName(e.target.value)}
+                    className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white shadow-inner transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-[10px] font-black uppercase text-gray-400 mb-2 px-1">Set Password</label>
                 <div className="relative">
                   <input 
@@ -170,7 +183,7 @@ export default function ProtectTool() {
           <SuccessState 
             message="Document Protected!" 
             downloadUrl={downloadUrl} 
-            fileName={protectedName} 
+            fileName={protectedName.endsWith('.pdf') ? protectedName : `${protectedName}.pdf`} 
             onStartOver={() => {
               setSourceFile(null)
               setPassword('')
