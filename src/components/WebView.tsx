@@ -20,7 +20,7 @@ const categoryColors: Record<ToolCategory, { bg: string, text: string, border: s
     hover: 'group-hover:bg-rose-500',
     glow: 'dark:hover:shadow-rose-900/20'
   },
-  Secure: { 
+  Security: { 
     bg: 'bg-indigo-50 dark:bg-indigo-900/20', 
     text: 'text-indigo-500', 
     border: 'border-indigo-100 dark:border-indigo-900/30',
@@ -69,7 +69,7 @@ export default function WebView({ tools }: { tools: Tool[] }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<ToolCategory | 'All'>('All')
 
-  const categories: (ToolCategory | 'All')[] = ['All', 'Edit', 'Convert', 'Optimize']
+  const categories: (ToolCategory | 'All')[] = ['All', 'Edit', 'Security', 'Convert', 'Optimize']
 
   const filteredTools = useMemo(() => {
     return tools.filter(tool => {

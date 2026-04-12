@@ -29,18 +29,22 @@ import MetadataTool from './components/tools/MetadataTool'
 import PageNumberTool from './components/tools/PageNumberTool'
 import PdfToImageTool from './components/tools/PdfToImageTool'
 import PdfToTextTool from './components/tools/PdfToTextTool'
+import ProtectTool from './components/tools/ProtectTool'
 import RearrangeTool from './components/tools/RearrangeTool'
 import RepairTool from './components/tools/RepairTool'
 import RotateTool from './components/tools/RotateTool'
 import SignatureTool from './components/tools/SignatureTool'
 import SplitTool from './components/tools/SplitTool'
+import UnlockTool from './components/tools/UnlockTool'
 import WatermarkTool from './components/tools/WatermarkTool'
-import { FileDown, FileUp, FileText, Image, FileSignature, Split, Settings2, Hash, Layers, Droplet, Wrench, RefreshCw, EyeOff } from 'lucide-react'
+import { FileDown, FileUp, FileText, Image, FileSignature, Split, Settings2, Hash, Layers, Droplet, Wrench, RefreshCw, EyeOff, Lock, Unlock as UnlockIcon } from 'lucide-react'
 
 const tools: Tool[] = [
   { title: 'Merge PDF', desc: 'Combine multiple PDFs into one', icon: Layers, path: '/merge', category: 'Edit', implemented: true },
   { title: 'Split PDF', desc: 'Extract pages from your PDF', icon: Split, path: '/split', category: 'Edit', implemented: true },
   { title: 'Compress PDF', desc: 'Reduce file size while maintaining quality', icon: FileDown, path: '/compress', category: 'Optimize', implemented: true },
+  { title: 'Protect PDF', desc: 'Add a password to your PDF', icon: Lock, path: '/protect', category: 'Security', implemented: true },
+  { title: 'Unlock PDF', desc: 'Remove PDF password permanently', icon: UnlockIcon, path: '/unlock', category: 'Security', implemented: true },
   { title: 'PDF to Image', desc: 'Convert PDF pages to JPG/PNG', icon: Image, path: '/pdf-to-image', category: 'Convert', implemented: true },
   { title: 'Image to PDF', desc: 'Convert images to PDF document', icon: FileUp, path: '/image-to-pdf', category: 'Convert', implemented: true },
   { title: 'Add Watermark', desc: 'Stamp text or image on PDF', icon: Droplet, path: '/watermark', category: 'Edit', implemented: true },
@@ -106,11 +110,13 @@ export default function App() {
               <Route path="/page-numbers" element={<PageNumberTool />} />
               <Route path="/pdf-to-image" element={<PdfToImageTool />} />
               <Route path="/pdf-to-text" element={<PdfToTextTool />} />
+              <Route path="/protect" element={<ProtectTool />} />
               <Route path="/rearrange" element={<RearrangeTool />} />
               <Route path="/repair" element={<RepairTool />} />
               <Route path="/rotate" element={<RotateTool />} />
               <Route path="/sign" element={<SignatureTool />} />
               <Route path="/split" element={<SplitTool />} />
+              <Route path="/unlock" element={<UnlockTool />} />
               <Route path="/watermark" element={<WatermarkTool />} />
               
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -6,7 +6,7 @@
 import React, { useState } from 'react'
 import { Lock, Unlock, Loader2, X, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
-import { PdfUnlocker } from '../../utils/pdfUnlocker'
+import { PdfSecurity } from '../../utils/pdfSecurity'
 
 interface SecurePDFGateProps {
   /**
@@ -43,9 +43,19 @@ export const SecurePDFGate: React.FC<SecurePDFGateProps> = ({ file, onUnlocked, 
     const check = async () => {
       setIsChecking(true)
       try {
-        const buffer = new Uint8Array(await file.slice(0, 4096).arrayBuffer())
-        const content = new TextDecoder().decode(buffer)
-        const locked = content.includes('/Encrypt')
+        // The /Encrypt dictionary is usually near the end of the file in the trailer
+        const fileSize = file.size
+        const chunkSize = Math.min(4096, fileSize)
+        const offset = Math.max(0, fileSize - chunkSize)
+        
+        const endBuffer = new Uint8Array(await file.slice(offset, fileSize).arrayBuffer())
+        const endContent = new TextDecoder().decode(endBuffer)
+        
+        // Sometimes it can be at the beginning if linearized, so we check both
+        const startBuffer = new Uint8Array(await file.slice(0, Math.min(4096, fileSize)).arrayBuffer())
+        const startContent = new TextDecoder().decode(startBuffer)
+
+        const locked = endContent.includes('/Encrypt') || startContent.includes('/Encrypt')
         setIsEncrypted(locked)
         
         if (!locked) {
@@ -69,7 +79,7 @@ export const SecurePDFGate: React.FC<SecurePDFGateProps> = ({ file, onUnlocked, 
     setIsUnlocking(true)
     try {
       const fullBuffer = new Uint8Array(await file.arrayBuffer())
-      const result = await PdfUnlocker.unlock(fullBuffer, password)
+      const result = await PdfSecurity.unlock(fullBuffer, password)
       
       if (result.success && result.data) {
         toast.success('File Unlocked Successfully')

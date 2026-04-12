@@ -3,7 +3,7 @@ import { LucideIcon } from 'lucide-react'
 export type Theme = 'light' | 'dark' | 'system'
 export type ViewMode = 'web' | 'android'
 
-export type ToolCategory = 'Edit' | 'Secure' | 'Convert' | 'Optimize'
+export type ToolCategory = 'Edit' | 'Security' | 'Convert' | 'Optimize'
 
 export interface Tool {
 
