@@ -43,6 +43,8 @@ export class PdfSecurity {
       const pdfDoc = await loadingTask.promise;
       const decryptedBytes = await (pdfDoc as any).saveDocument();
       
+      loadingTask.destroy();
+      
       if (decryptedBytes && decryptedBytes instanceof Uint8Array) {
         return { success: true, data: decryptedBytes };
       }
