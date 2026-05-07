@@ -72,7 +72,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
              <PaperKnifeLogo size={24} iconColor="#F43F5E" partColor="currentColor" />
              <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
-                   <span className="text-lg font-black tracking-tighter text-gray-900 dark:text-white leading-none">PaperKnife</span>
+                   <span className="text-lg font-black leading-none tracking-tighter text-gray-900 dark:text-white">PaperKnife</span>
                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                 </div>
                 <span className="text-[7px] font-black text-rose-500 uppercase tracking-[0.2em] mt-0.5">Secure Engine</span>
@@ -81,36 +81,36 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
           
           <button 
             onClick={toggleTheme}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-zinc-800 transition-colors"
+            className="flex items-center justify-center text-gray-500 transition-colors bg-gray-100 rounded-full w-9 h-9 dark:bg-zinc-900 dark:text-gray-400 active:bg-gray-200 dark:active:bg-zinc-800"
           >
             {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}
           </button>
         </div>
       </header>
 
-      <main className="px-4 py-2 space-y-6 flex-1 overflow-y-auto scrollbar-hide">
+      <main className="flex-1 px-4 py-2 space-y-6 overflow-y-auto scrollbar-hide">
         
         {/* Command Center Hero */}
         <section>
            <button 
             onClick={() => fileInputRef.current?.click()}
-            className="w-full bg-zinc-900 dark:bg-zinc-100 rounded-[2.25rem] p-6 text-left relative overflow-hidden shadow-xl shadow-zinc-900/10 dark:shadow-[0_0_30px_rgba(244,63,94,0.15)] group active:scale-[0.98] transition-all duration-100"
+            className="w-full bg-rose-900 rounded-[2.25rem] p-6 text-left relative overflow-hidden shadow-xl shadow-zinc-900/10 dark:shadow-[0_0_30px_rgba(244,63,94,0.15)] group active:scale-[0.98] transition-all duration-100"
            >
               {/* Static Background Pattern */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500 rounded-full blur-[80px] -mr-20 -mt-20 opacity-20 dark:opacity-[0.08] pointer-events-none" />
               
               <div className="relative z-10">
-                 <div className="flex justify-between items-start mb-12">
-                    <div className="p-3.5 bg-white/10 dark:bg-black/5 rounded-2xl backdrop-blur-md text-white dark:text-black border border-white/5 dark:border-black/5">
+                 <div className="flex items-start justify-between mb-12">
+                    <div className="p-3.5 bg-white/10 rounded-2xl backdrop-blur-md text-white border-white/5">
                        <UploadIcon size={28} strokeWidth={2.5} />
                     </div>
-                    <div className="px-3 py-1.5 bg-rose-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
+                    <div className="px-3 py-1.5 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
                        Start Session
                     </div>
                  </div>
                  <div>
-                    <h2 className="text-3xl font-black text-white dark:text-black tracking-tight leading-none mb-2">Select PDF</h2>
-                    <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-tight">Tap to load from device storage</p>
+                    <h2 className="mb-2 text-3xl font-black leading-none tracking-tight text-white">Select PDF</h2>
+                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-tight">Tap to load from device storage</p>
                  </div>
               </div>
            </button>
@@ -132,9 +132,9 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
                 <button 
                   key={item.id} 
                   onClick={() => navigate('/android-history')}
-                  className="w-full p-4 flex items-center gap-4 active:bg-gray-50 dark:active:bg-white/5 transition-colors text-left"
+                  className="flex items-center w-full gap-4 p-4 text-left transition-colors active:bg-gray-50 dark:active:bg-white/5"
                 >
-                  <div className="w-10 h-10 bg-gray-50 dark:bg-white/5 rounded-xl flex items-center justify-center text-gray-400 dark:text-zinc-500 shrink-0">
+                  <div className="flex items-center justify-center w-10 h-10 text-gray-400 bg-gray-50 dark:bg-white/5 rounded-xl dark:text-zinc-500 shrink-0">
                     <FileTextIcon size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -154,7 +154,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
 
         {/* Static Bento Grid */}
         <section>
-           <div className="px-2 mb-3 flex items-center justify-between">
+           <div className="flex items-center justify-between px-2 mb-3">
               <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Core Engines</h3>
            </div>
            
@@ -169,7 +169,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
                     <action.icon size={20} strokeWidth={2.5} />
                   </div>
                   <div className="relative z-10">
-                     <span className="text-sm font-black text-gray-900 dark:text-white block leading-none mb-1">{action.title}</span>
+                     <span className="block mb-1 text-sm font-black leading-none text-gray-900 dark:text-white">{action.title}</span>
                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">{action.sub}</span>
                   </div>
                 </button>
@@ -179,19 +179,19 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
                 onClick={() => navigate('/android-tools')}
                 className="col-span-2 p-5 bg-rose-500 text-white rounded-[2rem] flex items-center justify-between shadow-lg shadow-rose-500/20 active:bg-rose-600 transition-colors group relative overflow-hidden"
               >
-                 <div className="absolute right-0 top-0 p-4 opacity-10 pointer-events-none">
+                 <div className="absolute top-0 right-0 p-4 pointer-events-none opacity-10">
                     <LayoutGridIcon size={100} />
                  </div>
-                 <div className="flex items-center gap-4 relative z-10">
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                 <div className="relative z-10 flex items-center gap-4">
+                    <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl">
                        <LayoutGridIcon size={20} strokeWidth={2.5} />
                     </div>
                     <div>
-                       <span className="text-sm font-black block leading-none mb-1">More Engines</span>
+                       <span className="block mb-1 text-sm font-black leading-none">More Engines</span>
                        <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">Full Catalog</span>
                     </div>
                  </div>
-                 <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center relative z-10">
+                 <div className="relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-white/10">
                     <ChevronRightIcon size={16} />
                  </div>
               </button>
