@@ -1,7 +1,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
+import {App as CapacitorApp} from "@capacitor/app"
+import App from './App'
 import './index.css'
+
+CapacitorApp.addListener("backButton", ({canGoBack})=> canGoBack ? window.history.back() : CapacitorApp.exitApp())
 
 // Bug Sniffer: Show errors on Android screen
 window.onerror = function(msg, _url, line, _col, error) {
