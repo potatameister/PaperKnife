@@ -183,23 +183,17 @@ function QuickDropModal({ file, onClear, onBack }: { file: File, onClear: () => 
   )
 }
 
-function App() {
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    return Capacitor.isNativePlatform() ? 'android' : 'web'
-  })
+function AppContent({ theme, toggleTheme, setTheme, viewMode, setViewMode }: { 
+  theme: Theme, 
+  toggleTheme: () => void, 
+  setTheme: (t: Theme) => void,
+  viewMode: ViewMode,
+  setViewMode: React.Dispatch<React.SetStateAction<ViewMode>>
+}) {
+  const navigate = useNavigate()
+  const { setPipelineFiles } = usePipeline()
   const [droppedFile, setDroppedFile] = useState<File | null>(null)
   const [showQuickDrop, setShowQuickDrop] = useState(false)
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') as Theme
-      if (savedTheme) return savedTheme
-    }
-    return 'system'
-  })
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light')
-  }
 
   // Improved Auto-Wipe Logic
   useEffect(() => {
@@ -221,35 +215,6 @@ function App() {
     const interval = setInterval(updateLastSeen, 30000)
     return () => clearInterval(interval)
   }, [])
-
-  useEffect(() => {
-    const root = window.document.documentElement
-    
-    const applyTheme = (t: Theme) => {
-      let resolvedTheme = t
-      if (t === 'system') {
-        resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      }
-      
-      if (resolvedTheme === 'dark') {
-        root.classList.add('dark')
-        root.style.colorScheme = 'dark'
-      } else {
-        root.classList.remove('dark')
-        root.style.colorScheme = 'light'
-      }
-    }
-
-    applyTheme(theme)
-    localStorage.setItem('theme', theme)
-
-    if (theme === 'system') {
-      const media = window.matchMedia('(prefers-color-scheme: dark)')
-      const listener = () => applyTheme('system')
-      media.addEventListener('change', listener)
-      return () => media.removeEventListener('change', listener)
-    }
-  }, [theme])
 
   // Handle Intent Files (Android "Open With" / "Share to")
   useEffect(() => {
@@ -290,110 +255,181 @@ function App() {
     return () => window.removeEventListener('open-quick-drop' as any, handleGlobalTrigger)
   }, [])
 
-  const LoadingSpinner = () => (
-    <div className="h-full w-full flex items-center justify-center bg-[#FAFAFA] dark:bg-black min-h-[60vh]">
-      <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  )
+  const handleGlobalDrop = (files: FileList | File[]) => {
+    const fileArray = Array.from(files)
+    if (fileArray.length === 0) return
 
-  const handleGlobalDrop = (files: FileList) => {
-    const file = files[0]
-    if (!file || file.type !== 'application/pdf') {
-      toast.error('Please drop a valid PDF file.')
+    // If all files are images, redirect to Image to PDF tool
+    const allImages = fileArray.every(f => f.type.startsWith('image/'))
+    if (allImages) {
+      setPipelineFiles(fileArray)
+      navigate('/image-to-pdf')
+      toast.success(`Imported ${fileArray.length} images`)
+      return
+    }
+
+    // Otherwise look for the first PDF
+    const file = fileArray.find(f => f.type === 'application/pdf')
+    if (!file) {
+      toast.error('Please select a PDF file or images.')
       return
     }
     setDroppedFile(file)
     setShowQuickDrop(false) // Show preview first
   }
 
+  const LoadingSpinner = () => (
+    <div className="h-full w-full flex items-center justify-center bg-[#FAFAFA] dark:bg-black min-h-[60vh]">
+      <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  )
+
+  const resolvedTheme = theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme
+
+  return (
+    <Layout theme={resolvedTheme} toggleTheme={toggleTheme} tools={activeTools} onFileDrop={handleGlobalDrop} viewMode={viewMode}>
+      <Toaster 
+        position="top-center" 
+        expand={true} 
+        richColors 
+        duration={2000}
+        toastOptions={{
+          className: 'dark:bg-zinc-900 dark:text-white dark:border-white/10 mt-12',
+          style: { zIndex: 1000 }
+        }}
+      />
+      
+      {droppedFile && (
+        <PdfPreview 
+          file={droppedFile} 
+          onClose={() => {
+            setDroppedFile(null)
+            setShowQuickDrop(false)
+          }} 
+          onProcess={() => setShowQuickDrop(true)} 
+        />
+      )}
+
+      {droppedFile && showQuickDrop && (
+        <QuickDropModal 
+          file={droppedFile} 
+          onClear={() => {
+            setDroppedFile(null)
+            setShowQuickDrop(false)
+          }} 
+          onBack={() => setShowQuickDrop(false)}
+        />
+      )}
+
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route path="/" element={
+            viewMode === 'web' ? (
+              <WebView tools={activeTools} />
+            ) : (
+              <AndroidView toggleTheme={toggleTheme} theme={resolvedTheme} onFileSelect={(file) => handleGlobalDrop([file] as any)} />
+            )
+          } />
+          <Route path="/android-tools" element={<AndroidToolsView tools={activeTools} />} />
+          <Route path="/android-history" element={<AndroidHistoryView />} />
+          <Route path="/merge" element={<MergeTool />} />
+          <Route path="/split" element={<SplitTool />} />
+          <Route path="/protect" element={<ProtectTool />} />
+          <Route path="/unlock" element={<UnlockTool />} />
+          <Route path="/compress" element={<CompressTool />} />
+          <Route path="/pdf-to-image" element={<PdfToImageTool />} />
+          <Route path="/rotate-pdf" element={<RotateTool />} />
+          {!IS_OCR_DISABLED && <Route path="/pdf-to-text" element={<PdfToTextTool />} />}
+          <Route path="/rearrange-pdf" element={<RearrangeTool />} />
+          <Route path="/watermark" element={<WatermarkTool />} />
+          <Route path="/page-numbers" element={<PageNumberTool />} />
+          <Route path="/metadata" element={<MetadataTool />} />
+          <Route path="/image-to-pdf" element={<ImageToPdfTool />} />
+          <Route path="/signature" element={<SignatureTool />} />
+          <Route path="/repair" element={<RepairTool />} />
+          <Route path="/extract-images" element={<ExtractImagesTool />} />
+          <Route path="/grayscale" element={<GrayscaleTool />} />
+          <Route path="/about" element={<About viewMode={viewMode} />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/settings" element={<SettingsView theme={theme} setTheme={setTheme} />} />
+          <Route path="/thanks" element={<Thanks />} />
+        </Routes>
+      </Suspense>
+
+      {/* Chameleon Toggle (Dev Only) */}
+      {import.meta.env.DEV && (
+        <div className="fixed bottom-24 right-6 z-[100] flex flex-col gap-2">
+          <button
+            onClick={() => setViewMode(prev => prev === 'web' ? 'android' : 'web')}
+            className="bg-gray-900 dark:bg-zinc-800 text-white p-4 rounded-3xl shadow-2xl hover:bg-rose-500 transition-all duration-300 flex items-center gap-3 border border-white/10 group active:scale-95"
+            title="Toggle Chameleon Mode"
+          >
+            {viewMode === 'web' ? <SmartphoneIcon size={20} /> : <MonitorIcon size={20} />}
+            <span className="text-xs font-black uppercase tracking-tighter">{viewMode}</span>
+          </button>
+        </div>
+      )}
+    </Layout>
+  )
+}
+
+function App() {
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return Capacitor.isNativePlatform() ? 'android' : 'web'
+  })
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') as Theme
+      if (savedTheme) return savedTheme
+    }
+    return 'system'
+  })
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light')
+  }
+
+  useEffect(() => {
+    const root = window.document.documentElement
+    
+    const applyTheme = (t: Theme) => {
+      let resolvedTheme = t
+      if (t === 'system') {
+        resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      }
+      
+      if (resolvedTheme === 'dark') {
+        root.classList.add('dark')
+        root.style.colorScheme = 'dark'
+      } else {
+        root.classList.remove('dark')
+        root.style.colorScheme = 'light'
+      }
+    }
+
+    applyTheme(theme)
+    localStorage.setItem('theme', theme)
+
+    if (theme === 'system') {
+      const media = window.matchMedia('(prefers-color-scheme: dark)')
+      const listener = () => applyTheme('system')
+      media.addEventListener('change', listener)
+      return () => media.removeEventListener('change', listener)
+    }
+  }, [theme])
+
   return (
     <HashRouter>
       <ScrollToTop />
       <ViewModeProvider viewMode={viewMode} setViewMode={setViewMode}>
         <PipelineProvider>
-          <Layout theme={theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme} toggleTheme={toggleTheme} tools={activeTools} onFileDrop={handleGlobalDrop} viewMode={viewMode}>
-            <Toaster 
-              position="top-center" 
-              expand={true} 
-              richColors 
-              duration={2000}
-              toastOptions={{
-                className: 'dark:bg-zinc-900 dark:text-white dark:border-white/10 mt-12',
-                style: { zIndex: 1000 }
-              }}
-            />
-            
-            {droppedFile && (
-              <PdfPreview 
-                file={droppedFile} 
-                onClose={() => {
-                  setDroppedFile(null)
-                  setShowQuickDrop(false)
-                }} 
-                onProcess={() => setShowQuickDrop(true)} 
-              />
-            )}
-
-            {droppedFile && showQuickDrop && (
-              <QuickDropModal 
-                file={droppedFile} 
-                onClear={() => {
-                  setDroppedFile(null)
-                  setShowQuickDrop(false)
-                }} 
-                onBack={() => setShowQuickDrop(false)}
-              />
-            )}
-
-            <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                <Route path="/" element={
-                  viewMode === 'web' ? (
-                    <WebView tools={activeTools} />
-                  ) : (
-                    <AndroidView toggleTheme={toggleTheme} theme={theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme} onFileSelect={(file) => handleGlobalDrop([file] as any)} />
-                  )
-                } />
-                <Route path="/android-tools" element={<AndroidToolsView tools={activeTools} />} />
-                <Route path="/android-history" element={<AndroidHistoryView />} />
-                <Route path="/merge" element={<MergeTool />} />
-                <Route path="/split" element={<SplitTool />} />
-                <Route path="/protect" element={<ProtectTool />} />
-                <Route path="/unlock" element={<UnlockTool />} />
-                <Route path="/compress" element={<CompressTool />} />
-                <Route path="/pdf-to-image" element={<PdfToImageTool />} />
-                <Route path="/rotate-pdf" element={<RotateTool />} />
-                {!IS_OCR_DISABLED && <Route path="/pdf-to-text" element={<PdfToTextTool />} />}
-                <Route path="/rearrange-pdf" element={<RearrangeTool />} />
-                <Route path="/watermark" element={<WatermarkTool />} />
-                <Route path="/page-numbers" element={<PageNumberTool />} />
-                <Route path="/metadata" element={<MetadataTool />} />
-                <Route path="/image-to-pdf" element={<ImageToPdfTool />} />
-                <Route path="/signature" element={<SignatureTool />} />
-                <Route path="/repair" element={<RepairTool />} />
-                <Route path="/extract-images" element={<ExtractImagesTool />} />
-                <Route path="/grayscale" element={<GrayscaleTool />} />
-                <Route path="/about" element={<About viewMode={viewMode} />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/settings" element={<SettingsView theme={theme} setTheme={setTheme} />} />
-                <Route path="/thanks" element={<Thanks />} />
-              </Routes>
-            </Suspense>
-
-            {/* Chameleon Toggle (Dev Only) */}
-            {import.meta.env.DEV && (
-              <div className="fixed bottom-24 right-6 z-[100] flex flex-col gap-2">
-                <button
-                  onClick={() => setViewMode(prev => prev === 'web' ? 'android' : 'web')}
-                  className="bg-gray-900 dark:bg-zinc-800 text-white p-4 rounded-3xl shadow-2xl hover:bg-rose-500 transition-all duration-300 flex items-center gap-3 border border-white/10 group active:scale-95"
-                  title="Toggle Chameleon Mode"
-                >
-                  {viewMode === 'web' ? <SmartphoneIcon size={20} /> : <MonitorIcon size={20} />}
-                  <span className="text-xs font-black uppercase tracking-tighter">{viewMode}</span>
-                </button>
-              </div>
-            )}
-          </Layout>
+          <AppContent 
+            theme={theme} 
+            toggleTheme={toggleTheme} 
+            setTheme={setTheme} 
+            viewMode={viewMode} 
+            setViewMode={setViewMode} 
+          />
         </PipelineProvider>
       </ViewModeProvider>
     </HashRouter>
