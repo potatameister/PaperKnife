@@ -99,7 +99,7 @@ export default function RotateTool() {
   )
 
   return (
-    <NativeToolLayout title="Rotate PDF" description="Tap individual pages to rotate 90 degrees." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
+    <NativeToolLayout title="Rotate PDF" description="Tap individual pages to rotate 90 degrees." onFileDrop={(files) => files[0] && handleFile(files[0])} actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
       
       {!pdfData ? (

@@ -78,7 +78,7 @@ export default function SignatureTool() {
   )
 
   return (
-    <NativeToolLayout title="Signature" description="Sign any PDF by dragging your signature image." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
+    <NativeToolLayout title="Signature" description="Sign any PDF by dragging your signature image." onFileDrop={(files) => files[0] && handleFile(files[0])} actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
       <input type="file" accept="image/*" className="hidden" ref={signatureInputRef} onChange={(e) => { const file = e.target.files?.[0]; if (file) { setSignatureFile(file); setSignatureImg(URL.createObjectURL(file)) } }} />
       {!pdfData ? (

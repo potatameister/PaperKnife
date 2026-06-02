@@ -104,7 +104,7 @@ export default function PageNumberTool() {
   }
 
   return (
-    <NativeToolLayout title="Page Numbers" description="Add custom numbering to your PDF automatically." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
+    <NativeToolLayout title="Page Numbers" description="Add custom numbering to your PDF automatically." onFileDrop={(files) => files[0] && handleFile(files[0])} actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
       
       {!pdfData ? (

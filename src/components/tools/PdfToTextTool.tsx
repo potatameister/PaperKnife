@@ -111,7 +111,7 @@ export default function PdfToTextTool() {
   )
 
   return (
-    <NativeToolLayout title="PDF to Text" description="Extract text using fast scan or deep local OCR." actions={pdfData && !pdfData.isLocked && !extractedText && <ActionButton />}>
+    <NativeToolLayout title="PDF to Text" description="Extract text using fast scan or deep local OCR." onFileDrop={(files) => files[0] && handleFile(files[0])} actions={pdfData && !pdfData.isLocked && !extractedText && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
       {!pdfData ? (
         <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group">

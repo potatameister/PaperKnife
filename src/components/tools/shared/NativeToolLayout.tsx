@@ -1,5 +1,5 @@
-import React from 'react'
-import { ArrowLeft } from 'lucide-react'
+import React, { useState } from 'react'
+import { ArrowLeft, Upload } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'
 import ToolHeader from './ToolHeader'
@@ -10,16 +10,37 @@ interface NativeToolLayoutProps {
   children: React.ReactNode
   actions?: React.ReactNode
   onBack?: () => void
+  onFileDrop?: (files: FileList) => void
 }
 
-export const NativeToolLayout = ({ 
-  title, 
-  description, 
-  children, 
+export const NativeToolLayout = ({
+  title,
+  description,
+  children,
   actions,
-  onBack 
+  onBack,
+  onFileDrop
 }: NativeToolLayoutProps) => {
   const navigate = useNavigate()
+  const [isDragging, setIsDragging] = useState(false)
+
+  const dropHandlers = onFileDrop ? {
+    onDragOver: (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!isDragging) setIsDragging(true)
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      e.preventDefault()
+      if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false)
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDragging(false)
+      if (e.dataTransfer.files?.length) onFileDrop(e.dataTransfer.files)
+    },
+  } : {}
   
   // Determine if we should show the native-style header
   // It should only show if we are in Android/APK mode
@@ -31,7 +52,17 @@ export const NativeToolLayout = ({
   const showNativeHeader = isAndroidView
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FAFAFA] dark:bg-black transition-colors">
+    <div className="flex flex-col min-h-screen bg-[#FAFAFA] dark:bg-black transition-colors" {...dropHandlers}>
+      {/* Drag-to-load overlay */}
+      {onFileDrop && isDragging && (
+        <div className="fixed inset-0 z-[120] bg-rose-500/10 backdrop-blur-sm flex items-center justify-center pointer-events-none p-6">
+          <div className="bg-white dark:bg-zinc-900 px-10 py-8 rounded-[2rem] shadow-2xl border-4 border-dashed border-rose-500 flex flex-col items-center gap-3 animate-in zoom-in duration-200">
+            <Upload size={48} className="text-rose-500" />
+            <p className="font-black uppercase tracking-widest text-rose-500 text-sm text-center">Drop to load into {title}</p>
+          </div>
+        </div>
+      )}
+
       {/* Ultra-Compact Native AppBar - Only shown in Android/Native mode on mobile */}
       {showNativeHeader && (
         <header className="px-4 pt-safe pb-1 flex items-center justify-between sticky top-0 z-30 bg-[#FAFAFA]/95 dark:bg-black/95 backdrop-blur-xl md:hidden border-b border-gray-100 dark:border-white/5">
