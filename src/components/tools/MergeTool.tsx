@@ -90,7 +90,7 @@ function SortableItem({ id, file, onRemove, onRotate, onUnlock }: { id: string, 
               placeholder="Password" 
               value={localPass}
               onChange={(e) => setLocalPass(e.target.value)}
-              className="flex-1 bg-gray-50 dark:bg-black border border-gray-100 dark:border-zinc-800 rounded-lg px-2 py-1 text-[10px] font-bold outline-none focus:border-rose-500 text-gray-900 dark:text-white"
+              className="flex-1 min-w-0 bg-gray-50 dark:bg-black border border-gray-100 dark:border-zinc-800 rounded-lg px-2 py-1 text-[10px] font-bold outline-none focus:border-rose-500 text-gray-900 dark:text-white"
             />
             <button 
               onClick={handleUnlockClick}
