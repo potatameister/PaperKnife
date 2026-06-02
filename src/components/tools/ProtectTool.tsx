@@ -100,7 +100,7 @@ export default function ProtectTool() {
   )
 
   return (
-    <NativeToolLayout title="Protect PDF" description="Add strong encryption to your documents. Processed locally." actions={pdfData && !pdfData.isLocked && !objectUrl && <ActionButton />}>
+    <NativeToolLayout title="Protect PDF" description="Add strong encryption to your documents. Processed locally." onFileDrop={(files) => files[0] && handleFile(files[0])} actions={pdfData && !pdfData.isLocked && !objectUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
       {!pdfData ? (
         <button 

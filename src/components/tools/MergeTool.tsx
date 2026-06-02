@@ -269,11 +269,13 @@ export default function MergeTool() {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsDraggingGlobal(true)
   }
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     if (e.currentTarget && !e.currentTarget.contains(e.relatedTarget as Node)) {
       setIsDraggingGlobal(false)
     }
@@ -281,6 +283,7 @@ export default function MergeTool() {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsDraggingGlobal(false)
     if (e.dataTransfer.files) handleFiles(e.dataTransfer.files)
   }

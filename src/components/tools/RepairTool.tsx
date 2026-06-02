@@ -63,7 +63,7 @@ export default function RepairTool() {
   )
 
   return (
-    <NativeToolLayout title="Repair PDF" description="Fix corrupted or unreadable PDF files by rebuilding structure." actions={originalFile && !downloadUrl && <ActionButton />}>
+    <NativeToolLayout title="Repair PDF" description="Fix corrupted or unreadable PDF files by rebuilding structure." onFileDrop={(files) => files[0] && handleFile(files[0])} actions={originalFile && !downloadUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
       
       {!originalFile ? (

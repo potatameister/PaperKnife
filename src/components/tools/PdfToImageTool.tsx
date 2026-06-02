@@ -102,7 +102,7 @@ export default function PdfToImageTool() {
   )
 
   return (
-    <NativeToolLayout title="PDF to Image" description="Convert document pages into high-quality images." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
+    <NativeToolLayout title="PDF to Image" description="Convert document pages into high-quality images." onFileDrop={(files) => files[0] && handleFile(files[0])} actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
       {!pdfData ? (
         <button 
