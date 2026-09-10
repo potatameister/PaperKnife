@@ -89,7 +89,7 @@ export default function RearrangeTool() {
         setPageOrder(Array.from({ length: meta.pageCount }, (_, i) => (i + 1).toString()))
         setCustomFileName(`${file.name.replace('.pdf', '')}-rearranged`)
       }
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+    } catch (err) { console.error(err); toast.error('Failed to open PDF') } finally { setIsProcessing(false); setDownloadUrl(null) }
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -115,7 +115,7 @@ export default function RearrangeTool() {
       copiedPages.forEach(page => newPdf.addPage(page))
       const pdfBytes = await newPdf.save(); const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob); setDownloadUrl(url)
-      addActivity({ name: `${customFileName}.pdf`, tool: 'Rearrange', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.pdf`, tool: 'Rearrange', size: blob.size, resultUrl: url, buffer: new Uint8Array(await blob.arrayBuffer()) })
     } catch (error: any) { toast.error(`Error: ${error.message}`) } finally { setIsProcessing(false) }
   }
 

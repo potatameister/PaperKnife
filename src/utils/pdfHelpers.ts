@@ -218,6 +218,7 @@ export const renderPageThumbnail = async (pdf: any, pageNum: number, scale = 1.0
     // Memory cleanup
     canvas.width = 0;
     canvas.height = 0;
+    try { await page.cleanup(); } catch { /* ignore */ }
     return dataUrl;
   } catch (error) {
     console.error(`Error rendering page ${pageNum}:`, error);
@@ -254,6 +255,7 @@ export const renderGridThumbnail = async (pdf: any, pageNum: number): Promise<st
     
     canvas.width = 0;
     canvas.height = 0;
+    try { await page.cleanup(); } catch { /* ignore */ }
     return dataUrl;
   } catch (error) {
     return '';
@@ -264,11 +266,17 @@ export const renderGridThumbnail = async (pdf: any, pageNum: number): Promise<st
 export const generateThumbnail = async (file: File, pageNum: number = 1): Promise<string> => {
   try {
     const pdf = await loadPdfDocument(file);
-    return await renderPageThumbnail(pdf, pageNum, 0.8);
+    const thumb = await renderPageThumbnail(pdf, pageNum, 0.8);
+    try { await pdf.destroy(); } catch { /* ignore */ }
+    return thumb;
   } catch (error) {
     console.error('Thumbnail error:', error);
     return '';
   }
+};
+
+export const destroyPdf = async (pdf: any) => {
+  try { await pdf?.destroy(); } catch { /* ignore */ }
 };
 
 export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
@@ -283,10 +291,12 @@ export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
     
     const pdf = await loadingTask.promise;
     const firstPageThumb = await renderPageThumbnail(pdf, 1);
+    const pageCount = pdf.numPages;
+    try { await pdf.destroy(); } catch { /* ignore */ }
     
     return {
       thumbnail: firstPageThumb,
-      pageCount: pdf.numPages,
+      pageCount,
       isLocked: false
     };
   } catch (error: any) {

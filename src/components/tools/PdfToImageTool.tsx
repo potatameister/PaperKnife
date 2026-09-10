@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { Image as ImageIcon, Lock, Loader2, ArrowRight, X } from 'lucide-react'
-import JSZip from 'jszip'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
@@ -60,7 +59,7 @@ export default function PdfToImageTool() {
         setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc, thumbnail: meta.thumbnail })
         setCustomFileName(`${file.name.replace('.pdf', '')}-images`)
       }
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+    } catch (err) { console.error(err); toast.error('Failed to open PDF') } finally { setIsProcessing(false); setDownloadUrl(null) }
     
     // Reset file input value
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -70,7 +69,7 @@ export default function PdfToImageTool() {
     if (!pdfData || !pdfData.pdfDoc) return
     setIsProcessing(true); setProgress(0); await new Promise(resolve => setTimeout(resolve, 100))
     try {
-      const zip = new JSZip(); const scale = 2.0
+      const { default: JSZip } = await import('jszip'); const zip = new JSZip(); const scale = 2.0
       for (let i = 1; i <= pdfData.pageCount; i++) {
         const page = await pdfData.pdfDoc.getPage(i); const viewport = page.getViewport({ scale })
         const canvas = document.createElement('canvas'); const context = canvas.getContext('2d')
@@ -91,7 +90,7 @@ export default function PdfToImageTool() {
         name: `${customFileName}.zip`,
         type: 'application/zip'
       })
-      addActivity({ name: `${customFileName}.zip`, tool: 'PDF to Image', size: zipBlob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.zip`, tool: 'PDF to Image', size: zipBlob.size, resultUrl: url, buffer: new Uint8Array(await zipBlob.arrayBuffer()) })
     } catch (error: any) { toast.error(`Error: ${error.message}`) } finally { setIsProcessing(false) }
   }
 

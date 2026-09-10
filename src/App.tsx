@@ -212,7 +212,7 @@ function App() {
       const elapsedMinutes = (now - lastSeen) / (1000 * 60)
       if (timerMinutes === 0 || (lastSeen > 0 && elapsedMinutes >= timerMinutes)) {
         clearActivity().then(() => {
-          console.log(`Auto-Wipe triggered (${elapsedMinutes.toFixed(1)}m inactivity).`)
+          import('./utils/workspacePersistence').then(m => m.clearAllWorkspaces()).catch(() => {})
         })
       }
     }

@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Zap, Loader2, Plus, X, FileIcon, Download, ChevronLeft, ChevronRight, Maximize2, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
-import JSZip from 'jszip'
 import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf, downloadFile } from '../../utils/pdfHelpers'
@@ -193,7 +192,7 @@ export default function CompressTool() {
         const { url, size, buffer } = await compressSingleFile(item, quality, isSingle ? setGlobalProgress : undefined)
         results.push({ name: item.file.name.replace('.pdf', '-compressed.pdf'), buffer })
         setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: url, resultSize: size } : f))
-        addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size, resultUrl: url })
+        addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size, resultUrl: url, buffer })
         if (pendingFiles.length === 1) {
            const originalBuffer = await pendingFiles[0].file.arrayBuffer()
            setPipelineFile({ 
@@ -208,6 +207,7 @@ export default function CompressTool() {
       if (!isSingle) setGlobalProgress(Math.round(((i + 1) / pendingFiles.length) * 100))
     }
     if (results.length > 1) {
+      const { default: JSZip } = await import('jszip')
       const zip = new JSZip(); results.forEach(res => zip.file(res.name, res.buffer))
       const zipBlob = await zip.generateAsync({ type: 'blob' }); createUrl(zipBlob)
     }
@@ -216,6 +216,7 @@ export default function CompressTool() {
 
   const handleDownloadBatch = async () => {
     if (objectUrl && files.length > 1) {
+        const { default: JSZip } = await import('jszip')
         const zip = new JSZip()
         for (const f of files) {
             if (f.resultUrl) {

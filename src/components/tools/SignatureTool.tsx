@@ -37,7 +37,7 @@ export default function SignatureTool() {
       const result = await unlockPdf(pdfData.file, unlockPassword)
       if (result.success) { setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }); const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb) }
       else { toast.error('Incorrect password') }
-    } finally { setIsProcessing(false) }
+    } catch { toast.error('Failed to unlock PDF') } finally { setIsProcessing(false) }
   }
 
   const handleFile = async (file: File) => {
@@ -46,7 +46,7 @@ export default function SignatureTool() {
       const meta = await getPdfMetaData(file)
       if (meta.isLocked) { setPdfData({ file, pageCount: 0, isLocked: true }) }
       else { const pdfDoc = await loadPdfDocument(file); setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc }); const thumb = await renderPageThumbnail(pdfDoc, 1, 2.0); setThumbnail(thumb) }
-    } finally { 
+    } catch { toast.error('Failed to open PDF') } finally { 
       setIsProcessing(false) 
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
@@ -67,8 +67,8 @@ export default function SignatureTool() {
       const page = pdfDoc.getPages()[activePage - 1]; const { width, height } = page.getSize(); const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width))
       page.drawImage(sigImage, { x: pdfX, y: pdfY, width: size, height: size * (sigImage.height / sigImage.width) })
       const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes as any], { type: 'application/pdf' }); const url = URL.createObjectURL(blob)
-      setDownloadUrl(url); addActivity({ name: `${customFileName}.pdf`, tool: 'Signature', size: blob.size, resultUrl: url })
-    } finally { setIsProcessing(false) }
+      setDownloadUrl(url); addActivity({ name: `${customFileName}.pdf`, tool: 'Signature', size: blob.size, resultUrl: url, buffer: new Uint8Array(await blob.arrayBuffer()) })
+    } catch { toast.error('Failed to sign PDF') } finally { setIsProcessing(false) }
   }
 
   const ActionButton = () => (

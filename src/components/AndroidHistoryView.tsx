@@ -1,14 +1,30 @@
 import { useState, useEffect } from 'react'
-import { 
-  Download as DownloadIcon, 
-  Clock as HistoryIcon, Shield as ShieldIcon, Search as SearchIcon, FileText as FileTextIcon, ChevronRight as ChevronRightIcon, X as XIcon, Trash2 as Trash2Icon, Calendar as CalendarIcon, HardDrive as HardDriveIcon
+import { useNavigate } from 'react-router-dom'
+import {
+  Download as DownloadIcon,
+  Clock as HistoryIcon, Shield as ShieldIcon, Search as SearchIcon, FileText as FileTextIcon, ChevronRight as ChevronRightIcon, X as XIcon, Trash2 as Trash2Icon, Calendar as CalendarIcon, HardDrive as HardDriveIcon, Share2 as ShareIcon, FolderOpen as OpenIcon
 } from 'lucide-react'
-import { ActivityEntry, getRecentActivity, clearActivity } from '../utils/recentActivity'
+import { ActivityEntry, getRecentActivity, clearActivity, deleteActivity } from '../utils/recentActivity'
+import { downloadFile, shareFile } from '../utils/pdfHelpers'
+import { usePipeline } from '../utils/pipelineContext'
 import { toast } from 'sonner'
 
+// Originating tool route for "Open" (zip outputs offer Download/Share/Delete only)
+const TOOL_ROUTES: Record<string, string> = {
+  'Merge': '/merge', 'Split': '/split', 'Compress': '/compress', 'Protect': '/protect',
+  'Unlock': '/unlock', 'Rotate': '/rotate-pdf', 'Rearrange': '/rearrange-pdf',
+  'Page Numbers': '/page-numbers', 'Watermark': '/watermark', 'Metadata': '/metadata',
+  'Signature': '/signature', 'Grayscale': '/grayscale', 'Image to PDF': '/image-to-pdf',
+  'Repair': '/repair'
+}
+
 export default function AndroidHistoryView() {
+  const navigate = useNavigate()
+  const { setPipelineFile } = usePipeline()
   const [history, setHistory] = useState<ActivityEntry[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [selected, setSelected] = useState<ActivityEntry | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
 
   useEffect(() => {
     const limitSetting = localStorage.getItem('historyLimit')
@@ -51,6 +67,47 @@ export default function AndroidHistoryView() {
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp)
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  }
+
+  const mimeOf = (item: ActivityEntry) => item.name.endsWith('.zip') ? 'application/zip' : 'application/pdf'
+  const routeOf = (item: ActivityEntry) => !item.name.endsWith('.zip') ? TOOL_ROUTES[item.tool] : undefined
+
+  const handleOpen = (item: ActivityEntry) => {
+    if (!item.buffer) return
+    const route = routeOf(item)
+    if (!route) return
+    setPipelineFile({ buffer: item.buffer, name: item.name, type: mimeOf(item) })
+    setSelected(null)
+    navigate(route)
+    toast.success(`Opened in ${item.tool}`)
+  }
+
+  const handleDownload = async (item: ActivityEntry) => {
+    if (busy) return
+    setBusy('download')
+    try {
+      if (item.buffer) await downloadFile(item.buffer, item.name, mimeOf(item))
+      else if (item.resultUrl) await downloadFile(item.resultUrl, item.name, mimeOf(item))
+      else { toast.error('File expired — please re-process'); return }
+      toast.success('Saved')
+    } catch { toast.error('Download failed') } finally { setBusy(null) }
+  }
+
+  const handleShare = async (item: ActivityEntry) => {
+    if (busy) return
+    setBusy('share')
+    try {
+      if (item.buffer) await shareFile(item.buffer, item.name, mimeOf(item))
+      else if (item.resultUrl) await shareFile(item.resultUrl, item.name, mimeOf(item))
+      else { toast.error('File expired — please re-process'); return }
+    } catch { toast.error('Share failed') } finally { setBusy(null) }
+  }
+
+  const handleDelete = async (item: ActivityEntry) => {
+    await deleteActivity(item.id)
+    setHistory(prev => prev.filter(h => h.id !== item.id))
+    setSelected(null)
+    toast.success('Deleted from history')
   }
 
   return (
@@ -104,7 +161,7 @@ export default function AndroidHistoryView() {
           </div>
         ) : (
           filteredHistory.map((item) => (
-            <div key={item.id} className="p-4 bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 flex items-center gap-4 active:scale-[0.99] transition-all shadow-sm group">
+            <button key={item.id} onClick={() => setSelected(item)} className="w-full p-4 bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 flex items-center gap-4 active:scale-[0.99] transition-all shadow-sm group text-left">
               <div className="w-12 h-12 bg-gray-50 dark:bg-zinc-800 text-gray-400 group-hover:bg-rose-50 dark:group-hover:bg-rose-900/20 group-hover:text-rose-500 rounded-2xl flex items-center justify-center shrink-0 transition-colors shadow-inner">
                 <FileTextIcon size={22} />
               </div>
@@ -121,20 +178,25 @@ export default function AndroidHistoryView() {
                     <CalendarIcon size={10} /> {formatDate(item.timestamp)}
                   </div>
                 </div>
+                {!item.buffer && !item.resultUrl && (
+                  <p className="text-[9px] font-bold text-amber-500 mt-1">Expired — re-process to use again</p>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                 {item.resultUrl && (
-                    <a 
-                      href={item.resultUrl} 
-                      download={item.name} 
+                 {(item.buffer || item.resultUrl) && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); handleDownload(item) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); handleDownload(item) } }}
                       className="w-10 h-10 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-rose-500/20 active:scale-90 transition-all"
                     >
                       <DownloadIcon size={18} />
-                    </a>
+                    </span>
                  )}
                  <ChevronRightIcon size={16} className="text-gray-200 dark:text-zinc-800" />
               </div>
-            </div>
+            </button>
           ))
         )}
 
@@ -148,6 +210,41 @@ export default function AndroidHistoryView() {
            </p>
         </div>
       </main>
+
+      {selected && (
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-md" onClick={() => setSelected(null)}>
+          <div className="w-full max-w-md bg-white dark:bg-zinc-950 rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 pb-2">
+              <p className="text-xs font-black truncate dark:text-white">{selected.name}</p>
+              <p className="text-[10px] font-bold text-gray-400 mt-1">{selected.tool} • {formatSize(selected.size)} • {formatDate(selected.timestamp)}</p>
+              {!selected.buffer && !selected.resultUrl && (
+                <p className="text-[10px] font-bold text-amber-500 mt-2">File bytes expired — only Delete is available.</p>
+              )}
+            </div>
+            <div className="p-4 space-y-2">
+              {selected.buffer && routeOf(selected) && (
+                <button onClick={() => handleOpen(selected)} className="w-full p-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
+                  <OpenIcon size={16} /> Open in {selected.tool}
+                </button>
+              )}
+              <div className="flex gap-2">
+                <button disabled={busy !== null || (!selected.buffer && !selected.resultUrl)} onClick={() => handleDownload(selected)} className="flex-1 p-4 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50">
+                  <DownloadIcon size={16} /> {busy === 'download' ? 'Saving…' : 'Download'}
+                </button>
+                <button disabled={busy !== null || (!selected.buffer && !selected.resultUrl)} onClick={() => handleShare(selected)} className="flex-1 p-4 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50">
+                  <ShareIcon size={16} /> {busy === 'share' ? 'Sharing…' : 'Share'}
+                </button>
+              </div>
+              <button onClick={() => handleDelete(selected)} className="w-full p-4 text-rose-500 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
+                <Trash2Icon size={16} /> Delete
+              </button>
+              <button onClick={() => setSelected(null)} className="w-full p-3 text-gray-400 rounded-2xl font-black uppercase text-[10px] flex items-center justify-center gap-2">
+                <XIcon size={14} /> Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

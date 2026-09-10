@@ -75,10 +75,13 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
   const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
+    let cancelled = false
+    let doc: any = null
     const load = async () => {
       setIsLoading(true)
       try {
-        const doc = await loadPdfDocument(file)
+        doc = await loadPdfDocument(file)
+        if (cancelled) { try { await doc.destroy(); } catch { /* ignore */ } return }
         setPdfDoc(doc)
         setTotalPages(doc.numPages)
       } catch (err: any) {
@@ -87,7 +90,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
         }
         console.error('Preview load error:', err)
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
     load()
@@ -98,7 +101,12 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
     })
 
     return () => {
-      backListener.then(l => l.remove())
+      cancelled = true
+      backListener.then(l => l.remove());
+      (async () => {
+        if (doc) { try { await doc.destroy(); } catch { /* ignore */ } }
+        setPdfDoc((prev: any) => { if (prev && prev !== doc) { try { prev.destroy(); } catch { /* ignore */ } } return null });
+      })()
     }
   }, [file, onClose])
 
@@ -122,14 +130,21 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
     }
   }
 
+  const scrollTicking = useRef(false)
+
   const handleScroll = (e: React.UIEvent<HTMLElement>) => {
-    // Update current page based on intersection
-    const pages = e.currentTarget.querySelectorAll('[data-page-num]')
-    pages.forEach(page => {
-      const rect = page.getBoundingClientRect()
-      if (rect.top < window.innerHeight / 2 && rect.bottom > window.innerHeight / 2) {
-        setCurrentPage(Number(page.getAttribute('data-page-num')))
-      }
+    if (scrollTicking.current) return
+    scrollTicking.current = true
+    requestAnimationFrame(() => {
+      // Update current page based on intersection
+      const pages = e.currentTarget.querySelectorAll('[data-page-num]')
+      pages.forEach(page => {
+        const rect = page.getBoundingClientRect()
+        if (rect.top < window.innerHeight / 2 && rect.bottom > window.innerHeight / 2) {
+          setCurrentPage(Number(page.getAttribute('data-page-num')))
+        }
+      })
+      scrollTicking.current = false
     })
   }
 

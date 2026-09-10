@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Loader2, Copy, FileText, Lock, Check, Download, Zap, ScanSearch, ArrowRight, X } from 'lucide-react'
 import { toast } from 'sonner'
-import Tesseract from 'tesseract.js'
 import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, loadPdfDocument, unlockPdf, downloadFile } from '../../utils/pdfHelpers'
@@ -57,7 +56,7 @@ export default function PdfToTextTool() {
         setCustomFileName(`${file.name.replace('.pdf', '')}-extracted`)
       }
       setExtractedText('')
-    } catch (err) { console.error(err) } finally { setIsProcessing(false) }
+    } catch (err) { console.error(err); toast.error('Failed to open PDF') } finally { setIsProcessing(false) }
   }
 
   const handleStartExtraction = async () => {
@@ -73,7 +72,7 @@ export default function PdfToTextTool() {
         }
       } else {
         let currentPageIndex = 1
-        const worker = await Tesseract.createWorker('eng', 1, { 
+        const { default: Tesseract } = await import('tesseract.js'); const worker = await Tesseract.createWorker('eng', 1, { 
           workerPath: '/tesseract/worker.min.js',
           corePath: '/tesseract/tesseract-core.wasm.js',
           langPath: '/tesseract/',

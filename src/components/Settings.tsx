@@ -270,6 +270,7 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
                 onClick={async () => {
                   if(confirm("DANGER: This will permanently delete your history and reset all configuration. Proceed?")) {
                     await clearActivity()
+                    try { (await import('../utils/workspacePersistence')).clearAllWorkspaces(); } catch { /* ignore */ }
                     localStorage.clear()
                     window.location.reload()
                   }

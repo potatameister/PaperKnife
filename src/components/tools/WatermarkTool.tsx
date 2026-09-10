@@ -57,7 +57,7 @@ export default function WatermarkTool() {
         setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc, thumbnail: meta.thumbnail })
         setCustomFileName(`${file.name.replace('.pdf', '')}-watermarked`)
       }
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+    } catch (err) { console.error(err); toast.error('Failed to open PDF') } finally { setIsProcessing(false); setDownloadUrl(null) }
   }
 
   const hexToRgb = (hex: string) => {
@@ -94,7 +94,7 @@ export default function WatermarkTool() {
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       setDownloadUrl(url)
-      addActivity({ name: `${customFileName}.pdf`, tool: 'Watermark', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.pdf`, tool: 'Watermark', size: blob.size, resultUrl: url, buffer: new Uint8Array(await blob.arrayBuffer()) })
     } catch (error: any) { 
       toast.error(`Error: ${error.message}`) 
     } finally { 

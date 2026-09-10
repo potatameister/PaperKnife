@@ -92,7 +92,7 @@ export default function MetadataTool() {
       }
       setPdfData({ file, pageCount: metaRes.pageCount, isLocked: metaRes.isLocked, currentMeta })
       setMeta(currentMeta); setCustomFileName(`${file.name.replace('.pdf', '')}-metadata`)
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+    } catch (err) { console.error(err); toast.error('Failed to open PDF') } finally { setIsProcessing(false); setDownloadUrl(null) }
   }
 
   const saveMetadata = async (deepClean = false) => {
@@ -135,7 +135,7 @@ export default function MetadataTool() {
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       setDownloadUrl(url)
-      addActivity({ name: `${customFileName}.pdf`, tool: 'Metadata', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.pdf`, tool: 'Metadata', size: blob.size, resultUrl: url, buffer: new Uint8Array(await blob.arrayBuffer()) })
     } catch (error: any) { 
       toast.error(`Error: ${error.message}`) 
     } finally { 

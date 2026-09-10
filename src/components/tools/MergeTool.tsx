@@ -348,7 +348,8 @@ export default function MergeTool() {
             name: fileName,
             tool: 'Merge',
             size: blob.size,
-            resultUrl: url
+            resultUrl: url,
+            buffer: payload
           })
           
           setIsProcessing(false)

@@ -345,7 +345,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
               activity.map((item) => (
                 <div key={item.id} className="p-4 bg-gray-50 dark:bg-zinc-900/50 rounded-2xl border border-gray-100 dark:border-zinc-800 group relative">
                   <div className="flex items-center gap-3 mb-2"><div className="w-8 h-8 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg flex items-center justify-center"><CheckCircleIcon size={16} /></div><div className="flex-1 min-w-0"><p className="text-xs font-bold truncate dark:text-white">{item.name}</p><p className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">{item.tool}</p></div></div>
-                  <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold"><span>{new Date(item.timestamp).toLocaleTimeString()}</span>{item.resultUrl && (<a href={item.resultUrl} download={item.name} className="text-rose-500 hover:underline flex items-center gap-1"><DownloadIcon size={10} /> Redownload</a>)}</div>
+                  <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold"><span>{new Date(item.timestamp).toLocaleTimeString()}</span>{(item.buffer || item.resultUrl) && (<button onClick={async () => { try { const { downloadFile } = await import('../utils/pdfHelpers'); await downloadFile(item.buffer || item.resultUrl!, item.name, item.name.endsWith('.zip') ? 'application/zip' : 'application/pdf') } catch { /* toast handled by caller */ } }} className="text-rose-500 hover:underline flex items-center gap-1"><DownloadIcon size={10} /> Redownload</button>)}</div>
                 </div>
               ))
             )}

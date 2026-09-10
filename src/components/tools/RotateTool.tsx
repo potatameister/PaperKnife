@@ -66,7 +66,7 @@ export default function RotateTool() {
         setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc, thumbnail: meta.thumbnail })
         setCustomFileName(`${file.name.replace('.pdf', '')}-rotated`); setRotations({})
       }
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+    } catch (err) { console.error(err); toast.error('Failed to open PDF') } finally { setIsProcessing(false); setDownloadUrl(null) }
   }
 
   const rotatePage = (pageNum: number) => { setRotations(prev => ({ ...prev, [pageNum]: ((prev[pageNum] || 0) + 90) % 360 })); setDownloadUrl(null) }
@@ -88,7 +88,7 @@ export default function RotateTool() {
       })
       const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob); setDownloadUrl(url)
-      addActivity({ name: `${customFileName}.pdf`, tool: 'Rotate', size: blob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.pdf`, tool: 'Rotate', size: blob.size, resultUrl: url, buffer: new Uint8Array(await blob.arrayBuffer()) })
     } catch (error: any) { toast.error(`Error: ${error.message}`) } finally { setIsProcessing(false) }
   }
 

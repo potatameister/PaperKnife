@@ -18,9 +18,11 @@ export default defineConfig({
         manualChunks: {
           'pdf-lib-core': ['pdf-lib'],
           'pdfjs-viewer': ['pdfjs-dist'],
-          'tesseract-core': ['tesseract.js'],
           'vendor-ui': ['react', 'react-dom', 'react-router-dom', 'lucide-react', 'sonner'],
-          'vendor-utils': ['jszip', '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities']
+          'vendor-utils': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities']
+          // NOTE: jszip + tesseract.js intentionally excluded so they
+          // load on-demand via dynamic import() (see Split/Compress/
+          // PdfToImage/ExtractImages/PdfToText tools). Keeps lite initial small.
         }
       }
     }

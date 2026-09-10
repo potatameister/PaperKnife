@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { Loader2, Scissors, Check, Plus, Lock, ArrowRight, X, Zap } from 'lucide-react'
-import JSZip from 'jszip'
 import { toast } from 'sonner'
 
 import { getPdfMetaData, loadPdfDocument, renderGridThumbnail, unlockPdf } from '../../utils/pdfHelpers'
@@ -144,14 +143,15 @@ export default function SplitTool() {
         if (type === 'SUCCESS') {
           const blob = new Blob([payload], { type: 'application/pdf' })
           const url = createUrl(blob)
-          addActivity({ name: `${customFileName || 'split'}.pdf`, tool: 'Split', size: blob.size, resultUrl: url })
+          addActivity({ name: `${customFileName || 'split'}.pdf`, tool: 'Split', size: blob.size, resultUrl: url, buffer: new Uint8Array(await blob.arrayBuffer()) })
           setIsProcessing(false); worker.terminate()
         } else if (type === 'SUCCESS_BATCH') {
+          const { default: JSZip } = await import('jszip')
           const zip = new JSZip()
           payload.forEach((res: { name: string, buffer: Uint8Array }) => { zip.file(res.name, res.buffer) })
           const zipBlob = await zip.generateAsync({ type: 'blob' })
           const url = createUrl(zipBlob)
-          addActivity({ name: `${customFileName || 'split'}.zip`, tool: 'Split', size: zipBlob.size, resultUrl: url })
+          addActivity({ name: `${customFileName || 'split'}.zip`, tool: 'Split', size: zipBlob.size, resultUrl: url, buffer: new Uint8Array(await zipBlob.arrayBuffer()) })
           setIsProcessing(false); worker.terminate()
         } else if (type === 'ERROR') {
           toast.error(payload); setIsProcessing(false); worker.terminate()

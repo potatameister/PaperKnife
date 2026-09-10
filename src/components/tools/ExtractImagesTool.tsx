@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { Image as ImageIcon, Lock, Loader2, X, Sparkles } from 'lucide-react'
-import JSZip from 'jszip'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
@@ -55,7 +54,7 @@ export default function ExtractImagesTool() {
         setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc, thumbnail: meta.thumbnail })
         setCustomFileName(`${file.name.replace('.pdf', '')}-extracted`)
       }
-    } catch (err) { console.error(err) } finally { setIsProcessing(false); setDownloadUrl(null) }
+    } catch (err) { console.error(err); toast.error('Failed to open PDF') } finally { setIsProcessing(false); setDownloadUrl(null) }
   }
 
   const extractImages = async () => {
@@ -64,7 +63,7 @@ export default function ExtractImagesTool() {
     await new Promise(resolve => setTimeout(resolve, 100))
     
     try {
-      const zip = new JSZip()
+      const { default: JSZip } = await import('jszip'); const zip = new JSZip()
       let imageCounter = 0
       
       for (let i = 1; i <= pdfData.pageCount; i++) {
@@ -122,7 +121,7 @@ export default function ExtractImagesTool() {
       const url = URL.createObjectURL(zipBlob)
       setDownloadUrl(url)
       setExtractedCount(imageCounter)
-      addActivity({ name: `${customFileName}.zip`, tool: 'Extract Images', size: zipBlob.size, resultUrl: url })
+      addActivity({ name: `${customFileName}.zip`, tool: 'Extract Images', size: zipBlob.size, resultUrl: url, buffer: new Uint8Array(await zipBlob.arrayBuffer()) })
       toast.success(`Extracted ${imageCounter} images!`)
     } catch (error: any) { 
       toast.error(`Error: ${error.message}`) 
