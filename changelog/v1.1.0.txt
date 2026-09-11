@@ -15,3 +15,7 @@ Issue #6 - history now works when tapped:
 Privacy:
 - No permissions declared in manifest (only invisible auto-granted Vibrate from haptics plugin)
 - Android auto-backup disabled so app data stays on device
+
+Contributors:
+- @AndrewVoisovych - tool-panel overflow fix on narrow screens (#58)
+- @Captain-Vikram - FAB gallery picker for Image-to-PDF (#53)
