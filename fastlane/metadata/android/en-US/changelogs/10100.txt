@@ -1,0 +1,4 @@
+History fix & speed update:
+- History entries now open, download, share, or delete on tap.
+- Fixed memory leaks and silent failures, faster startup.
+- Privacy: no permissions asked, device backup disabled.

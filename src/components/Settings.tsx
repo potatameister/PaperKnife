@@ -277,7 +277,7 @@ export default function Settings({ theme, setTheme }: { theme: Theme, setTheme: 
                 }}
               />
            </div>
-           <p className="text-[8px] font-black uppercase text-center text-gray-300 dark:text-zinc-700 tracking-[0.5em] mt-10">Configuration Engine v1.0.9 Stable</p>
+           <p className="text-[8px] font-black uppercase text-center text-gray-300 dark:text-zinc-700 tracking-[0.5em] mt-10">Configuration Engine v1.1.0</p>
         </div>
 
       </div>
