@@ -17,46 +17,102 @@ self.onmessage = async (e: MessageEvent) => {
   try {
     if (type === 'MERGE_PDFS') {
       const { files } = payload
+      if (!files || files.length === 0) throw new Error('No files received')
       const mergedPdf = await PDFDocument.create()
+      let totalPages = 0
 
       for (let i = 0; i < files.length; i++) {
-        const { buffer, rotation, password } = files[i]
-        
-        const pdf = await PDFDocument.load(buffer, { 
-          password: password || undefined,
-          ignoreEncryption: true 
-        } as any)
-        
-        const pageIndices = pdf.getPageIndices()
-        const copiedPages = await mergedPdf.copyPages(pdf, pageIndices)
-        
+        const { buffer, rotation, password, name } = files[i]
+        const label = name || `File ${i + 1}`
+        if (!buffer || (buffer as Uint8Array).byteLength === 0) throw new Error(`"${label}" is empty or unreadable`)
+
+        let pdf
+        try {
+          pdf = await PDFDocument.load(buffer, {
+            password: password || undefined,
+            ignoreEncryption: true, throwOnInvalidObject: false
+          } as any)
+        } catch (e: any) {
+          throw new Error(`"${label}" could not be opened (${e?.message || 'corrupt or unsupported file'})`)
+        }
+
+        let pageIndices: number[]
+        try {
+          pageIndices = pdf.getPageIndices()
+        } catch {
+          throw new Error(`"${label}" pages could not be read (password-protected or corrupt?)`)
+        }
+        if (pageIndices.length === 0) throw new Error(`"${label}" has no pages`)
+
+        let copiedPages
+        try {
+          copiedPages = await mergedPdf.copyPages(pdf, pageIndices)
+        } catch {
+          throw new Error(`"${label}" pages could not be copied (password-protected or restricted?)`)
+        }
+
+        const rot = Number.isFinite(rotation) ? rotation : 0
         copiedPages.forEach((page) => {
           const currentRotation = page.getRotation().angle
-          page.setRotation(degrees((currentRotation + rotation) % 360))
+          page.setRotation(degrees((currentRotation + rot) % 360))
           mergedPdf.addPage(page)
         })
+        totalPages += copiedPages.length
 
         self.postMessage({ type: 'PROGRESS', payload: Math.round(((i + 1) / files.length) * 100) })
       }
 
-      const mergedPdfBytes = await mergedPdf.save()
+      if (totalPages === 0) throw new Error('No pages to merge')
+      let mergedPdfBytes
+      try {
+        mergedPdfBytes = await mergedPdf.save()
+      } catch {
+        throw new Error('Merged result could not be saved (damaged content in one of the files?)')
+      }
       self.postMessage({ type: 'SUCCESS', payload: mergedPdfBytes }, [mergedPdfBytes.buffer] as any)
     } 
     
     else if (type === 'SPLIT_PDF') {
-      const { buffer, password, selectedPages, mode, customFileName } = payload
-      const originalPdf = await PDFDocument.load(buffer, { 
-        password: password || undefined,
-        ignoreEncryption: true
-      } as any)
+      const { buffer, password, selectedPages, mode, customFileName, name } = payload
+      const label = name || 'File'
+      if (!buffer || (buffer as Uint8Array).byteLength === 0) throw new Error(`"${label}" is empty or unreadable`)
+      const picked = Array.from(selectedPages as number[]).sort((a, b) => a - b)
+      if (picked.length === 0) throw new Error('No pages selected')
+
+      let originalPdf
+      try {
+        originalPdf = await PDFDocument.load(buffer, {
+          password: password || undefined,
+          ignoreEncryption: true, throwOnInvalidObject: false
+        } as any)
+      } catch (e: any) {
+        throw new Error(`"${label}" could not be opened (${e?.message || 'corrupt or unsupported file'})`)
+      }
+      let pageCount: number | null = null
+      try {
+        pageCount = originalPdf.getPageCount()
+      } catch {
+        throw new Error(`"${label}" page index is damaged (file may be corrupt)`)
+      }
+      const bad = picked.filter(p => p < 1 || p > (pageCount as number))
+      if (bad.length > 0) throw new Error(`Pages ${bad.join(', ')} are out of range (file has ${pageCount} pages)`)
 
       if (mode === 'single') {
         const newPdf = await PDFDocument.create()
-        const sortedIndices = Array.from(selectedPages as number[]).sort((a, b) => a - b).map(p => p - 1)
-        const copiedPages = await newPdf.copyPages(originalPdf, sortedIndices)
+        const sortedIndices = picked.map(p => p - 1)
+        let copiedPages
+        try {
+          copiedPages = await newPdf.copyPages(originalPdf, sortedIndices)
+        } catch {
+          throw new Error(`Selected pages could not be copied (password-protected or restricted?)`)
+        }
         copiedPages.forEach(page => newPdf.addPage(page))
-
-        const pdfBytes = await newPdf.save()
+        let pdfBytes
+        try {
+          pdfBytes = await newPdf.save()
+        } catch {
+          throw new Error(`Split result could not be saved (damaged content in selected pages?)`)
+        }
         self.postMessage({ type: 'SUCCESS', payload: pdfBytes }, [pdfBytes.buffer] as any)
       } else {
         // ZIP mode is better handled on main thread because of JSZip dependency 
@@ -67,9 +123,19 @@ self.onmessage = async (e: MessageEvent) => {
         for (let i = 0; i < sortedPages.length; i++) {
           const pageNum = sortedPages[i]
           const newPdf = await PDFDocument.create()
-          const [copiedPage] = await newPdf.copyPages(originalPdf, [pageNum - 1])
+          let copiedPage
+          try {
+            [copiedPage] = await newPdf.copyPages(originalPdf, [pageNum - 1])
+          } catch {
+            throw new Error(`Page ${pageNum} could not be copied (password-protected or restricted?)`)
+          }
           newPdf.addPage(copiedPage)
-          const pdfBytes = await newPdf.save()
+          let pdfBytes
+          try {
+            pdfBytes = await newPdf.save()
+          } catch {
+            throw new Error(`Page ${pageNum} result could not be saved (damaged content?)`)
+          }
           resultBuffers.push({ 
             name: `${customFileName || 'page'}-${pageNum}.pdf`, 
             buffer: pdfBytes 

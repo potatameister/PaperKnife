@@ -57,7 +57,7 @@ export default function UnlockTool() {
       const result = await unlockPdf(pdfData.file, password)
       if (!result.success) throw new Error('Incorrect password.')
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: password || undefined, ignoreEncryption: true } as any)
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: password || undefined, ignoreEncryption: true, throwOnInvalidObject: false } as any)
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
       const url = createUrl(blob)

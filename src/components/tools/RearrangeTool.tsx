@@ -108,7 +108,7 @@ export default function RearrangeTool() {
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true } as any)
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true, throwOnInvalidObject: false } as any)
       const newPdf = await PDFDocument.create()
       const indices = pageOrder.map(id => parseInt(id) - 1)
       const copiedPages = await newPdf.copyPages(pdfDoc, indices)

@@ -72,7 +72,7 @@ export default function WatermarkTool() {
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true } as any)
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true, throwOnInvalidObject: false } as any)
       const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
       const pages = pdfDoc.getPages()
       const watermarkColor = hexToRgb(color)

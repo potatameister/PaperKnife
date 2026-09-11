@@ -37,9 +37,8 @@ export default function RepairTool() {
     setIsProcessing(true)
     try {
       const arrayBuffer = await originalFile.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { 
-        ignoreEncryption: true, 
-        throwOnInvalidObject: false 
+      const pdfDoc = await PDFDocument.load(arrayBuffer, {
+        ignoreEncryption: true, throwOnInvalidObject: false
       } as any)
       
       const pdfBytes = await pdfDoc.save()
@@ -49,8 +48,8 @@ export default function RepairTool() {
       setDownloadUrl(url)
       addActivity({ name: `${customFileName}.pdf`, tool: 'Repair', size: blob.size, resultUrl: url, buffer: new Uint8Array(await blob.arrayBuffer()) })
       toast.success('PDF rebuilt successfully!')
-    } catch (error: any) { 
-      toast.error(`Repair failed: ${error.message}`) 
+    } catch (error: any) {
+      toast.error(`Repair failed for "${originalFile.name}": ${error.message}`)
     } finally { 
       setIsProcessing(false) 
     }

@@ -320,14 +320,17 @@ export default function MergeTool() {
       const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
       const fileDatas = []
       for (const f of files) {
+        if (!f.file || f.file.size === 0) { toast.error(`"${f.file?.name || 'File'}" is empty`); setIsProcessing(false); worker.terminate(); return }
+        if (!f.pageCount || f.pageCount === 0) { toast.error(`"${f.file.name}" has no readable pages`); setIsProcessing(false); worker.terminate(); return }
         fileDatas.push({
           buffer: await f.file.arrayBuffer(),
           rotation: f.rotation,
-          password: f.password
+          password: f.password,
+          name: f.file.name
         })
       }
 
-      worker.postMessage({ type: 'MERGE_PDFS', payload: { files: fileDatas } })
+      worker.postMessage({ type: 'MERGE_PDFS', payload: { files: fileDatas } }, fileDatas.map(d => d.buffer) as any)
 
       worker.onmessage = (e) => {
         const { type, payload } = e.data
@@ -477,12 +480,6 @@ export default function MergeTool() {
                <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF Files</h3>
                <p className="text-sm text-gray-400 font-medium">Tap to browse or drag and drop here</p>
             </button>
-          )}
-
-          {files.length > 0 && !objectUrl && !isNative && (
-             <div className="mt-8">
-                <ActionButton />
-             </div>
           )}
 
           {isProcessing && !isNative && (

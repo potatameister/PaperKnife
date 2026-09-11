@@ -7,9 +7,10 @@ import {
 import { ActivityEntry, getRecentActivity, clearActivity, deleteActivity } from '../utils/recentActivity'
 import { downloadFile, shareFile } from '../utils/pdfHelpers'
 import { usePipeline } from '../utils/pipelineContext'
+import PdfPreview from './PdfPreview'
 import { toast } from 'sonner'
 
-// Originating tool route for "Open" (zip outputs offer Download/Share/Delete only)
+// Originating tool route for preview's "+" (process) action (zip outputs offer Download/Share/Delete only)
 const TOOL_ROUTES: Record<string, string> = {
   'Merge': '/merge', 'Split': '/split', 'Compress': '/compress', 'Protect': '/protect',
   'Unlock': '/unlock', 'Rotate': '/rotate-pdf', 'Rearrange': '/rearrange-pdf',
@@ -24,6 +25,7 @@ export default function AndroidHistoryView() {
   const [history, setHistory] = useState<ActivityEntry[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selected, setSelected] = useState<ActivityEntry | null>(null)
+  const [previewItem, setPreviewItem] = useState<ActivityEntry | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
 
   useEffect(() => {
@@ -71,15 +73,21 @@ export default function AndroidHistoryView() {
 
   const mimeOf = (item: ActivityEntry) => item.name.endsWith('.zip') ? 'application/zip' : 'application/pdf'
   const routeOf = (item: ActivityEntry) => !item.name.endsWith('.zip') ? TOOL_ROUTES[item.tool] : undefined
+  const canPreview = (item: ActivityEntry) => !!item.buffer && !item.name.endsWith('.zip')
 
   const handleOpen = (item: ActivityEntry) => {
-    if (!item.buffer) return
-    const route = routeOf(item)
-    if (!route) return
-    setPipelineFile({ buffer: item.buffer, name: item.name, type: mimeOf(item) })
+    if (!canPreview(item)) return
+    setPreviewItem(item)
     setSelected(null)
-    navigate(route)
-    toast.success(`Opened in ${item.tool}`)
+  }
+
+  const handlePreviewProcess = () => {
+    if (!previewItem?.buffer) return
+    const route = routeOf(previewItem)
+    setPipelineFile({ buffer: previewItem.buffer, name: previewItem.name, type: mimeOf(previewItem) })
+    setPreviewItem(null)
+    if (route) { navigate(route); toast.success(`Opened in ${previewItem.tool}`) }
+    else toast.success('Sent to tools')
   }
 
   const handleDownload = async (item: ActivityEntry) => {
@@ -222,9 +230,9 @@ export default function AndroidHistoryView() {
               )}
             </div>
             <div className="p-4 space-y-2">
-              {selected.buffer && routeOf(selected) && (
+              {canPreview(selected) && (
                 <button onClick={() => handleOpen(selected)} className="w-full p-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
-                  <OpenIcon size={16} /> Open in {selected.tool}
+                  <OpenIcon size={16} /> Preview
                 </button>
               )}
               <div className="flex gap-2">
@@ -244,6 +252,14 @@ export default function AndroidHistoryView() {
             </div>
           </div>
         </div>
+      )}
+
+      {previewItem?.buffer && (
+        <PdfPreview
+          file={new File([new Uint8Array(previewItem.buffer)], previewItem.name, { type: mimeOf(previewItem) })}
+          onClose={() => setPreviewItem(null)}
+          onProcess={handlePreviewProcess}
+        />
       )}
     </div>
   )

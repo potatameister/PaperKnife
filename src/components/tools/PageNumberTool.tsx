@@ -71,7 +71,7 @@ export default function PageNumberTool() {
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true } as any)
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true, throwOnInvalidObject: false } as any)
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica); const pages = pdfDoc.getPages(); const textColor = hexToRgb(color)
       pages.forEach((page, idx) => {
         const { width, height } = page.getSize(); const n = idx + startFrom; const total = pages.length + (startFrom - 1)

@@ -80,7 +80,7 @@ export default function RotateTool() {
     setIsProcessing(true); await new Promise(resolve => setTimeout(resolve, 100))
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true } as any)
+      const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true, throwOnInvalidObject: false } as any)
       const pages = pdfDoc.getPages()
       pages.forEach((page, idx) => {
         const pageNum = idx + 1; const rotationToAdd = rotations[pageNum] || 0

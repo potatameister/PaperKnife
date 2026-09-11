@@ -101,7 +101,7 @@ export default function MetadataTool() {
     await new Promise(resolve => setTimeout(resolve, 300))
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true } as any)
+      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.password || undefined, ignoreEncryption: true, throwOnInvalidObject: false } as any)
       let targetPdf: PDFDocument
       
       if (deepClean) {

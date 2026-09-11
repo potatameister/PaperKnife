@@ -136,8 +136,9 @@ export default function SplitTool() {
     setIsProcessing(true)
     try {
       const buffer = await pdfData.file.arrayBuffer()
+      if (!buffer || buffer.byteLength === 0) { toast.error(`"${pdfData.file.name}" is empty`); setIsProcessing(false); return }
       const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
-      worker.postMessage({ type: 'SPLIT_PDF', payload: { buffer, password: pdfData.password, selectedPages: Array.from(selectedPages), mode: splitMode, customFileName } })
+      worker.postMessage({ type: 'SPLIT_PDF', payload: { buffer, password: pdfData.password, selectedPages: Array.from(selectedPages), mode: splitMode, customFileName, name: pdfData.file.name } }, [buffer] as any)
       worker.onmessage = async (e) => {
         const { type, payload } = e.data
         if (type === 'SUCCESS') {

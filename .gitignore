@@ -33,6 +33,10 @@ dist-ssr
 GEMINI.md
 gha-creds-*.json
 
+# Local-only agent/changelog notes (never commit)
+AGENTS.md
+changelog/
+
 # Capacitor
 android/app/build
 android/app/src/main/assets/public

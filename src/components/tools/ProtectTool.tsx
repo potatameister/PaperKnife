@@ -73,7 +73,7 @@ export default function ProtectTool() {
     
     try {
       const arrayBuffer = await pdfData.file.arrayBuffer()
-      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.sourcePassword || undefined, ignoreEncryption: true } as any)
+      const sourcePdf = await PDFDocument.load(arrayBuffer, { password: pdfData.sourcePassword || undefined, ignoreEncryption: true, throwOnInvalidObject: false } as any)
       const newPdf = await PDFDocument.create()
       const pages = await newPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
       pages.forEach(page => newPdf.addPage(page))
