@@ -88,11 +88,16 @@ jobs:
           cp paperknife-fdroid-unsigned-signed.apk "paperknife-lite-v${VERSION}.apk"
           echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
 
-      - name: Upload Artifacts
+      - name: Upload Full APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: PaperKnife-v${{ env.APP_VERSION }}
-          path: |
-            paperknife-v${{ env.APP_VERSION }}.apk
-            paperknife-lite-v${{ env.APP_VERSION }}.apk
+          path: paperknife-v${{ env.APP_VERSION }}.apk
+          if-no-files-found: error
+
+      - name: Upload Lite APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PaperKnife-lite-v${{ env.APP_VERSION }}
+          path: paperknife-lite-v${{ env.APP_VERSION }}.apk
           if-no-files-found: error
