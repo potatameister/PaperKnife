@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Plus, X, Loader2, GripVertical, Upload, ArrowRight } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
@@ -11,6 +11,7 @@ import { addActivity } from '../../utils/recentActivity'
 import SuccessState from './shared/SuccessState'
 import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { usePipeline } from '../../utils/pipelineContext'
 
 type ImageFile = { id: string, file: File, preview: string }
 
@@ -29,6 +30,7 @@ function SortableImageItem({ id, img, onRemove }: { id: string, img: ImageFile, 
 
 export default function ImageToPdfTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { consumePipelineFiles } = usePipeline()
   const [images, setImages] = useState<ImageFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
@@ -42,6 +44,13 @@ export default function ImageToPdfTool() {
     if (newImages.length === 0) { toast.error('Select images (JPG, PNG, WebP)'); return }
     setImages(prev => [...prev, ...newImages]); setDownloadUrl(null)
   }
+
+  useEffect(() => {
+    const files = consumePipelineFiles()
+    if (files && files.length > 0) {
+      handleFiles(files)
+    }
+  }, [])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event

@@ -15,13 +15,17 @@ interface PipelinedFile {
   name: string
   type?: string
   originalBuffer?: Uint8Array // To store the source before processing (e.g. for comparison)
+  file?: File // Store the original File object if available
 }
 
 interface PipelineContextType {
   pipelinedFile: PipelinedFile | null
   lastPipelinedFile: PipelinedFile | null
+  pipelinedFiles: File[] | null
   setPipelineFile: (file: PipelinedFile | null) => void
+  setPipelineFiles: (files: File[] | null) => void
   consumePipelineFile: () => PipelinedFile | null
+  consumePipelineFiles: () => File[] | null
 }
 
 const PipelineContext = createContext<PipelineContextType | undefined>(undefined)
@@ -29,6 +33,7 @@ const PipelineContext = createContext<PipelineContextType | undefined>(undefined
 export function PipelineProvider({ children }: { children: ReactNode }) {
   const [pipelinedFile, setPipelinedFile] = useState<PipelinedFile | null>(null)
   const [lastPipelinedFile, setLastPipelinedFile] = useState<PipelinedFile | null>(null)
+  const [pipelinedFiles, setPipelinedFiles] = useState<File[] | null>(null)
 
   const setPipelineFile = (file: PipelinedFile | null) => {
     setPipelinedFile(file)
@@ -41,8 +46,22 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     return file
   }
 
+  const consumePipelineFiles = () => {
+    const files = pipelinedFiles
+    setPipelinedFiles(null)
+    return files
+  }
+
   return (
-    <PipelineContext.Provider value={{ pipelinedFile, lastPipelinedFile, setPipelineFile, consumePipelineFile }}>
+    <PipelineContext.Provider value={{ 
+      pipelinedFile, 
+      lastPipelinedFile, 
+      pipelinedFiles,
+      setPipelineFile, 
+      setPipelineFiles: setPipelinedFiles,
+      consumePipelineFile,
+      consumePipelineFiles
+    }}>
       {children}
     </PipelineContext.Provider>
   )

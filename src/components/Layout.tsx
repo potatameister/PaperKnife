@@ -18,7 +18,9 @@ import {
   Settings as SettingsIcon,
   Github as GHIcon,
   Heart as HeartIcon,
-  Download
+  Download,
+  FileText,
+  Image as ImageIcon
 } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { Theme, Tool, ToolCategory, ViewMode } from '../types'
@@ -48,6 +50,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   const [isDragging, setIsDragging] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [showFabMenu, setShowFabMenu] = useState(false)
   const [activity, setActivity] = useState<ActivityEntry[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
   const isNative = Capacitor.isNativePlatform()
@@ -282,19 +285,59 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
 
           {/* Floating Action Button - Lifted */}
           <div className="relative -top-8">
+             {showFabMenu && (
+               <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col gap-3 items-center animate-in slide-in-from-bottom-4 duration-300 z-[110]">
+                  <button 
+                    onClick={() => {
+                      setShowFabMenu(false)
+                      hapticImpact()
+                      const input = document.createElement('input')
+                      input.type = 'file'
+                      input.accept = '.pdf'
+                      input.onchange = (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0]
+                        if (file) onFileDrop?.([file] as any)
+                      }
+                      input.click()
+                    }}
+                    className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white rounded-[2rem] shadow-2xl border border-gray-100 dark:border-white/5 active:scale-95 transition-all whitespace-nowrap"
+                  >
+                    <div className="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
+                      <FileText size={20} />
+                    </div>
+                    <span className="font-bold text-sm">Import PDF</span>
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                      setShowFabMenu(false)
+                      hapticImpact()
+                      const input = document.createElement('input')
+                      input.type = 'file'
+                      input.accept = 'image/*'
+                      input.multiple = true
+                      input.onchange = (e) => {
+                        const files = (e.target as HTMLInputElement).files
+                        if (files && files.length > 0) onFileDrop?.(files)
+                      }
+                      input.click()
+                    }}
+                    className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white rounded-[2rem] shadow-2xl border border-gray-100 dark:border-white/5 active:scale-95 transition-all whitespace-nowrap"
+                  >
+                    <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                      <ImageIcon size={20} />
+                    </div>
+                    <span className="font-bold text-sm">Gallery (Images to PDF)</span>
+                  </button>
+               </div>
+             )}
+             {showFabMenu && <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[105] animate-in fade-in duration-300" onClick={() => setShowFabMenu(false)} />}
              <button 
                onClick={() => {
                  hapticImpact()
-                 const input = document.createElement('input')
-                 input.type = 'file'
-                 input.accept = '.pdf'
-                 input.onchange = (e) => {
-                   const file = (e.target as HTMLInputElement).files?.[0]
-                   if (file) onFileDrop?.([file] as any)
-                 }
-                 input.click()
+                 setShowFabMenu(!showFabMenu)
                }}
-               className="w-14 h-14 bg-rose-500 text-white rounded-2xl shadow-xl shadow-rose-500/40 flex items-center justify-center active:scale-90 transition-transform ring-4 ring-white dark:ring-black"
+               className={`w-14 h-14 bg-rose-500 text-white rounded-2xl shadow-xl shadow-rose-500/40 flex items-center justify-center active:scale-90 transition-transform ring-4 ring-white dark:ring-black z-[110] relative ${showFabMenu ? 'rotate-45' : ''}`}
              >
                <PlusIcon size={32} strokeWidth={3} />
              </button>
