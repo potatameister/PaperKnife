@@ -7,8 +7,8 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Plus, Loader2, Lock, Share2, Unlock } from 'lucide-react'
 import { toast } from 'sonner'
-import { App } from '@capacitor/app'
 import { loadPdfDocument, renderPageThumbnail, shareFile, unlockPdf } from '../utils/pdfHelpers'
+import { useBackHandler } from '../utils/backHandler'
 import { PaperKnifeLogo } from './Logo'
 
 interface PdfPreviewProps {
@@ -74,6 +74,9 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
   
   const mainRef = useRef<HTMLElement>(null)
 
+  // Hardware back button closes the preview (ordered via shared stack)
+  useBackHandler(true, onClose)
+
   useEffect(() => {
     let cancelled = false
     let doc: any = null
@@ -95,15 +98,9 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
     }
     load()
 
-    // Handle Hardware Back Button
-    const backListener = App.addListener('backButton', () => {
-      onClose()
-    })
-
     return () => {
       cancelled = true
-      backListener.then(l => l.remove());
-      (async () => {
+      ;(async () => {
         if (doc) { try { await doc.destroy(); } catch { /* ignore */ } }
         setPdfDoc((prev: any) => { if (prev && prev !== doc) { try { prev.destroy(); } catch { /* ignore */ } } return null });
       })()

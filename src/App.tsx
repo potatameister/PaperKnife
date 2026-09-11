@@ -14,15 +14,17 @@ import {
   RotateCw, Type, Hash, Tags, FileText, ArrowUpDown, PenTool, 
   Wrench, ImagePlus, FileImage, Palette, X, ChevronDown
 } from 'lucide-react'
-import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { Toaster, toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
+import { App as CapApp } from '@capacitor/app'
 import { Filesystem } from '@capacitor/filesystem'
 import { Theme, ViewMode, Tool } from './types'
 import Layout from './components/Layout'
 import { PipelineProvider, usePipeline } from './utils/pipelineContext'
 import { ViewModeProvider } from './utils/viewModeContext'
 import { clearActivity, updateLastSeen, getLastSeen } from './utils/recentActivity'
+import { useBackHandler, ensureBackListening, setBackFallback } from './utils/backHandler'
 import ScrollToTop from './components/ScrollToTop'
 
 // Critical Views - No lazy loading to prevent dynamic import errors on Android
@@ -191,9 +193,21 @@ function AppContent({ theme, toggleTheme, setTheme, viewMode, setViewMode }: {
   setViewMode: React.Dispatch<React.SetStateAction<ViewMode>>
 }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { setPipelineFiles } = usePipeline()
   const [droppedFile, setDroppedFile] = useState<File | null>(null)
   const [showQuickDrop, setShowQuickDrop] = useState(false)
+
+  // Hardware back button: close QuickDrop first, else route back, else exit on home
+  useBackHandler(showQuickDrop, () => setShowQuickDrop(false))
+  useEffect(() => {
+    ensureBackListening()
+    setBackFallback(() => {
+      if (location.pathname !== '/') navigate(-1)
+      else CapApp.exitApp().catch(() => {})
+    })
+    return () => setBackFallback(null)
+  }, [location.pathname, navigate])
 
   // Improved Auto-Wipe Logic
   useEffect(() => {

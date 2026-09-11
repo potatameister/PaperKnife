@@ -7,6 +7,7 @@ import {
 import { ActivityEntry, getRecentActivity, clearActivity, deleteActivity } from '../utils/recentActivity'
 import { downloadFile, shareFile } from '../utils/pdfHelpers'
 import { usePipeline } from '../utils/pipelineContext'
+import { useBackHandler } from '../utils/backHandler'
 import PdfPreview from './PdfPreview'
 import { toast } from 'sonner'
 
@@ -27,6 +28,10 @@ export default function AndroidHistoryView() {
   const [selected, setSelected] = useState<ActivityEntry | null>(null)
   const [previewItem, setPreviewItem] = useState<ActivityEntry | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+
+  // Hardware back button: preview first, then the action sheet
+  useBackHandler(!!previewItem, () => setPreviewItem(null))
+  useBackHandler(!!selected && !previewItem, () => setSelected(null))
 
   useEffect(() => {
     const limitSetting = localStorage.getItem('historyLimit')

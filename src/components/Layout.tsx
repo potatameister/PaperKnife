@@ -26,6 +26,7 @@ import { Capacitor } from '@capacitor/core'
 import { Theme, Tool, ToolCategory, ViewMode } from '../types'
 import { PaperKnifeLogo } from './Logo'
 import { ActivityEntry, getRecentActivity, clearActivity } from '../utils/recentActivity'
+import { useBackHandler } from '../utils/backHandler'
 import { hapticImpact } from '../utils/haptics'
 
 interface LayoutProps {
@@ -55,6 +56,10 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   const dropdownRef = useRef<HTMLDivElement>(null)
   const isNative = Capacitor.isNativePlatform()
   const showMobileNav = isNative || viewMode === 'android'
+
+  // Hardware back button closes drawer / FAB menu before anything else
+  useBackHandler(showFabMenu, () => setShowFabMenu(false))
+  useBackHandler(showHistory && !showFabMenu, () => setShowHistory(false))
   
   const isMobileBrowser = !isNative && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 

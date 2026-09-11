@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Zap, Loader2, Plus, X, FileIcon, Download, ChevronLeft, ChevronRight, Maximize2, ArrowRight } from 'lucide-react'
+import { Zap, Loader2, Plus, X, FileIcon, Download, ChevronLeft, ChevronRight, Maximize2, ArrowRight, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
@@ -77,6 +77,7 @@ type CompressPdfFile = {
   status: 'pending' | 'processing' | 'completed' | 'error'
   resultUrl?: string
   resultSize?: number
+  keptOriginal?: boolean
 }
 
 type CompressionQuality = 'low' | 'medium' | 'high'
@@ -87,6 +88,7 @@ export default function CompressTool() {
   const { objectUrl, createUrl, clearUrls } = useObjectURL()
   const [files, setFiles] = useState<CompressPdfFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [unlockingIds, setUnlockingIds] = useState<Set<string>>(new Set())
   const [globalProgress, setGlobalProgress] = useState(0)
   const [quality, setQuality] = useState<CompressionQuality>('medium')
   const [showSuccess, setShowSuccess] = useState(false)
@@ -123,16 +125,21 @@ export default function CompressTool() {
 
   const handleUnlock = async (id: string, password: string) => {
     const item = files.find(f => f.id === id)
-    if (!item) return
-    const result = await unlockPdf(item.file, password)
-    if (result.success) {
-      setFiles(prev => prev.map(f => f.id === id ? { ...f, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail, password } : f))
-    } else { toast.error('Incorrect password') }
+    if (!item || unlockingIds.has(id)) return
+    setUnlockingIds(prev => new Set(prev).add(id))
+    try {
+      const result = await unlockPdf(item.file, password)
+      if (result.success) {
+        setFiles(prev => prev.map(f => f.id === id ? { ...f, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail, password } : f))
+      } else { toast.error(`Incorrect password for "${item.file.name}"`) }
+    } catch { toast.error(`Failed to unlock "${item.file.name}"`) } finally {
+      setUnlockingIds(prev => { const next = new Set(prev); next.delete(id); return next })
+    }
   }
 
   const compressSingleFile = async (item: CompressPdfFile, quality: CompressionQuality, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array }> => {
     let pdfDoc = item.pdfDoc || await loadPdfDocument(item.file)
-    const scaleMap = { high: 1.0, medium: 1.5, low: 2.0 }; const qualityMap = { high: 0.3, medium: 0.5, low: 0.7 }
+    const scaleMap = { high: 2.0, medium: 1.5, low: 1.0 }; const qualityMap = { high: 0.7, medium: 0.5, low: 0.3 }
     const scale = scaleMap[quality]; const jpegQuality = qualityMap[quality]
     const pagesData: { imageBytes: Uint8Array, width: number, height: number }[] = []
     for (let i = 1; i <= item.pageCount; i++) {
@@ -181,6 +188,7 @@ export default function CompressTool() {
     if (pendingFiles.length === 0) return
     setIsProcessing(true); setGlobalProgress(0)
     const results = []
+    let keptOriginalCount = 0
     
     // If single file, track detailed progress
     const isSingle = pendingFiles.length === 1
@@ -189,17 +197,32 @@ export default function CompressTool() {
       const item = pendingFiles[i]
       setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f))
       try {
-        const { url, size, buffer } = await compressSingleFile(item, quality, isSingle ? setGlobalProgress : undefined)
-        results.push({ name: item.file.name.replace('.pdf', '-compressed.pdf'), buffer })
-        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: url, resultSize: size } : f))
-        addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size, resultUrl: url, buffer })
+        const originalSize = item.file.size
+        let res = await compressSingleFile(item, quality, isSingle ? setGlobalProgress : undefined)
+        // Smallest that grows the file gets one salvage pass at Standard
+        if (res.size >= originalSize && quality === 'low') {
+          const retry = await compressSingleFile(item, 'medium', isSingle ? setGlobalProgress : undefined)
+          if (retry.size < res.size) res = retry
+        }
+        // Guarantee: never hand back a bigger file than the original
+        let finalBuffer = res.buffer, finalSize = res.size, finalUrl = res.url, keptOriginal = false
+        if (res.size >= originalSize) {
+          finalBuffer = new Uint8Array(await item.file.arrayBuffer())
+          finalSize = originalSize
+          finalUrl = createUrl(new Blob([finalBuffer as any], { type: 'application/pdf' }))
+          keptOriginal = true
+          keptOriginalCount++
+        }
+        results.push({ name: item.file.name.replace('.pdf', '-compressed.pdf'), buffer: finalBuffer })
+        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: finalUrl, resultSize: finalSize, keptOriginal } : f))
+        addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size: finalSize, resultUrl: finalUrl, buffer: finalBuffer })
         if (pendingFiles.length === 1) {
            const originalBuffer = await pendingFiles[0].file.arrayBuffer()
-           setPipelineFile({ 
-             buffer, 
-             name: item.file.name.replace('.pdf', '-compressed.pdf'), 
+           setPipelineFile({
+             buffer: finalBuffer,
+             name: item.file.name.replace('.pdf', '-compressed.pdf'),
              type: 'application/pdf',
-             originalBuffer: new Uint8Array(originalBuffer) 
+             originalBuffer: new Uint8Array(originalBuffer)
            })
         }
       } catch { setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error' } : f)) }
@@ -211,6 +234,7 @@ export default function CompressTool() {
       const zip = new JSZip(); results.forEach(res => zip.file(res.name, res.buffer))
       const zipBlob = await zip.generateAsync({ type: 'blob' }); createUrl(zipBlob)
     }
+    if (keptOriginalCount > 0) toast.success(keptOriginalCount === pendingFiles.length ? 'Already optimal — kept original' : `${keptOriginalCount} file(s) already optimal — kept original`)
     setIsProcessing(false); setShowSuccess(true)
   }
 
@@ -258,13 +282,22 @@ export default function CompressTool() {
             {files.map(f => (
               <div key={f.id} className="bg-white dark:bg-zinc-900 p-4 rounded-[1.5rem] border border-gray-100 dark:border-white/5 flex items-center gap-4 relative group shadow-sm">
                 <div className="w-12 h-16 bg-gray-50 dark:bg-black rounded-lg overflow-hidden shrink-0 border border-gray-100 dark:border-zinc-800">
-                  {f.thumbnail ? <img src={f.thumbnail} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><FileIcon className="text-gray-300" size={16} /></div>}
+                  {f.isLocked ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-black text-rose-500">
+                      <Lock size={16} />
+                      <span className="text-[8px] font-black uppercase mt-1 text-center px-1">Locked</span>
+                    </div>
+                  ) : f.thumbnail ? <img src={f.thumbnail} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><FileIcon className="text-gray-300" size={16} /></div>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-black truncate dark:text-white">{f.file.name}</p>
                   {f.isLocked ? (
-                    <div className="flex gap-1 mt-1">
-                       <input type="password" placeholder="Locked..." className="flex-1 bg-gray-50 dark:bg-black text-[10px] p-1.5 rounded-lg outline-none w-full border border-gray-100 dark:border-zinc-800 focus:border-rose-500" onKeyDown={(e) => { if(e.key === 'Enter') handleUnlock(f.id, e.currentTarget.value) }} />
+                    <div className="flex gap-1 mt-1 items-center">
+                       {unlockingIds.has(f.id) ? (
+                         <p className="flex-1 text-[10px] font-bold text-gray-400 flex items-center gap-1.5"><Loader2 size={12} className="animate-spin text-rose-500" /> Unlocking…</p>
+                       ) : (
+                         <input type="password" placeholder="Password" className="flex-1 bg-gray-50 dark:bg-black text-[10px] p-1.5 rounded-lg outline-none w-full border border-gray-100 dark:border-zinc-800 focus:border-rose-500" onKeyDown={(e) => { if(e.key === 'Enter') handleUnlock(f.id, e.currentTarget.value) }} />
+                       )}
                     </div>
                   ) : <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{(f.file.size / (1024*1024)).toFixed(2)} MB • {f.pageCount} Pages</p>}
                 </div>
@@ -313,15 +346,18 @@ export default function CompressTool() {
                      Expected reduction: <span className="text-rose-500 font-bold">40-60%</span>.
                    </>
                  )}
-                 {quality === 'low' && (
-                   <>
-                     <strong>Smallest Size:</strong> Aggressive downsampling for the lowest possible file size. 
-                     Ideal for quick mobile viewing or meeting strict upload limits. 
-                     Expected reduction: <span className="text-rose-500 font-bold">70-90%</span>.
-                   </>
-                 )}
-               </p>
-            </div>
+                  {quality === 'low' && (
+                    <>
+                      <strong>Smallest Size:</strong> Aggressive downsampling for the lowest possible file size. 
+                      Ideal for quick mobile viewing or meeting strict upload limits. 
+                      Expected reduction: <span className="text-rose-500 font-bold">70-90%</span>.
+                    </>
+                  )}
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-zinc-500 leading-relaxed mt-3">
+                  Note: pages are rebuilt as images, so text won't stay selectable. If a result would grow the file, the original is kept instead.
+                </p>
+             </div>
 
             {isProcessing && (
               <div className="mt-8 space-y-3">
@@ -345,7 +381,7 @@ export default function CompressTool() {
           {objectUrl && files.length === 1 && (
             <div className="space-y-8">
               {lastPipelinedFile?.originalBuffer && lastPipelinedFile?.buffer && <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm"><QualityCompare originalBuffer={lastPipelinedFile.originalBuffer} compressedBuffer={lastPipelinedFile.buffer} /></div>}
-              <SuccessState message={`Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`} downloadUrl={objectUrl} fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} />
+              <SuccessState message={files[0].keptOriginal ? 'Already optimal — kept original' : `Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`} downloadUrl={objectUrl} fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} />
             </div>
           )}
         </div>
