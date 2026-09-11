@@ -114,17 +114,17 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
           {showPreview && (
             <button 
               onClick={handlePreview}
-              className="flex-1 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-800 p-4 rounded-2xl md:rounded-3xl shadow-sm font-black text-sm md:text-xl tracking-tight transition-all hover:bg-gray-50 active:scale-95 flex items-center justify-center gap-2"
+              className="flex-1 min-w-0 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-800 px-3 py-4 rounded-2xl md:rounded-3xl shadow-sm font-black text-sm tracking-tight transition-all hover:bg-gray-50 active:scale-95 flex items-center justify-center gap-2"
             >
-              <Eye size={20} /> Preview
+              <Eye size={18} /> Preview
             </button>
           )}
           
           <button 
             onClick={handleShare}
-            className="flex-1 bg-rose-50 dark:bg-rose-900/20 text-rose-500 border border-rose-100 dark:border-rose-900/30 p-4 rounded-2xl md:rounded-3xl shadow-sm font-black text-sm md:text-xl tracking-tight transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="flex-1 min-w-0 bg-rose-50 dark:bg-rose-900/20 text-rose-500 border border-rose-100 dark:border-rose-900/30 px-3 py-4 rounded-2xl md:rounded-3xl shadow-sm font-black text-sm tracking-tight transition-all active:scale-95 flex items-center justify-center gap-2"
           >
-            <Share2 size={20} /> Share
+            <Share2 size={18} /> Share
           </button>
         </div>
         
