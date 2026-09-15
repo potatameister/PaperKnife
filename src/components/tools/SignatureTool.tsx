@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Loader2, Lock, Image as ImageIcon, ArrowRight, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Loader2, Lock, Image as ImageIcon, ArrowRight, ChevronLeft, ChevronRight, X, Pen, Eraser, Check, Trash2 } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
@@ -13,13 +13,104 @@ import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type SignaturePdfData = { file: File, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
 
+function SignaturePad({ onSave, onCancel, inkColor }: { onSave: (blob: Blob) => void, onCancel: () => void, inkColor: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const lastPoint = useRef<{ x: number, y: number } | null>(null)
+  const inkRef = useRef(inkColor)
+  inkRef.current = inkColor
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const dpr = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    canvas.width = Math.max(1, Math.round(rect.width * dpr))
+    canvas.height = Math.max(1, Math.round(rect.height * dpr))
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.scale(dpr, dpr)
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+  }, [])
+
+  const getPos = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current
+    if (!canvas) return { x: 0, y: 0 }
+    const rect = canvas.getBoundingClientRect()
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    return { x: clientX - rect.left, y: clientY - rect.top }
+  }
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsDrawing(true)
+    lastPoint.current = getPos(e)
+  }
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing || !lastPoint.current) return
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !ctx) return
+    ctx.strokeStyle = inkRef.current
+    ctx.lineWidth = 3
+    const currentPoint = getPos(e)
+    ctx.beginPath()
+    ctx.moveTo(lastPoint.current.x, lastPoint.current.y)
+    const midPoint = { x: (lastPoint.current.x + currentPoint.x) / 2, y: (lastPoint.current.y + currentPoint.y) / 2 }
+    ctx.quadraticCurveTo(lastPoint.current.x, lastPoint.current.y, midPoint.x, midPoint.y)
+    ctx.stroke()
+    lastPoint.current = currentPoint
+  }
+
+  const stopDrawing = () => { setIsDrawing(false); lastPoint.current = null }
+
+  const handleClear = () => {
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
+  }
+
+  const handleDone = () => {
+    const canvas = canvasRef.current
+    if (canvas) canvas.toBlob((blob) => { if (blob) onSave(blob) }, 'image/png')
+  }
+
+  return (
+    <div className="space-y-4 animate-in zoom-in-95 duration-200">
+      <div className="relative aspect-video w-full bg-white border-2 border-gray-200 dark:border-zinc-700 rounded-3xl overflow-hidden touch-none select-none shadow-sm">
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full cursor-crosshair touch-none"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+        />
+        <div className="absolute top-4 right-4 flex gap-2">
+          <button onClick={handleClear} className="p-2.5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 hover:bg-rose-500 hover:text-white rounded-xl transition-all shadow-sm text-gray-400" title="Clear"><Eraser size={18} /></button>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onCancel} className="flex-1 py-3 bg-gray-100 dark:bg-zinc-800 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500">Cancel</button>
+        <button onClick={handleDone} className="flex-[2] py-3 bg-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20"><Check size={16} /> Use Signature</button>
+      </div>
+    </div>
+  )
+}
+
 export default function SignatureTool() {
   const fileInputRef = useRef<HTMLInputElement>(null); const signatureInputRef = useRef<HTMLInputElement>(null); const previewRef = useRef<HTMLDivElement>(null)
   const { consumePipelineFile } = usePipeline()
-  const [pdfData, setPdfData] = useState<SignaturePdfData | null>(null); const [signatureImg, setSignatureImg] = useState<string | null>(null); const [signatureFile, setSignatureFile] = useState<File | null>(null)
+  const [pdfData, setPdfData] = useState<SignaturePdfData | null>(null); const [signatureImg, setSignatureImg] = useState<string | null>(null); const [signatureFile, setSignatureFile] = useState<File | Blob | null>(null)
   const [isProcessing, setIsProcessing] = useState(false); const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [customFileName, setCustomFileName] = useState('paperknife-signed')
   const [unlockPassword, setUnlockPassword] = useState(''); const [activePage, setActivePage] = useState(1); const [pos, setPos] = useState({ x: 50, y: 50 })
+  const [sigMode, setSigMode] = useState<'draw' | null>(null); const [inkColor, setInkColor] = useState('#000000')
   const [size, setSize] = useState(150); const [thumbnail, setThumbnail] = useState<string | null>(null); const [isDraggingSig, setIsDraggingSig] = useState(false); const [isResizing, setIsResizing] = useState(false)
   const isNative = Capacitor.isNativePlatform()
 
@@ -96,7 +187,7 @@ export default function SignatureTool() {
   return (
     <NativeToolLayout title="Signature" description="Sign any PDF by dragging your signature image." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-      <input type="file" accept="image/*" className="hidden" ref={signatureInputRef} onChange={(e) => { const file = e.target.files?.[0]; if (file) { setSignatureFile(file); setSignatureImg(URL.createObjectURL(file)) } }} />
+      <input type="file" accept="image/*" className="hidden" ref={signatureInputRef} onChange={(e) => { const file = e.target.files?.[0]; if (file) { if (!file.type.startsWith('image/')) { toast.error('Please upload an image file'); return } setSignatureFile(file); setSignatureImg(URL.createObjectURL(file)) } }} />
       {!pdfData ? (
         <button 
           onClick={() => !isProcessing && fileInputRef.current?.click()} 
@@ -129,6 +220,28 @@ export default function SignatureTool() {
               <button onClick={() => signatureInputRef.current?.click()} className="w-full p-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs hover:bg-rose-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20">
                 <span className="flex items-center justify-center gap-2"><ImageIcon size={16}/> {signatureImg ? 'Replace Signature' : 'Upload Signature'}</span>
               </button>
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 px-1">Signature</label>
+                {!signatureImg && sigMode === null && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <button onClick={() => setSigMode('draw')} className="aspect-video bg-rose-50 dark:bg-rose-900/10 border-2 border-rose-100 dark:border-rose-900/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-rose-500 hover:bg-rose-100 transition-all"><Pen size={24} /><span className="text-[10px] font-black uppercase tracking-widest">Draw</span></button>
+                      <button onClick={() => signatureInputRef.current?.click()} className="aspect-video bg-rose-50 dark:bg-rose-900/10 border-2 border-rose-100 dark:border-rose-900/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-rose-500 hover:bg-rose-100 transition-all"><ImageIcon size={24} /><span className="text-[10px] font-black uppercase tracking-widest">Upload</span></button>
+                    </div>
+                    <div className="flex items-center gap-3 p-1 bg-gray-50 dark:bg-black border border-gray-100 dark:border-zinc-800 rounded-xl">
+                      <button onClick={() => setInkColor('#000000')} className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${inkColor === '#000000' ? 'bg-white dark:bg-zinc-800 text-gray-900 shadow-sm' : 'text-gray-400'}`}>Black Ink</button>
+                      <button onClick={() => setInkColor('#003366')} className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase transition-all ${inkColor === '#003366' ? 'bg-[#003366] text-white shadow-sm' : 'text-gray-400'}`}>Blue Ink</button>
+                    </div>
+                  </div>
+                )}
+                {sigMode === 'draw' && !signatureImg && <SignaturePad inkColor={inkColor} onSave={(blob) => { setSignatureFile(blob); setSignatureImg(URL.createObjectURL(blob)); setSigMode(null); }} onCancel={() => setSigMode(null)} />}
+                {signatureImg && (
+                  <div className="relative group">
+                    <div className="w-full p-4 bg-white rounded-2xl border-2 border-gray-100 flex items-center justify-center min-h-[100px] shadow-inner"><img src={signatureImg} className="h-20 object-contain" alt="Signature preview" /></div>
+                    <button onClick={() => { setSignatureImg(null); setSignatureFile(null); }} className="absolute -top-2 -right-2 bg-rose-500 text-white p-1.5 rounded-full shadow-lg"><Trash2 size={14} /></button>
+                  </div>
+                )}
+              </div>
               {pdfData.pageCount > 1 && (
                 <div className="flex items-center justify-between bg-white dark:bg-zinc-900 px-4 py-3 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                   <button onClick={() => changePage(activePage - 1)} disabled={activePage <= 1} className="p-2 text-gray-400 hover:text-rose-500 disabled:opacity-30 transition-colors" aria-label="Previous page"><ChevronLeft size={20} /></button>
@@ -157,9 +270,9 @@ export default function SignatureTool() {
               </div>
             </>
           ) : (
-            <SuccessState message="Signed Successfully!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setPdfData(null); setSignatureImg(null); }} />
+            <SuccessState message="Signed Successfully!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setPdfData(null); setSignatureImg(null); setSigMode(null); }} />
           )}
-          <button onClick={() => { setPdfData(null); setSignatureImg(null); }} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors">Close File</button>
+          <button onClick={() => { setPdfData(null); setSignatureImg(null); setSigMode(null); }} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors">Close File</button>
         </div>
       )}
     </NativeToolLayout>

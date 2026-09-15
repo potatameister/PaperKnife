@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { Zap, Loader2, Plus, X, FileIcon, Download, ChevronLeft, ChevronRight, Maximize2, ArrowRight, Lock } from 'lucide-react'
+import { Zap, Loader2, X, FileIcon, ChevronLeft, ChevronRight, Maximize2, ArrowRight, Lock } from 'lucide-react'
 import { toast } from 'sonner'
-import { Capacitor } from '@capacitor/core'
 
-import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf, downloadFile } from '../../utils/pdfHelpers'
+import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
@@ -92,7 +91,6 @@ export default function CompressTool() {
   const [globalProgress, setGlobalProgress] = useState(0)
   const [quality, setQuality] = useState<CompressionQuality>('medium')
   const [showSuccess, setShowSuccess] = useState(false)
-  const isNative = Capacitor.isNativePlatform()
 
   useEffect(() => {
     const pipelined = consumePipelineFile()
@@ -107,20 +105,22 @@ export default function CompressTool() {
   }, [])
 
   const handleFiles = async (selectedFiles: FileList | File[]) => {
-    const newFiles = Array.from(selectedFiles).filter(f => f.type === 'application/pdf').map(file => ({
+    const picked = Array.from(selectedFiles).filter(f => f.type === 'application/pdf')
+    if (picked.length === 0) return
+    if (picked.length > 1) toast('One file at a time — using the first PDF.')
+    const file = picked[0]
+    const entry = {
       id: Math.random().toString(36).substr(2, 9),
       file, pageCount: 0, isLocked: false, status: 'pending' as const
-    }))
-    setFiles(prev => [...prev, ...newFiles]); setShowSuccess(false); clearUrls()
-    
+    }
+    setFiles([entry]); setShowSuccess(false); clearUrls()
+
     // Clear input value to allow selecting the same file again
     if (fileInputRef.current) fileInputRef.current.value = ''
 
-    for (const f of newFiles) {
-      getPdfMetaData(f.file).then(meta => {
-        setFiles(prev => prev.map(item => item.id === f.id ? { ...item, pageCount: meta.pageCount, isLocked: meta.isLocked, thumbnail: meta.thumbnail } : item))
-      })
-    }
+    getPdfMetaData(file).then(meta => {
+      setFiles(prev => prev.map(item => item.id === entry.id ? { ...item, pageCount: meta.pageCount, isLocked: meta.isLocked, thumbnail: meta.thumbnail } : item))
+    })
   }
 
   const handleUnlock = async (id: string, password: string) => {
@@ -187,77 +187,48 @@ export default function CompressTool() {
     const pendingFiles = files.filter(f => !f.isLocked && f.status === 'pending')
     if (pendingFiles.length === 0) return
     setIsProcessing(true); setGlobalProgress(0)
-    const results = []
-    let keptOriginalCount = 0
-    let unlockedGrewCount = 0
-    
-    // If single file, track detailed progress
-    const isSingle = pendingFiles.length === 1
-    
-    for (let i = 0; i < pendingFiles.length; i++) {
-      const item = pendingFiles[i]
-      setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f))
-      try {
-        const originalSize = item.file.size
-        let res = await compressSingleFile(item, quality, isSingle ? setGlobalProgress : undefined)
-        // Smallest that grows the file gets one salvage pass at Standard
-        if (res.size >= originalSize && quality === 'low') {
-          const retry = await compressSingleFile(item, 'medium', isSingle ? setGlobalProgress : undefined)
-          if (retry.size < res.size) res = retry
-        }
-        // Guarantee: never hand back a bigger file than the original —
-        // except locked inputs, which must ship the rebuilt (unlocked) result
-        const wasLocked = !!item.password
-        let finalBuffer = res.buffer, finalSize = res.size, finalUrl = res.url, keptOriginal = false, unlockedGrew = false
-        if (res.size >= originalSize && !wasLocked) {
-          finalBuffer = new Uint8Array(await item.file.arrayBuffer())
-          finalSize = originalSize
-          finalUrl = createUrl(new Blob([finalBuffer as any], { type: 'application/pdf' }))
-          keptOriginal = true
-          keptOriginalCount++
-        } else if (res.size >= originalSize && wasLocked) {
-          unlockedGrew = true
-          unlockedGrewCount++
-        }
-        results.push({ name: item.file.name.replace('.pdf', '-compressed.pdf'), buffer: finalBuffer })
-        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: finalUrl, resultSize: finalSize, keptOriginal, unlockedGrew } : f))
-        addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size: finalSize, resultUrl: finalUrl, buffer: finalBuffer })
-        if (pendingFiles.length === 1) {
-           const originalBuffer = await pendingFiles[0].file.arrayBuffer()
-           setPipelineFile({
-             buffer: finalBuffer,
-             name: item.file.name.replace('.pdf', '-compressed.pdf'),
-             type: 'application/pdf',
-             originalBuffer: new Uint8Array(originalBuffer)
-           })
-        }
-      } catch { setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error' } : f)) }
-      
-      if (!isSingle) setGlobalProgress(Math.round(((i + 1) / pendingFiles.length) * 100))
-    }
-    if (results.length > 1) {
-      const { default: JSZip } = await import('jszip')
-      const zip = new JSZip(); results.forEach(res => zip.file(res.name, res.buffer))
-      const zipBlob = await zip.generateAsync({ type: 'blob' }); createUrl(zipBlob)
-    }
-    if (keptOriginalCount > 0) toast.success(keptOriginalCount === pendingFiles.length ? 'Already optimal — kept original' : `${keptOriginalCount} file(s) already optimal — kept original`)
-    else if (unlockedGrewCount > 0) toast.success(unlockedGrewCount === pendingFiles.length ? 'Unlocked — larger than original' : `${unlockedGrewCount} file(s) unlocked but larger than original`)
-    setIsProcessing(false); setShowSuccess(true)
-  }
 
-  const handleDownloadBatch = async () => {
-    if (objectUrl && files.length > 1) {
-        const { default: JSZip } = await import('jszip')
-        const zip = new JSZip()
-        for (const f of files) {
-            if (f.resultUrl) {
-                const res = await fetch(f.resultUrl)
-                zip.file(f.file.name.replace('.pdf', '-compressed.pdf'), await res.arrayBuffer())
-            }
-        }
-        const blob = await zip.generateAsync({ type: 'blob' })
-        await downloadFile(new Uint8Array(await blob.arrayBuffer()), 'paperknife-compressed.zip', 'application/zip')
+    const item = pendingFiles[0]
+    setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f))
+    try {
+      const originalSize = item.file.size
+      let res = await compressSingleFile(item, quality, setGlobalProgress)
+      // Smallest that grows the file gets one salvage pass at Standard
+      if (res.size >= originalSize && quality === 'low') {
+        const retry = await compressSingleFile(item, 'medium', setGlobalProgress)
+        if (retry.size < res.size) res = retry
+      }
+      // Never ship an unusable result
+      if (res.size < 1024) throw new Error(`"${item.file.name}" compressed to an unusable file.`)
+      // Guarantee: never hand back a bigger file than the original —
+      // except locked inputs, which must ship the rebuilt (unlocked) result
+      const wasLocked = !!item.password
+      let finalBuffer = res.buffer, finalSize = res.size, finalUrl = res.url, keptOriginal = false, unlockedGrew = false
+      if (res.size >= originalSize && !wasLocked) {
+        finalBuffer = new Uint8Array(await item.file.arrayBuffer())
+        finalSize = originalSize
+        finalUrl = createUrl(new Blob([finalBuffer as any], { type: 'application/pdf' }))
+        keptOriginal = true
+      } else if (res.size >= originalSize && wasLocked) {
+        unlockedGrew = true
+      }
+      const outName = item.file.name.replace('.pdf', '-compressed.pdf')
+      setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: finalUrl, resultSize: finalSize, keptOriginal, unlockedGrew } : f))
+      addActivity({ name: outName, tool: 'Compress', size: finalSize, resultUrl: finalUrl, buffer: finalBuffer })
+      const originalBuffer = await item.file.arrayBuffer()
+      setPipelineFile({
+        buffer: finalBuffer,
+        name: outName,
+        type: 'application/pdf',
+        originalBuffer: new Uint8Array(originalBuffer)
+      })
+      if (keptOriginal) toast.success('Already optimal — kept original')
+      else if (unlockedGrew) toast.success('Unlocked — larger than original')
+    } catch (e: any) {
+      setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error' } : f))
+      toast.error(e?.message || `Failed to compress "${item.file.name}".`)
     }
+    setIsProcessing(false); setShowSuccess(true)
   }
 
   const ActionButton = () => (
@@ -266,13 +237,13 @@ export default function CompressTool() {
       disabled={isProcessing || files.filter(f => !f.isLocked).length === 0}
       className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg shadow-rose-500/20 py-4 rounded-2xl text-sm md:p-6 md:rounded-3xl md:text-xl`}
     >
-      {isProcessing ? <><Loader2 className="animate-spin" /> {globalProgress}%</> : <>Compress {files.length > 1 ? `${files.length} Files` : 'PDF'} <ArrowRight size={18} /></>}
+      {isProcessing ? <><Loader2 className="animate-spin" /> {globalProgress}%</> : <>Compress PDF <ArrowRight size={18} /></>}
     </button>
   )
 
   return (
     <NativeToolLayout title="Compress PDF" description="Reduce file size while maintaining quality. Everything stays on your device." actions={files.length > 0 && !showSuccess && <ActionButton />}>
-      <input type="file" multiple accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files && handleFiles(e.target.files)} />
+      <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files && handleFiles(e.target.files)} />
       
       {files.length === 0 ? (
         <button 
@@ -280,8 +251,8 @@ export default function CompressTool() {
           className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group"
         >
           <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-inner"><Zap size={32} /></div>
-          <h3 className="text-xl font-bold dark:text-white mb-2">Select PDFs</h3>
-          <p className="text-sm text-gray-400 font-medium">Tap to start batch compression</p>
+              <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF</h3>
+              <p className="text-sm text-gray-400 font-medium">Tap to start compression</p>
         </button>
       ) : !showSuccess ? (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -311,9 +282,6 @@ export default function CompressTool() {
                 <button onClick={() => setFiles(prev => prev.filter(item => item.id !== f.id))} className="p-2 text-gray-300 hover:text-rose-500 transition-colors"><X size={16} /></button>
               </div>
             ))}
-            <button onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-gray-100 dark:border-zinc-800 rounded-[1.5rem] p-4 text-gray-400 flex flex-col items-center justify-center gap-1 hover:border-rose-500 hover:text-rose-500 transition-all">
-              <Plus size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Add More</span>
-            </button>
           </div>
 
           <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
@@ -381,14 +349,7 @@ export default function CompressTool() {
         </div>
       ) : (
         <div className="space-y-6 animate-in zoom-in duration-300">
-          {objectUrl && files.length > 1 && (
-            <button onClick={handleDownloadBatch} className="block w-full bg-zinc-900 dark:bg-white text-white dark:text-black p-10 rounded-[2.5rem] text-center shadow-2xl transition-all group active:scale-[0.98]">
-              <div className="w-16 h-16 bg-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg"><Download className="text-white" size={32} /></div>
-              <h3 className="text-2xl font-black tracking-tight mb-1">{isNative ? 'Save ZIP Archive' : 'Download ZIP Archive'}</h3>
-              <p className="text-xs font-bold opacity-60 uppercase tracking-widest">{files.length} Optimized PDFs</p>
-            </button>
-          )}
-          {objectUrl && files.length === 1 && (
+          {objectUrl && (
             <div className="space-y-8">
               {lastPipelinedFile?.originalBuffer && lastPipelinedFile?.buffer && <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm"><QualityCompare originalBuffer={lastPipelinedFile.originalBuffer} compressedBuffer={lastPipelinedFile.buffer} /></div>}
               <SuccessState message={files[0].keptOriginal ? 'Already optimal — kept original' : files[0].unlockedGrew ? 'Unlocked — larger than original' : `Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`} downloadUrl={objectUrl} fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} />
