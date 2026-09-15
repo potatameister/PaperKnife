@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Loader2, Lock, Image as ImageIcon, ArrowRight } from 'lucide-react'
+import { Loader2, Lock, Image as ImageIcon, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
@@ -20,7 +20,7 @@ export default function SignatureTool() {
   const [pdfData, setPdfData] = useState<SignaturePdfData | null>(null); const [signatureImg, setSignatureImg] = useState<string | null>(null); const [signatureFile, setSignatureFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false); const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [customFileName, setCustomFileName] = useState('paperknife-signed')
-  const [unlockPassword, setUnlockPassword] = useState(''); const [activePage] = useState(1); const [pos, setPos] = useState({ x: 50, y: 50 })
+  const [unlockPassword, setUnlockPassword] = useState(''); const [activePage, setActivePage] = useState(1); const [pos, setPos] = useState({ x: 50, y: 50 })
   const [size, setSize] = useState(150); const [thumbnail, setThumbnail] = useState<string | null>(null); const [isDraggingSig, setIsDraggingSig] = useState(false); const [isResizing, setIsResizing] = useState(false)
   const isNative = Capacitor.isNativePlatform()
 
@@ -36,7 +36,7 @@ export default function SignatureTool() {
     if (!pdfData || !unlockPassword) return; setIsProcessing(true)
     try {
       const result = await unlockPdf(pdfData.file, unlockPassword)
-      if (result.success) { setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }); const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb) }
+      if (result.success) { setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }); setActivePage(1); const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb) }
       else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
     } catch { toast.error('Failed to unlock PDF') } finally { setIsProcessing(false) }
   }
@@ -46,11 +46,21 @@ export default function SignatureTool() {
     try {
       const meta = await getPdfMetaData(file)
       if (meta.isLocked) { setPdfData({ file, pageCount: 0, isLocked: true }) }
-      else { const pdfDoc = await loadPdfDocument(file); setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc }); const thumb = await renderPageThumbnail(pdfDoc, 1, 2.0); setThumbnail(thumb) }
+      else { const pdfDoc = await loadPdfDocument(file); setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc }); setActivePage(1); const thumb = await renderPageThumbnail(pdfDoc, 1, 2.0); setThumbnail(thumb) }
     } catch { toast.error('Failed to open PDF') } finally { 
       setIsProcessing(false) 
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
+  }
+
+  const changePage = async (pageNum: number) => {
+    if (!pdfData || !pdfData.pdfDoc) return
+    const clamped = Math.min(Math.max(pageNum, 1), pdfData.pageCount)
+    if (clamped === activePage && thumbnail) return
+    setActivePage(clamped); setThumbnail(null)
+    try {
+      setThumbnail(await renderPageThumbnail(pdfData.pdfDoc, clamped, 2.0))
+    } catch { toast.error('Failed to render page') }
   }
 
   const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
@@ -71,7 +81,7 @@ export default function SignatureTool() {
       }
       const pdfDoc = await PDFDocument.load(bytes, { throwOnInvalidObject: false } as any)
       const sigBytes = await signatureFile.arrayBuffer(); let sigImage = signatureFile.type === 'image/png' ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes)
-      const page = pdfDoc.getPages()[activePage - 1]; const { width, height } = page.getSize(); const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width))
+      const page = pdfDoc.getPages()[Math.min(Math.max(activePage, 1), pdfDoc.getPageCount()) - 1]; const { width, height } = page.getSize(); const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width))
       page.drawImage(sigImage, { x: pdfX, y: pdfY, width: size, height: size * (sigImage.height / sigImage.width) })
       const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes as any], { type: 'application/pdf' }); const url = URL.createObjectURL(blob)
       setDownloadUrl(url); addActivity({ name: `${customFileName}.pdf`, tool: 'Signature', size: blob.size, resultUrl: url, buffer: new Uint8Array(await blob.arrayBuffer()) })
@@ -102,6 +112,13 @@ export default function SignatureTool() {
         <div className="space-y-6" onMouseMove={handleMouseMove} onTouchMove={handleMouseMove} onMouseUp={() => { setIsDraggingSig(false); setIsResizing(false); }} onTouchEnd={() => { setIsDraggingSig(false); setIsResizing(false); }}>
           {!downloadUrl ? (
             <>
+              {pdfData.pageCount > 1 && (
+                <div className="flex items-center justify-between bg-white dark:bg-zinc-900 px-4 py-3 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
+                  <button onClick={() => changePage(activePage - 1)} disabled={activePage <= 1} className="p-2 text-gray-400 hover:text-rose-500 disabled:opacity-30 transition-colors" aria-label="Previous page"><ChevronLeft size={20} /></button>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Page {activePage} of {pdfData.pageCount}</span>
+                  <button onClick={() => changePage(activePage + 1)} disabled={activePage >= pdfData.pageCount} className="p-2 text-gray-400 hover:text-rose-500 disabled:opacity-30 transition-colors" aria-label="Next page"><ChevronRight size={20} /></button>
+                </div>
+              )}
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-3xl border border-gray-100 dark:border-white/5 relative aspect-[1/1.4] overflow-hidden touch-none" ref={previewRef} onClick={(e) => { if (!signatureImg || isDraggingSig || isResizing) return; const r = e.currentTarget.getBoundingClientRect(); setPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }) }}>
                 {thumbnail ? <img src={thumbnail} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center"><Loader2 className="animate-spin text-rose-500" /></div>}
                 {signatureImg && (
