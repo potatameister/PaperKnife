@@ -42,7 +42,7 @@ export default function WatermarkTool() {
     if (result.success) {
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, password: unlockPassword, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-watermarked`)
-    } else { toast.error('Incorrect password') }
+    } else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
     setIsProcessing(false)
   }
 

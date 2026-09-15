@@ -49,7 +49,7 @@ export default function ProtectTool() {
     if (result.success) {
       setPdfData({ ...pdfData, isLocked: false, thumbnail: result.thumbnail, pageCount: result.pageCount, sourcePassword: unlockPassword })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-protected`)
-    } else { toast.error('Incorrect password') }
+    } else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
     setIsProcessing(false)
   }
 

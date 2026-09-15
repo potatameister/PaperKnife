@@ -311,6 +311,9 @@ export default function CompressTool() {
 
           <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
             <h4 className="text-[10px] font-black uppercase text-gray-400 mb-6 tracking-widest px-1">Compression Strategy</h4>
+            {files.some(f => f.password) && (
+              <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mb-4 text-center">Locked inputs are decrypted first — their outputs will be unlocked.</p>
+            )}
             <div className="grid grid-cols-3 gap-3">
               {[
                 { id: 'high', label: 'High Quality', desc: '100% Clarity' },

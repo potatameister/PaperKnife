@@ -40,7 +40,7 @@ export default function PdfToTextTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) { setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }) }
-    else { toast.error('Incorrect password') }
+    else { toast.error(`Incorrect password for "${pdfData.file.name}".`) }
     setIsProcessing(false)
   }
 

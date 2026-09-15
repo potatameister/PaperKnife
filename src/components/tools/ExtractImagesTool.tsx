@@ -39,7 +39,7 @@ export default function ExtractImagesTool() {
     if (result.success) {
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail, password: unlockPassword })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-extracted`)
-    } else { toast.error('Incorrect password') }
+    } else { toast.error(`Incorrect password for "${pdfData.file.name}".`) }
     setIsProcessing(false)
   }
 

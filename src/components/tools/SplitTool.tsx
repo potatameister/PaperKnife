@@ -75,7 +75,7 @@ export default function SplitTool() {
       const all = new Set<number>(); for (let i = 1; i <= result.pageCount; i++) all.add(i)
       setSelectedPages(all); setRangeInput(`1-${result.pageCount}`)
     } else {
-      toast.error('Incorrect password')
+      toast.error(`Incorrect password for "${pdfData?.file.name}".`)
     }
     setIsLoadingMeta(false)
   }

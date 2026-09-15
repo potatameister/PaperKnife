@@ -52,7 +52,7 @@ export default function RotateTool() {
     if (result.success) {
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword, thumbnail: result.thumbnail })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-rotated`)
-    } else { toast.error('Incorrect password') }
+    } else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
     setIsProcessing(false)
   }
 

@@ -39,7 +39,7 @@ export default function GrayscaleTool() {
     if (result.success) {
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail, password: unlockPassword })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-grayscale`)
-    } else { toast.error('Incorrect password') }
+    } else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
     setIsProcessing(false)
   }
 
@@ -157,7 +157,7 @@ export default function GrayscaleTool() {
                      Best for printing and reducing file size.
                    </p>
                 </div>
-                <div><label className="block text-[10px] font-black uppercase text-gray-400 mb-3 tracking-widest px-1">Output Filename</label><input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" /></div>
+                <div><label className="block text-[10px] font-black uppercase text-gray-400 mb-3 tracking-widest px-1">Output Filename</label><input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />{pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">Locked input is decrypted first — the output file will be unlocked.</p>)}</div>
                 {isProcessing && (
                   <div className="space-y-3">
                     <div className="w-full bg-gray-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden shadow-inner">

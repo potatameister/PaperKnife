@@ -3,7 +3,7 @@ import { Info, Lock, Edit3, Loader2, Sparkles, X } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 
-import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
+import { getPdfMetaData, unlockPdf, destroyPdf } from '../../utils/pdfHelpers'
 import { getProcessBytes } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
@@ -63,9 +63,24 @@ export default function MetadataTool() {
     setIsProcessing(true)
     const result = await unlockPdf(pdfData.file, unlockPassword)
     if (result.success) {
-      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, password: unlockPassword, currentMeta: { title: '', author: localStorage.getItem('defaultAuthor') || '', subject: '', keywords: '', creator: '', producer: '' } })
-      setMeta({ title: '', author: localStorage.getItem('defaultAuthor') || '', subject: '', keywords: '', creator: '', producer: '' })
-    } else { toast.error('Incorrect password') }
+      const savedAuthor = localStorage.getItem('defaultAuthor') || ''
+      let currentMeta = { title: '', author: savedAuthor, subject: '', keywords: '', creator: '', producer: '' }
+      try {
+        const md = await result.pdfDoc?.getMetadata()
+        const info = md?.info || {}
+        currentMeta = {
+          title: info.Title || '',
+          author: savedAuthor || info.Author || '',
+          subject: info.Subject || '',
+          keywords: Array.isArray(info.Keywords) ? info.Keywords.join(', ') : (info.Keywords || ''),
+          creator: info.Creator || '',
+          producer: info.Producer || ''
+        }
+      } catch { /* fall back to empty fields */ }
+      try { await destroyPdf(result.pdfDoc) } catch { /* ignore */ }
+      setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, password: unlockPassword, currentMeta })
+      setMeta(currentMeta)
+    } else { toast.error(`Incorrect password for "${pdfData.file.name}".`) }
     setIsProcessing(false)
   }
 

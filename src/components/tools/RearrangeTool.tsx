@@ -74,7 +74,7 @@ export default function RearrangeTool() {
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword, thumbnail: result.thumbnail })
       setPageOrder(Array.from({ length: result.pageCount }, (_, i) => (i + 1).toString()))
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-rearranged`)
-    } else { toast.error('Incorrect password') }
+    } else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
     setIsProcessing(false)
   }
 

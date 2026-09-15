@@ -37,7 +37,7 @@ export default function SignatureTool() {
     try {
       const result = await unlockPdf(pdfData.file, unlockPassword)
       if (result.success) { setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }); const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb) }
-      else { toast.error('Incorrect password') }
+      else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
     } catch { toast.error('Failed to unlock PDF') } finally { setIsProcessing(false) }
   }
 

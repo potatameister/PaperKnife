@@ -43,7 +43,7 @@ export default function PageNumberTool() {
     if (result.success) {
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, password: unlockPassword, pdfDoc: result.pdfDoc, thumbnail: result.thumbnail })
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-numbered`)
-    } else { toast.error('Incorrect password') }
+    } else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
     setIsProcessing(false)
   }
 
