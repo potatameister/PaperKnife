@@ -79,6 +79,7 @@ type CompressPdfFile = {
   resultSize?: number
   keptOriginal?: boolean
   unlockedGrew?: boolean
+  resultMessage?: string
 }
 
 type CompressionQuality = 'low' | 'medium' | 'high'
@@ -121,6 +122,11 @@ export default function CompressTool() {
     if (fileInputRef.current) fileInputRef.current.value = ''
 
     getPdfMetaData(file).then(meta => {
+      if (!meta.isLocked && meta.pageCount === 0) {
+        toast.error(`"${file.name}" could not be read.`)
+        setFiles(prev => prev.filter(item => item.id !== entry.id))
+        return
+      }
       setFiles(prev => prev.map(item => item.id === entry.id ? { ...item, pageCount: meta.pageCount, isLocked: meta.isLocked, thumbnail: meta.thumbnail } : item))
     })
   }
@@ -208,33 +214,68 @@ export default function CompressTool() {
     setIsProcessing(true); setGlobalProgress(0)
 
     const item = pendingFiles[0]
+    if (!item.pageCount) {
+      setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error' } : f))
+      toast.error(`"${item.file.name}" could not be read.`)
+      setIsProcessing(false)
+      return
+    }
     setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f))
     try {
       const originalSize = item.file.size
-      let res = quality === 'high'
-        ? await optimizeLossless(item, setGlobalProgress)
-        : await compressSingleFile(item, quality, setGlobalProgress)
-      // Smallest that grows the file gets one salvage pass at Standard
-      if (res.size >= originalSize && quality === 'low') {
-        const retry = await compressSingleFile(item, 'medium', setGlobalProgress)
-        if (retry.size < res.size) res = retry
+      const tierLabel = { high: 'High', medium: 'Standard', low: 'Smallest' } as const
+      let res: { url: string, size: number, buffer: Uint8Array }
+      let usedTier: CompressionQuality = quality
+      if (quality === 'low') {
+        // Smallest path untouched, salvage pass included
+        res = await compressSingleFile(item, quality, setGlobalProgress)
+        if (res.size >= originalSize) {
+          const retry = await compressSingleFile(item, 'medium', setGlobalProgress)
+          if (retry.size < res.size) res = retry
+        }
+      } else {
+        // Cascade down until something shrinks: High(lossless) -> Standard -> Smallest.
+        // A compress tool must never hand back a bigger file without trying lower tiers.
+        const tiers: CompressionQuality[] = quality === 'high' ? ['high', 'medium', 'low'] : ['medium', 'low']
+        let best: { res: { url: string, size: number, buffer: Uint8Array }, usedTier: CompressionQuality } | null = null
+        for (const tier of tiers) {
+          let attempt
+          try {
+            attempt = tier === 'high'
+              ? await optimizeLossless(item, setGlobalProgress)
+              : await compressSingleFile(item, tier, setGlobalProgress)
+          } catch (e) {
+            if (tier === 'high') continue // quirky files pdf-lib can't load — fall through to raster
+            throw e
+          }
+          if (attempt && (!best || attempt.size < best.res.size)) best = { res: attempt, usedTier: tier }
+          if (attempt && attempt.size < originalSize) break
+        }
+        if (!best) throw new Error(`Failed to compress "${item.file.name}".`)
+        res = best.res; usedTier = best.usedTier
       }
       // Never ship an unusable result
       if (res.size < 1024) throw new Error(`"${item.file.name}" compressed to an unusable file.`)
       // Guarantee: never hand back a bigger file than the original —
       // except locked inputs, which must ship the rebuilt (unlocked) result
       const wasLocked = !!item.password
+      const steppedDown = usedTier !== quality
+      const pct = ((1 - res.size / originalSize) * 100).toFixed(0)
+      const outcome = usedTier === 'high' ? `Optimized by ${pct}% — text stays selectable` : steppedDown ? `Reduced by ${pct}% (used ${tierLabel[usedTier]})` : `Reduced by ${pct}%`
       let finalBuffer = res.buffer, finalSize = res.size, finalUrl = res.url, keptOriginal = false, unlockedGrew = false
+      let finalMessage = outcome
       if (res.size >= originalSize && !wasLocked) {
         finalBuffer = new Uint8Array(await item.file.arrayBuffer())
         finalSize = originalSize
         finalUrl = createUrl(new Blob([finalBuffer as any], { type: 'application/pdf' }))
         keptOriginal = true
+        finalMessage = 'Already optimal — kept original'
       } else if (res.size >= originalSize && wasLocked) {
         unlockedGrew = true
+        finalMessage = 'Unlocked — larger than original'
       }
       const outName = item.file.name.replace('.pdf', '-compressed.pdf')
-      setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: finalUrl, resultSize: finalSize, keptOriginal, unlockedGrew } : f))
+      setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: finalUrl, resultSize: finalSize, keptOriginal, unlockedGrew, resultMessage: finalMessage } : f))
       addActivity({ name: outName, tool: 'Compress', size: finalSize, resultUrl: finalUrl, buffer: finalBuffer })
       const originalBuffer = await item.file.arrayBuffer()
       setPipelineFile({
@@ -243,8 +284,7 @@ export default function CompressTool() {
         type: 'application/pdf',
         originalBuffer: new Uint8Array(originalBuffer)
       })
-      if (keptOriginal) toast.success('Already optimal — kept original')
-      else if (unlockedGrew) toast.success('Unlocked — larger than original')
+      if (keptOriginal || unlockedGrew || steppedDown || usedTier === 'high') toast.success(finalMessage)
     } catch (e: any) {
       setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error' } : f))
       toast.error(e?.message || `Failed to compress "${item.file.name}".`)
@@ -354,7 +394,7 @@ export default function CompressTool() {
                   )}
                 </p>
                 <p className="text-[10px] text-gray-400 dark:text-zinc-500 leading-relaxed mt-3">
-                  Note: High only repacks — everything stays selectable. Standard and Smallest rebuild pages as images, so text won't stay selectable. If a result would grow the file, the original is kept instead — except locked inputs, which are always rebuilt unlocked even if larger.
+                  Note: High only repacks — everything stays selectable. Standard and Smallest rebuild pages as images, so text won't stay selectable. If the chosen tier would grow the file, the next lower tier is tried automatically — the original is kept only if nothing shrinks (locked inputs always ship the smallest unlocked rebuild).
                 </p>
              </div>
 
@@ -373,7 +413,7 @@ export default function CompressTool() {
           {objectUrl && (
             <div className="space-y-8">
               {lastPipelinedFile?.originalBuffer && lastPipelinedFile?.buffer && <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm"><QualityCompare originalBuffer={lastPipelinedFile.originalBuffer} compressedBuffer={lastPipelinedFile.buffer} /></div>}
-              <SuccessState message={files[0].keptOriginal ? 'Already optimal — kept original' : files[0].unlockedGrew ? 'Unlocked — larger than original' : `Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`} downloadUrl={objectUrl} fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} />
+              <SuccessState message={files[0].resultMessage || `Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`} downloadUrl={objectUrl} fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} />
             </div>
           )}
         </div>

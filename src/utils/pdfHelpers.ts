@@ -280,30 +280,40 @@ export const destroyPdf = async (pdf: any) => {
 };
 
 export const getPdfMetaData = async (file: File): Promise<PdfMetaData> => {
-  try {
+  const attempt = async (lenient: boolean): Promise<PdfMetaData> => {
+    // Fresh bytes per attempt: pdf.js may detach the buffer it is given.
     const loadingTask = pdfjsLib.getDocument({
       data: await file.arrayBuffer(),
       cMapUrl: getCMapUrl(),
       cMapPacked: true,
+      ...(lenient ? { stopAtErrors: false } : {}),
     });
-    
+
     loadingTask.onPassword = () => { throw new Error('PASSWORD_REQUIRED'); };
-    
+
     const pdf = await loadingTask.promise;
     const firstPageThumb = await renderPageThumbnail(pdf, 1);
     const pageCount = pdf.numPages;
     try { await pdf.destroy(); } catch { /* ignore */ }
-    
+
     return {
       thumbnail: firstPageThumb,
       pageCount,
       isLocked: false
     };
+  };
+  try {
+    return await attempt(false);
   } catch (error: any) {
     if (error.message === 'PASSWORD_REQUIRED' || error.name === 'PasswordException') {
       return { thumbnail: '', pageCount: 0, isLocked: true };
     }
-    return { thumbnail: '', pageCount: 0, isLocked: false };
+    // Quirky-but-readable files: retry with the lenient parser (mirrors loadPdfDocument)
+    try {
+      return await attempt(true);
+    } catch {
+      return { thumbnail: '', pageCount: 0, isLocked: false };
+    }
   }
 };
 
