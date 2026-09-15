@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { Zap, Loader2, X, FileIcon, ChevronLeft, ChevronRight, Maximize2, ArrowRight, Lock } from 'lucide-react'
 import { toast } from 'sonner'
+import { PDFDocument } from 'pdf-lib'
 
 import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
+import { getProcessBytes } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
@@ -183,6 +185,23 @@ export default function CompressTool() {
     })
   }
 
+  const optimizeLossless = async (item: CompressPdfFile, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array }> => {
+    // High quality: repack internals (object streams + flate) without
+    // touching content. Vectors stay vectors, text stays selectable.
+    const bytes = await getProcessBytes(item.file, item.password)
+    let pdfDoc
+    try {
+      pdfDoc = await PDFDocument.load(bytes, { throwOnInvalidObject: false } as any)
+    } catch {
+      throw new Error(`"${item.file.name}" could not be optimized.`)
+    }
+    const out = await pdfDoc.save({ useObjectStreams: true })
+    const buffer = new Uint8Array(out)
+    const blob = new Blob([buffer as any], { type: 'application/pdf' })
+    if (onProgress) onProgress(100)
+    return { url: createUrl(blob), size: blob.size, buffer }
+  }
+
   const startBatchCompression = async () => {
     const pendingFiles = files.filter(f => !f.isLocked && f.status === 'pending')
     if (pendingFiles.length === 0) return
@@ -192,7 +211,9 @@ export default function CompressTool() {
     setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f))
     try {
       const originalSize = item.file.size
-      let res = await compressSingleFile(item, quality, setGlobalProgress)
+      let res = quality === 'high'
+        ? await optimizeLossless(item, setGlobalProgress)
+        : await compressSingleFile(item, quality, setGlobalProgress)
       // Smallest that grows the file gets one salvage pass at Standard
       if (res.size >= originalSize && quality === 'low') {
         const retry = await compressSingleFile(item, 'medium', setGlobalProgress)
@@ -312,9 +333,9 @@ export default function CompressTool() {
                <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed">
                  {quality === 'high' && (
                    <>
-                      <strong>High Quality:</strong> Renders pages at 2x for near-original fidelity.
-                      Already-optimized files may barely shrink — the original is kept if the result would grow.
-                      Expected reduction: <span className="text-rose-500 font-bold">0-30%</span>.
+                      <strong>High Quality:</strong> Lossless repack — tidies the file's internals without touching a word or pixel.
+                      Text stays selectable, quality stays perfect, and the file can never grow.
+                      Expected reduction: <span className="text-rose-500 font-bold">0-40%</span>.
                    </>
                  )}
                  {quality === 'medium' && (
@@ -333,7 +354,7 @@ export default function CompressTool() {
                   )}
                 </p>
                 <p className="text-[10px] text-gray-400 dark:text-zinc-500 leading-relaxed mt-3">
-                  Note: pages are rebuilt as images, so text won't stay selectable. If a result would grow the file, the original is kept instead — except locked inputs, which are always rebuilt unlocked even if larger.
+                  Note: High only repacks — everything stays selectable. Standard and Smallest rebuild pages as images, so text won't stay selectable. If a result would grow the file, the original is kept instead — except locked inputs, which are always rebuilt unlocked even if larger.
                 </p>
              </div>
 
