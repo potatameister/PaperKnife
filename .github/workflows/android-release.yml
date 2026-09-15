@@ -34,6 +34,9 @@ jobs:
       - name: Build Web Assets (Global)
         run: npm run build
 
+      - name: Strip dead bundled qpdf wasm (APKs use native plugin)
+        run: rm -f dist/assets/qpdf-*.wasm
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -60,10 +63,13 @@ jobs:
         run: |
           # Clean assets
           rm -rf public/tesseract/
+          rm -rf public/qpdf/
           
           # Rebuild without OCR using environment variable
           export VITE_DISABLE_OCR=true
+          export VITE_DISABLE_UNLOCK_WASM=true
           npm run build
+          rm -f dist/assets/qpdf-*.wasm
           npx cap sync android
           
           cd android

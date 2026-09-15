@@ -33,6 +33,9 @@ dist-ssr
 GEMINI.md
 gha-creds-*.json
 
+# qpdf WASM vendored at deploy time only (Pages web unlock; never in APKs)
+public/qpdf/
+
 # Local-only agent/changelog notes (never commit)
 AGENTS.md
 changelog/

@@ -77,7 +77,7 @@ export default function ProtectTool() {
       const newPdf = await PDFDocument.create()
       const pages = await newPdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
       pages.forEach(page => newPdf.addPage(page))
-      const pdfBytes = await newPdf.save()
+      const pdfBytes = await newPdf.save({ useObjectStreams: false })
       
       // Heavy task: encryption
       const encryptedBytes = await encryptPDF(pdfBytes, password)

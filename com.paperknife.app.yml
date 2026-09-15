@@ -45,8 +45,10 @@ Builds:
     prebuild:
       - cd ../..
       - export VITE_DISABLE_OCR=true
+      - export VITE_DISABLE_UNLOCK_WASM=true
       - npm ci
       - npm run build
+      - rm -f dist/assets/qpdf-*.wasm
       - npx cap sync android
     scanignore:
       - node_modules/@capacitor/cli/assets/capacitor-cordova-android-plugins.tar.gz
@@ -71,8 +73,10 @@ Builds:
     prebuild:
       - cd ../..
       - export VITE_DISABLE_OCR=true
+      - export VITE_DISABLE_UNLOCK_WASM=true
       - npm ci
       - npm run build
+      - rm -f dist/assets/qpdf-*.wasm
       - npx cap sync android
     scanignore:
       - node_modules/@capacitor/cli/assets/capacitor-cordova-android-plugins.tar.gz

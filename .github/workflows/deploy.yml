@@ -23,10 +23,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Vendor qpdf WASM (Web unlock only)
+        run: |
+          mkdir -p public/qpdf
+          cp node_modules/qpdf-run/src/worker.js public/qpdf/worker.js
+          cp node_modules/qpdf-run/vendor/qpdf/lib/qpdf.js public/qpdf/qpdf.js
+          cp node_modules/qpdf-run/vendor/qpdf/lib/qpdf.wasm public/qpdf/qpdf.wasm
+
       - name: Build
         run: npm run build
         env:
           VITE_BASE: /PaperKnife/
+
+      - name: Strip dead bundled qpdf wasm (runtime uses public/qpdf/)
+        run: rm -f dist/assets/qpdf-*.wasm
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
