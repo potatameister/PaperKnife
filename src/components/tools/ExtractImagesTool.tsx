@@ -7,7 +7,6 @@ import { getPdfMetaData, loadPdfDocument, unlockPdf } from '../../utils/pdfHelpe
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type PdfData = { file: File, thumbnail?: string, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
@@ -193,7 +192,6 @@ export default function ExtractImagesTool() {
           </div>
         </div>
       )}
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }

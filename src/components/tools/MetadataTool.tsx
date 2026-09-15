@@ -8,7 +8,6 @@ import { getProcessBytes } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type MetadataPdfData = {
@@ -207,7 +206,7 @@ export default function MetadataTool() {
                     onChange={(e) => setCustomFileName(e.target.value)} 
                     className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" 
                   />
-                  {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">Locked input is decrypted first — the output file will be unlocked.</p>)}
+                  {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">File output will be unlocked.</p>)}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {['title', 'author', 'subject', 'keywords', 'creator', 'producer'].map(field => (
@@ -225,7 +224,6 @@ export default function MetadataTool() {
           </div>
         </div>
       )}
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }

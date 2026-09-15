@@ -8,7 +8,6 @@ import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 // Compare Slider Component (Optimized)
@@ -78,6 +77,7 @@ type CompressPdfFile = {
   resultUrl?: string
   resultSize?: number
   keptOriginal?: boolean
+  unlockedGrew?: boolean
 }
 
 type CompressionQuality = 'low' | 'medium' | 'high'
@@ -189,6 +189,7 @@ export default function CompressTool() {
     setIsProcessing(true); setGlobalProgress(0)
     const results = []
     let keptOriginalCount = 0
+    let unlockedGrewCount = 0
     
     // If single file, track detailed progress
     const isSingle = pendingFiles.length === 1
@@ -204,17 +205,22 @@ export default function CompressTool() {
           const retry = await compressSingleFile(item, 'medium', isSingle ? setGlobalProgress : undefined)
           if (retry.size < res.size) res = retry
         }
-        // Guarantee: never hand back a bigger file than the original
-        let finalBuffer = res.buffer, finalSize = res.size, finalUrl = res.url, keptOriginal = false
-        if (res.size >= originalSize) {
+        // Guarantee: never hand back a bigger file than the original —
+        // except locked inputs, which must ship the rebuilt (unlocked) result
+        const wasLocked = !!item.password
+        let finalBuffer = res.buffer, finalSize = res.size, finalUrl = res.url, keptOriginal = false, unlockedGrew = false
+        if (res.size >= originalSize && !wasLocked) {
           finalBuffer = new Uint8Array(await item.file.arrayBuffer())
           finalSize = originalSize
           finalUrl = createUrl(new Blob([finalBuffer as any], { type: 'application/pdf' }))
           keptOriginal = true
           keptOriginalCount++
+        } else if (res.size >= originalSize && wasLocked) {
+          unlockedGrew = true
+          unlockedGrewCount++
         }
         results.push({ name: item.file.name.replace('.pdf', '-compressed.pdf'), buffer: finalBuffer })
-        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: finalUrl, resultSize: finalSize, keptOriginal } : f))
+        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'completed', resultUrl: finalUrl, resultSize: finalSize, keptOriginal, unlockedGrew } : f))
         addActivity({ name: item.file.name.replace('.pdf', '-compressed.pdf'), tool: 'Compress', size: finalSize, resultUrl: finalUrl, buffer: finalBuffer })
         if (pendingFiles.length === 1) {
            const originalBuffer = await pendingFiles[0].file.arrayBuffer()
@@ -235,6 +241,7 @@ export default function CompressTool() {
       const zipBlob = await zip.generateAsync({ type: 'blob' }); createUrl(zipBlob)
     }
     if (keptOriginalCount > 0) toast.success(keptOriginalCount === pendingFiles.length ? 'Already optimal — kept original' : `${keptOriginalCount} file(s) already optimal — kept original`)
+    else if (unlockedGrewCount > 0) toast.success(unlockedGrewCount === pendingFiles.length ? 'Unlocked — larger than original' : `${unlockedGrewCount} file(s) unlocked but larger than original`)
     setIsProcessing(false); setShowSuccess(true)
   }
 
@@ -312,12 +319,12 @@ export default function CompressTool() {
           <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
             <h4 className="text-[10px] font-black uppercase text-gray-400 mb-6 tracking-widest px-1">Compression Strategy</h4>
             {files.some(f => f.password) && (
-              <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mb-4 text-center">Locked inputs are decrypted first — their outputs will be unlocked.</p>
+              <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mb-4 text-center">File output will be unlocked.</p>
             )}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: 'high', label: 'High Quality', desc: '100% Clarity' },
-                { id: 'medium', label: 'Standard', desc: 'Recommended' },
+                { id: 'high', label: 'High Quality', desc: 'Best Quality' },
+                { id: 'medium', label: 'Standard', desc: 'Balanced' },
                 { id: 'low', label: 'Smallest', desc: 'Max Save' }
               ].map((lvl) => (
                 <button key={lvl.id} onClick={() => setQuality(lvl.id as CompressionQuality)} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 ${quality === lvl.id ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : 'border-gray-100 dark:border-white/5'}`}>
@@ -337,16 +344,16 @@ export default function CompressTool() {
                <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed">
                  {quality === 'high' && (
                    <>
-                     <strong>High Quality:</strong> Retains maximum text clarity and image resolution. 
-                     Best for official documents and high-fidelity reports. 
-                     Expected reduction: <span className="text-rose-500 font-bold">10-30%</span>.
+                      <strong>High Quality:</strong> Renders pages at 2x for near-original fidelity.
+                      Already-optimized files may barely shrink — the original is kept if the result would grow.
+                      Expected reduction: <span className="text-rose-500 font-bold">0-30%</span>.
                    </>
                  )}
                  {quality === 'medium' && (
                    <>
-                     <strong>Standard:</strong> Balanced optimization for everyday sharing and email attachments. 
-                     The perfect middle ground for most users. 
-                     Expected reduction: <span className="text-rose-500 font-bold">40-60%</span>.
+                      <strong>Standard:</strong> Balanced optimization for everyday sharing and email attachments.
+                      Already-small files may shrink little — the original is kept if the result would grow.
+                      Expected reduction: <span className="text-rose-500 font-bold">10-60%</span>.
                    </>
                  )}
                   {quality === 'low' && (
@@ -358,7 +365,7 @@ export default function CompressTool() {
                   )}
                 </p>
                 <p className="text-[10px] text-gray-400 dark:text-zinc-500 leading-relaxed mt-3">
-                  Note: pages are rebuilt as images, so text won't stay selectable. If a result would grow the file, the original is kept instead.
+                  Note: pages are rebuilt as images, so text won't stay selectable. If a result would grow the file, the original is kept instead — except locked inputs, which are always rebuilt unlocked even if larger.
                 </p>
              </div>
 
@@ -384,12 +391,11 @@ export default function CompressTool() {
           {objectUrl && files.length === 1 && (
             <div className="space-y-8">
               {lastPipelinedFile?.originalBuffer && lastPipelinedFile?.buffer && <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm"><QualityCompare originalBuffer={lastPipelinedFile.originalBuffer} compressedBuffer={lastPipelinedFile.buffer} /></div>}
-              <SuccessState message={files[0].keptOriginal ? 'Already optimal — kept original' : `Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`} downloadUrl={objectUrl} fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} />
+              <SuccessState message={files[0].keptOriginal ? 'Already optimal — kept original' : files[0].unlockedGrew ? 'Unlocked — larger than original' : `Reduced by ${((1 - (files[0].resultSize || 0) / files[0].file.size) * 100).toFixed(0)}%`} downloadUrl={objectUrl} fileName={files[0].file.name.replace('.pdf', '-compressed.pdf')} onStartOver={() => { setFiles([]); setShowSuccess(false); clearUrls(); setIsProcessing(false); }} />
             </div>
           )}
         </div>
       )}
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }

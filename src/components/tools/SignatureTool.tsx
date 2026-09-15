@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Loader2, Lock, Image as ImageIcon, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Lock, Image as ImageIcon, ArrowRight, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
@@ -9,7 +9,6 @@ import { getProcessBytes } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type SignaturePdfData = { file: File, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
@@ -107,11 +106,29 @@ export default function SignatureTool() {
           <h3 className="text-xl font-bold dark:text-white">Select PDF</h3>
         </button>
       ) : pdfData.isLocked ? (
-        <div className="max-w-md mx-auto p-8 bg-white dark:bg-zinc-900 rounded-3xl text-center"><Lock size={32} className="mx-auto mb-4 text-rose-500" /><input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} className="w-full p-4 mb-4 border rounded-xl" /><button onClick={handleUnlock} className="w-full p-4 bg-rose-500 text-white rounded-xl">Unlock</button></div>
+        <div className="max-w-md mx-auto relative z-[100]">
+          <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 text-center shadow-2xl">
+            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6"><Lock size={32} /></div>
+            <h3 className="text-2xl font-bold mb-2 dark:text-white">Protected File</h3>
+            <input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} placeholder="Password" className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white" />
+            <button onClick={handleUnlock} disabled={!unlockPassword || isProcessing} className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs">Unlock</button>
+          </div>
+        </div>
       ) : (
         <div className="space-y-6" onMouseMove={handleMouseMove} onTouchMove={handleMouseMove} onMouseUp={() => { setIsDraggingSig(false); setIsResizing(false); }} onTouchEnd={() => { setIsDraggingSig(false); setIsResizing(false); }}>
           {!downloadUrl ? (
             <>
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-gray-100 dark:border-white/5 flex items-center gap-6 shadow-sm">
+                <div className="w-12 h-16 bg-gray-50 dark:bg-black rounded-xl overflow-hidden shrink-0 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-rose-500 shadow-inner">{thumbnail ? <img src={thumbnail} className="w-full h-full object-cover" /> : <ImageIcon size={24} />}</div>
+                <div className="flex-1 min-w-0 text-left">
+                  <h3 className="font-bold text-sm truncate dark:text-white">{pdfData.file.name}</h3>
+                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{pdfData.pageCount} Pages • {(pdfData.file.size / (1024*1024)).toFixed(1)} MB</p>
+                </div>
+                <button onClick={() => { setPdfData(null); setSignatureImg(null); }} className="p-2 text-gray-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
+              </div>
+              <button onClick={() => signatureInputRef.current?.click()} className="w-full p-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs hover:bg-rose-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20">
+                <span className="flex items-center justify-center gap-2"><ImageIcon size={16}/> {signatureImg ? 'Replace Signature' : 'Upload Signature'}</span>
+              </button>
               {pdfData.pageCount > 1 && (
                 <div className="flex items-center justify-between bg-white dark:bg-zinc-900 px-4 py-3 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                   <button onClick={() => changePage(activePage - 1)} disabled={activePage <= 1} className="p-2 text-gray-400 hover:text-rose-500 disabled:opacity-30 transition-colors" aria-label="Previous page"><ChevronLeft size={20} /></button>
@@ -128,11 +145,6 @@ export default function SignatureTool() {
                   </div>
                 )}
               </div>
-              <div className="flex gap-4">
-                <button onClick={() => signatureInputRef.current?.click()} className="flex-1 p-4 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-white border border-gray-100 dark:border-white/5 rounded-2xl font-black uppercase text-xs hover:border-rose-500 transition-all">
-                  <span className="flex items-center justify-center gap-2"><ImageIcon size={16}/> Upload Signature</span>
-                </button>
-              </div>
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 px-1">Output Filename</label>
                 <input 
@@ -141,7 +153,7 @@ export default function SignatureTool() {
                   onChange={(e) => setCustomFileName(e.target.value)} 
                   className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" 
                 />
-                {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">Locked input is decrypted first — the signed file will be unlocked.</p>)}
+                {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">File output will be unlocked.</p>)}
               </div>
             </>
           ) : (
@@ -150,7 +162,6 @@ export default function SignatureTool() {
           <button onClick={() => { setPdfData(null); setSignatureImg(null); }} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors">Close File</button>
         </div>
       )}
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }

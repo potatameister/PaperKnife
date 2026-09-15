@@ -9,7 +9,6 @@ import { Capacitor } from '@capacitor/core'
 
 import { addActivity } from '../../utils/recentActivity'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 import { usePipeline } from '../../utils/pipelineContext'
 
@@ -98,7 +97,6 @@ export default function ImageToPdfTool() {
       ) : (
         <SuccessState message="PDF Ready!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setImages([]); setDownloadUrl(null); }} />
       )}
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }

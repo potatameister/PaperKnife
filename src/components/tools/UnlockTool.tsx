@@ -9,7 +9,6 @@ import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type UnlockPdfFile = {
@@ -135,7 +134,6 @@ export default function UnlockTool() {
           </div>
         </div>
       )}
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }

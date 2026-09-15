@@ -8,7 +8,6 @@ import { getProcessBytes } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type PageNumberPdfData = { file: File, pageCount: number, isLocked: boolean, password?: string, pdfDoc?: any, thumbnail?: string }
@@ -166,7 +165,7 @@ export default function PageNumberTool() {
                   <div>
                     <label className="block text-[10px] font-black uppercase text-gray-400 mb-3">Output Filename</label>
                     <input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
-                    {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">Locked input is decrypted first — the output file will be unlocked.</p>)}
+                    {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">File output will be unlocked.</p>)}
                   </div>
                 </>
               ) : (
@@ -177,7 +176,6 @@ export default function PageNumberTool() {
           </div>
         </div>
       )}
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }

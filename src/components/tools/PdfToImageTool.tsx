@@ -7,7 +7,6 @@ import { getPdfMetaData, loadPdfDocument, unlockPdf } from '../../utils/pdfHelpe
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type ImageFormat = 'jpg' | 'png'
@@ -141,7 +140,6 @@ export default function PdfToImageTool() {
           </div>
         </div>
       )}
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }

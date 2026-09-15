@@ -13,7 +13,6 @@ import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
 import { saveWorkspace, getWorkspace, clearWorkspace } from '../../utils/workspacePersistence'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 // File Item Type
@@ -475,7 +474,7 @@ export default function MergeTool() {
                       className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 outline-none font-bold text-sm border border-transparent focus:border-rose-500 transition-colors dark:text-white"
                    />
                    {files.some(f => f.password) && (
-                     <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">Locked inputs are decrypted first — the merged file will be unlocked.</p>
+                     <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">File output will be unlocked.</p>
                    )}
                 </div>
               )}
@@ -515,7 +514,6 @@ export default function MergeTool() {
         </div>
 
         <input type="file" multiple accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
-        <PrivacyBadge />
       </div>
     </NativeToolLayout>
   )

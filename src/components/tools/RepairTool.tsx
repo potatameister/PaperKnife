@@ -7,7 +7,6 @@ import { getPdfMetaData } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 export default function RepairTool() {
@@ -117,7 +116,6 @@ export default function RepairTool() {
           PaperKnife rebuilds the internal cross-reference table and regenerates the file structure from scratch. This can restore access to many files that "cannot be opened."
         </div>
       </div>
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }

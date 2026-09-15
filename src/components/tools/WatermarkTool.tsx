@@ -8,7 +8,6 @@ import { getProcessBytes } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
-import PrivacyBadge from './shared/PrivacyBadge'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 
 type WatermarkPdfData = { file: File, pageCount: number, isLocked: boolean, password?: string, pdfDoc?: any, thumbnail?: string }
@@ -80,14 +79,23 @@ export default function WatermarkTool() {
       
       pages.forEach(page => {
         const { width, height } = page.getSize()
-        page.drawText(text, { 
-          x: width / 2, 
-          y: height / 2, 
-          size: fontSize, 
-          font, 
-          color: watermarkColor, 
-          opacity, 
-          rotate: degrees(rotation)
+        // Center the text on the page: pdf-lib draws from the unrotated
+        // baseline start and rotates about it (CSS preview rotates about the
+        // center, clockwise-positive), so offset by half the advance along
+        // the rotated axis and negate the angle to match the preview.
+        const tw = font.widthOfTextAtSize(text, fontSize)
+        const rad = (-rotation * Math.PI) / 180
+        const cap = font.heightAtSize(fontSize) * 0.35
+        const x = width / 2 - (tw / 2) * Math.cos(rad) + cap * Math.sin(rad)
+        const y = height / 2 - (tw / 2) * Math.sin(rad) - cap * Math.cos(rad)
+        page.drawText(text, {
+          x,
+          y,
+          size: fontSize,
+          font,
+          color: watermarkColor,
+          opacity,
+          rotate: degrees(-rotation)
         })
       })
       
@@ -208,7 +216,7 @@ export default function WatermarkTool() {
                   <div>
                     <label className="block text-[10px] font-black uppercase text-gray-400 mb-3">Output Filename</label>
                     <input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
-                    {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">Locked input is decrypted first — the output file will be unlocked.</p>)}
+                    {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">File output will be unlocked.</p>)}
                   </div>
                 </>
               ) : (
@@ -219,7 +227,6 @@ export default function WatermarkTool() {
           </div>
         </div>
       )}
-      <PrivacyBadge />
     </NativeToolLayout>
   )
 }
