@@ -1,7 +1,8 @@
-import { Download, Eye, CheckCircle2, Share2, RotateCcw } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Download, Eye, CheckCircle2, Share2, RotateCcw, Pencil } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { downloadFile, shareFile } from '../../../utils/pdfHelpers'
+import { updateActivityName } from '../../../utils/recentActivity'
 import { Capacitor } from '@capacitor/core'
 import { hapticSuccess } from '../../../utils/haptics'
 import PdfPreview from '../../PdfPreview'
@@ -16,12 +17,34 @@ interface SuccessStateProps {
 
 export default function SuccessState({ message, downloadUrl, fileName, onStartOver, showPreview = true }: SuccessStateProps) {
   const [internalPreviewFile, setInternalPreviewFile] = useState<File | null>(null)
+  const [name, setName] = useState(fileName)
+  const autoFired = useRef<string | null>(null)
   const isNative = Capacitor.isNativePlatform()
+  const ext = fileName.endsWith('.zip') ? '.zip' : '.pdf'
+  const mimeType = ext === '.zip' ? 'application/zip' : 'application/pdf'
+
+  const withExt = (v: string) => {
+    const base = v.trim().replace(/\.(pdf|zip)$/i, '') || fileName.replace(/\.(pdf|zip)$/i, '')
+    return base + ext
+  }
+
+  const commitRename = async (raw: string) => {
+    const final = withExt(raw)
+    setName(final)
+    if (final === fileName) return
+    try {
+      await updateActivityName(downloadUrl, final)
+    } catch {
+      toast.error('Could not update history name')
+    }
+  }
 
   useEffect(() => {
     hapticSuccess()
+    if (autoFired.current === downloadUrl) return
+    autoFired.current = downloadUrl
     
-    // Auto-Download Logic
+    // Auto-Download Logic (fires once with the as-run name)
     const shouldAutoDownload = localStorage.getItem('autoDownload') === 'true'
     if (shouldAutoDownload) {
       const triggerAutoDownload = async () => {
@@ -29,7 +52,6 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
           const response = await fetch(downloadUrl)
           const blob = await response.blob()
           const buffer = await blob.arrayBuffer()
-          const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
           await downloadFile(new Uint8Array(buffer), fileName, mimeType)
           toast.success(`Auto-saved as ${fileName}`)
         } catch (e) {
@@ -43,14 +65,13 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault()
     try {
-      toast.loading(`Saving ${fileName}...`, { id: 'save-action' })
+      toast.loading(`Saving ${name}...`, { id: 'save-action' })
       const response = await fetch(downloadUrl)
       const blob = await response.blob()
       const buffer = await blob.arrayBuffer()
-      const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
       
-      await downloadFile(new Uint8Array(buffer), fileName, mimeType)
-      toast.success(`Saved to Documents as ${fileName}`, { id: 'save-action' })
+      await downloadFile(new Uint8Array(buffer), name, mimeType)
+      toast.success(`Saved to Documents as ${name}`, { id: 'save-action' })
     } catch (err) {
       toast.error('Failed to save file', { id: 'save-action' })
     }
@@ -63,9 +84,8 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
       const response = await fetch(downloadUrl)
       const blob = await response.blob()
       const buffer = await blob.arrayBuffer()
-      const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
       
-      await shareFile(new Uint8Array(buffer), fileName, mimeType)
+      await shareFile(new Uint8Array(buffer), name, mimeType)
       toast.dismiss('share-action')
     } catch (err) {
       toast.error('Failed to share file', { id: 'share-action' })
@@ -77,8 +97,7 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
       toast.loading('Loading preview...', { id: 'preview-load' })
       const response = await fetch(downloadUrl)
       const blob = await response.blob()
-      const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'application/pdf'
-      const file = new File([blob], fileName, { type: mimeType })
+      const file = new File([blob], name, { type: mimeType })
       setInternalPreviewFile(file)
       toast.dismiss('preview-load')
     } catch (e) {
@@ -107,6 +126,18 @@ export default function SuccessState({ message, downloadUrl, fileName, onStartOv
 
       <div className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-3 md:p-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-xs md:text-sm border border-green-100 dark:border-green-900/30">
         <CheckCircle2 size={16} /> {message}
+      </div>
+
+      <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 px-4 py-3 rounded-2xl shadow-sm">
+        <Pencil size={16} className="text-gray-400 shrink-0" />
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={(e) => commitRename(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+          aria-label="Output filename"
+          className="flex-1 min-w-0 bg-transparent outline-none font-bold text-sm dark:text-white truncate"
+        />
       </div>
       
       <div className="flex flex-col gap-3">

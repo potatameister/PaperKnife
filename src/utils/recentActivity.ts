@@ -111,6 +111,29 @@ export const deleteActivity = async (id: string) => {
   })
 }
 
+export const updateActivityName = async (resultUrl: string, name: string): Promise<boolean> => {
+  const db = await openDB()
+  try {
+    const all = await new Promise<ActivityEntry[]>((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const req = tx.objectStore(STORE_NAME).getAll()
+      req.onsuccess = () => resolve(req.result as ActivityEntry[])
+      req.onerror = () => resolve([])
+    })
+    const match = all.find(a => a.resultUrl === resultUrl)
+    if (!match) return false
+    await new Promise<void>((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).put({ ...match, name })
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => resolve()
+    })
+    return true
+  } finally {
+    try { db.close() } catch { /* ignore */ }
+  }
+}
+
 export const updateLastSeen = () => {
   localStorage.setItem('lastSeen', String(Date.now()))
 }
