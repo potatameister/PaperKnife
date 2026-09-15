@@ -72,10 +72,12 @@ export default function PdfToTextTool() {
         }
       } else {
         let currentPageIndex = 1
-        const { default: Tesseract } = await import('tesseract.js'); const worker = await Tesseract.createWorker('eng', 1, { 
-          workerPath: '/tesseract/worker.min.js',
-          corePath: '/tesseract/tesseract-core.wasm.js',
-          langPath: '/tesseract/',
+        const { default: Tesseract } = await import('tesseract.js')
+        const tessBase = `${import.meta.env.BASE_URL}tesseract/`
+        const worker = await Tesseract.createWorker('eng', 1, { 
+          workerPath: tessBase + 'worker.min.js',
+          corePath: tessBase + 'tesseract-core.wasm.js',
+          langPath: tessBase,
           gzip: false,
           cacheMethod: 'none',
           logger: (m: any) => { 
@@ -96,7 +98,7 @@ export default function PdfToTextTool() {
         await worker.terminate()
       }
       setExtractedText(result); toast.success('Complete!')
-    } catch (err: any) { toast.error(err.message) } finally { setIsProcessing(false) }
+    } catch (err: any) { toast.error(`Text extraction failed for "${pdfData.file.name}".`) } finally { setIsProcessing(false) }
   }
 
   const handleDownload = async () => {
