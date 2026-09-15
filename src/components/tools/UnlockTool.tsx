@@ -4,9 +4,7 @@ import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 
 import { getPdfMetaData, unlockPdf, destroyPdf } from '../../utils/pdfHelpers'
-import { nativeDecrypt } from '../../utils/nativeUnlock'
-import { IS_UNLOCK_WASM_DISABLED, qpdfDecrypt } from '../../utils/qpdfUnlock'
-import { Capacitor } from '@capacitor/core'
+import { decryptInput } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
@@ -72,24 +70,7 @@ export default function UnlockTool() {
       const expectedPages = probe.pageCount
       await destroyPdf(probe.pdfDoc)
       const input = new Uint8Array(await pdfData.file.arrayBuffer())
-      let pdfBytes: Uint8Array
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const res = await nativeDecrypt(input, password)
-          pdfBytes = res.bytes
-        } catch (e: any) {
-          if (e.message === 'INCORRECT_PASSWORD') throw new Error(`Incorrect password for "${sourceName}".`)
-          throw new Error(`"${sourceName}" could not be unlocked on this device.`)
-        }
-      } else {
-        if (IS_UNLOCK_WASM_DISABLED) throw new Error(`Unlock engine missing for "${sourceName}".`)
-        try {
-          pdfBytes = await qpdfDecrypt(input, password)
-        } catch (e: any) {
-          if (e.message === 'INCORRECT_PASSWORD') throw new Error(`Incorrect password for "${sourceName}".`)
-          throw new Error(`"${sourceName}" could not be unlocked (${e.message || 'unsupported file'}).`)
-        }
-      }
+      const pdfBytes = await decryptInput(input, password, sourceName)
       let check
       try {
         check = await PDFDocument.load(pdfBytes, { throwOnInvalidObject: false } as any)

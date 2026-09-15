@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, unlockPdf } from '../../utils/pdfHelpers'
+import { decryptInput } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
@@ -317,20 +318,27 @@ export default function MergeTool() {
     setProgress(0)
     
     try {
-      const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
-      const fileDatas = []
+      const fileDatas: { buffer: Uint8Array, rotation: number, name: string }[] = []
       for (const f of files) {
-        if (!f.file || f.file.size === 0) { toast.error(`"${f.file?.name || 'File'}" is empty`); setIsProcessing(false); worker.terminate(); return }
-        if (!f.pageCount || f.pageCount === 0) { toast.error(`"${f.file.name}" has no readable pages`); setIsProcessing(false); worker.terminate(); return }
+        if (!f.file || f.file.size === 0) { toast.error(`"${f.file?.name || 'File'}" is empty`); setIsProcessing(false); return }
+        if (!f.pageCount || f.pageCount === 0) { toast.error(`"${f.file.name}" has no readable pages`); setIsProcessing(false); return }
+        let bytes: Uint8Array = new Uint8Array(await f.file.arrayBuffer())
+        if (f.password) {
+          try {
+            bytes = await decryptInput(bytes, f.password, f.file.name)
+          } catch (e: any) {
+            toast.error(e.message || `Failed to unlock "${f.file.name}".`); setIsProcessing(false); return
+          }
+        }
         fileDatas.push({
-          buffer: await f.file.arrayBuffer(),
+          buffer: bytes,
           rotation: f.rotation,
-          password: f.password,
           name: f.file.name
         })
       }
 
-      worker.postMessage({ type: 'MERGE_PDFS', payload: { files: fileDatas } }, fileDatas.map(d => d.buffer) as any)
+      const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
+      worker.postMessage({ type: 'MERGE_PDFS', payload: { files: fileDatas } }, fileDatas.map(d => d.buffer.buffer) as any)
 
       worker.onmessage = (e) => {
         const { type, payload } = e.data
@@ -466,6 +474,9 @@ export default function MergeTool() {
                       onChange={(e) => setCustomFileName(e.target.value)}
                       className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 outline-none font-bold text-sm border border-transparent focus:border-rose-500 transition-colors dark:text-white"
                    />
+                   {files.some(f => f.password) && (
+                     <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">Locked inputs are decrypted first — the merged file will be unlocked.</p>
+                   )}
                 </div>
               )}
             </div>

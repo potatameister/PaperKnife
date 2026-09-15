@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Capacitor } from '@capacitor/core'
 
 import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
+import { getProcessBytes } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
@@ -62,7 +63,13 @@ export default function SignatureTool() {
   const saveSignedPdf = async () => {
     if (!pdfData || !signatureFile) return; setIsProcessing(true)
     try {
-      const arrayBuffer = await pdfData.file.arrayBuffer(); const pdfDoc = await PDFDocument.load(arrayBuffer, { password: pdfData.password, ignoreEncryption: true, throwOnInvalidObject: false } as any)
+      let bytes: Uint8Array
+      try {
+        bytes = await getProcessBytes(pdfData.file, pdfData.password)
+      } catch (e: any) {
+        toast.error(e.message || `Failed to unlock "${pdfData.file.name}".`); setIsProcessing(false); return
+      }
+      const pdfDoc = await PDFDocument.load(bytes, { throwOnInvalidObject: false } as any)
       const sigBytes = await signatureFile.arrayBuffer(); let sigImage = signatureFile.type === 'image/png' ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes)
       const page = pdfDoc.getPages()[activePage - 1]; const { width, height } = page.getSize(); const pdfX = (pos.x / 100) * width; const pdfY = height - ((pos.y / 100) * height) - (size * (sigImage.height / sigImage.width))
       page.drawImage(sigImage, { x: pdfX, y: pdfY, width: size, height: size * (sigImage.height / sigImage.width) })
@@ -117,6 +124,7 @@ export default function SignatureTool() {
                   onChange={(e) => setCustomFileName(e.target.value)} 
                   className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" 
                 />
+                {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">Locked input is decrypted first — the signed file will be unlocked.</p>)}
               </div>
             </>
           ) : (

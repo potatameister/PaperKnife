@@ -22,16 +22,13 @@ self.onmessage = async (e: MessageEvent) => {
       let totalPages = 0
 
       for (let i = 0; i < files.length; i++) {
-        const { buffer, rotation, password, name } = files[i]
+        const { buffer, rotation, name } = files[i]
         const label = name || `File ${i + 1}`
         if (!buffer || (buffer as Uint8Array).byteLength === 0) throw new Error(`"${label}" is empty or unreadable`)
 
         let pdf
         try {
-          pdf = await PDFDocument.load(buffer, {
-            password: password || undefined,
-            ignoreEncryption: true, throwOnInvalidObject: false
-          } as any)
+          pdf = await PDFDocument.load(buffer, { throwOnInvalidObject: false })
         } catch (e: any) {
           throw new Error(`"${label}" could not be opened (${e?.message || 'corrupt or unsupported file'})`)
         }
@@ -40,7 +37,7 @@ self.onmessage = async (e: MessageEvent) => {
         try {
           pageIndices = pdf.getPageIndices()
         } catch {
-          throw new Error(`"${label}" pages could not be read (password-protected or corrupt?)`)
+          throw new Error(`"${label}" pages could not be read (corrupt file?)`)
         }
         if (pageIndices.length === 0) throw new Error(`"${label}" has no pages`)
 
@@ -48,7 +45,7 @@ self.onmessage = async (e: MessageEvent) => {
         try {
           copiedPages = await mergedPdf.copyPages(pdf, pageIndices)
         } catch {
-          throw new Error(`"${label}" pages could not be copied (password-protected or restricted?)`)
+          throw new Error(`"${label}" pages could not be copied (corrupt file?)`)
         }
 
         const rot = Number.isFinite(rotation) ? rotation : 0
@@ -73,7 +70,7 @@ self.onmessage = async (e: MessageEvent) => {
     } 
     
     else if (type === 'SPLIT_PDF') {
-      const { buffer, password, selectedPages, mode, customFileName, name } = payload
+      const { buffer, selectedPages, mode, customFileName, name } = payload
       const label = name || 'File'
       if (!buffer || (buffer as Uint8Array).byteLength === 0) throw new Error(`"${label}" is empty or unreadable`)
       const picked = Array.from(selectedPages as number[]).sort((a, b) => a - b)
@@ -81,10 +78,7 @@ self.onmessage = async (e: MessageEvent) => {
 
       let originalPdf
       try {
-        originalPdf = await PDFDocument.load(buffer, {
-          password: password || undefined,
-          ignoreEncryption: true, throwOnInvalidObject: false
-        } as any)
+        originalPdf = await PDFDocument.load(buffer, { throwOnInvalidObject: false })
       } catch (e: any) {
         throw new Error(`"${label}" could not be opened (${e?.message || 'corrupt or unsupported file'})`)
       }
@@ -104,7 +98,7 @@ self.onmessage = async (e: MessageEvent) => {
         try {
           copiedPages = await newPdf.copyPages(originalPdf, sortedIndices)
         } catch {
-          throw new Error(`Selected pages could not be copied (password-protected or restricted?)`)
+          throw new Error(`Selected pages could not be copied (corrupt file?)`)
         }
         copiedPages.forEach(page => newPdf.addPage(page))
         let pdfBytes
@@ -127,7 +121,7 @@ self.onmessage = async (e: MessageEvent) => {
           try {
             [copiedPage] = await newPdf.copyPages(originalPdf, [pageNum - 1])
           } catch {
-            throw new Error(`Page ${pageNum} could not be copied (password-protected or restricted?)`)
+            throw new Error(`Page ${pageNum} could not be copied (corrupt file?)`)
           }
           newPdf.addPage(copiedPage)
           let pdfBytes

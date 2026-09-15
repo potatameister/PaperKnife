@@ -3,6 +3,7 @@ import { Loader2, ShieldAlert, Upload, X, FileCheck } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
 import { toast } from 'sonner'
 
+import { getPdfMetaData } from '../../utils/pdfHelpers'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
@@ -15,6 +16,7 @@ export default function RepairTool() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [originalFile, setOriginalFile] = useState<File | null>(null)
+  const [isLockedFile, setIsLockedFile] = useState(false)
   const [customFileName, setCustomFileName] = useState('')
 
   useEffect(() => {
@@ -30,6 +32,9 @@ export default function RepairTool() {
     setOriginalFile(file)
     setCustomFileName(`repaired-${file.name.replace('.pdf', '')}`)
     setDownloadUrl(null)
+    const meta = await getPdfMetaData(file)
+    setIsLockedFile(meta.isLocked)
+    if (meta.isLocked) toast.error(`"${file.name}" is locked — unlock it first, then repair.`)
   }
 
   const startRepair = async () => {
@@ -56,7 +61,7 @@ export default function RepairTool() {
   }
 
   const ActionButton = () => (
-    <button onClick={startRepair} disabled={isProcessing} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 py-4 rounded-2xl text-sm md:p-6 md:rounded-3xl md:text-xl flex items-center justify-center gap-3 shadow-lg shadow-rose-500/20">
+    <button onClick={startRepair} disabled={isProcessing || isLockedFile} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 py-4 rounded-2xl text-sm md:p-6 md:rounded-3xl md:text-xl flex items-center justify-center gap-3 shadow-lg shadow-rose-500/20">
       {isProcessing ? <Loader2 className="animate-spin" /> : <FileCheck size={20} />} Attempt Repair
     </button>
   )
@@ -94,6 +99,9 @@ export default function RepairTool() {
                     className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" 
                   />
                 </div>
+                {isLockedFile && (
+                  <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/20 text-center"><p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed">This file is locked — unlock it with the Unlock tool first, then repair the unlocked copy.</p></div>
+                )}
               </div>
             ) : (
               <SuccessState message="Reconstruction Complete!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setOriginalFile(null); }} showPreview={true} />

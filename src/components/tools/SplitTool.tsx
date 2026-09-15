@@ -3,6 +3,7 @@ import { Loader2, Scissors, Check, Plus, Lock, ArrowRight, X, Zap } from 'lucide
 import { toast } from 'sonner'
 
 import { getPdfMetaData, loadPdfDocument, renderGridThumbnail, unlockPdf } from '../../utils/pdfHelpers'
+import { getProcessBytes } from '../../utils/decryptInput'
 import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
@@ -135,10 +136,15 @@ export default function SplitTool() {
     if (!pdfData || selectedPages.size === 0) return
     setIsProcessing(true)
     try {
-      const buffer = await pdfData.file.arrayBuffer()
+      let buffer: Uint8Array
+      try {
+        buffer = await getProcessBytes(pdfData.file, pdfData.password)
+      } catch (e: any) {
+        toast.error(e.message || `Failed to unlock "${pdfData.file.name}".`); setIsProcessing(false); return
+      }
       if (!buffer || buffer.byteLength === 0) { toast.error(`"${pdfData.file.name}" is empty`); setIsProcessing(false); return }
       const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
-      worker.postMessage({ type: 'SPLIT_PDF', payload: { buffer, password: pdfData.password, selectedPages: Array.from(selectedPages), mode: splitMode, customFileName, name: pdfData.file.name } }, [buffer] as any)
+      worker.postMessage({ type: 'SPLIT_PDF', payload: { buffer, selectedPages: Array.from(selectedPages), mode: splitMode, customFileName, name: pdfData.file.name } }, [buffer.buffer] as any)
       worker.onmessage = async (e) => {
         const { type, payload } = e.data
         if (type === 'SUCCESS') {
@@ -295,6 +301,9 @@ export default function SplitTool() {
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Output Filename</label>
                       <input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
+                      {pdfData.password && (
+                        <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">Locked input is decrypted first — the split files will be unlocked.</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Range Selection</label>
