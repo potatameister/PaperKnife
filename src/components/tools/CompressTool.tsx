@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Zap, Loader2, X, FileIcon, ChevronLeft, ChevronRight, Maximize2, ArrowRight, Lock } from 'lucide-react'
 import { toast } from 'sonner'
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, PDFName, PDFNumber, PDFRawStream, PDFArray } from 'pdf-lib'
 
 import { getPdfMetaData, loadPdfDocument, renderPageThumbnail, unlockPdf } from '../../utils/pdfHelpers'
 import { getProcessBytes } from '../../utils/decryptInput'
@@ -147,7 +147,7 @@ export default function CompressTool() {
 
   const compressSingleFile = async (item: CompressPdfFile, quality: CompressionQuality, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array }> => {
     let pdfDoc = item.pdfDoc || await loadPdfDocument(item.file)
-    const scaleMap = { high: 2.0, medium: 1.5, low: 1.0 }; const qualityMap = { high: 0.7, medium: 0.5, low: 0.3 }
+    const scaleMap = { high: 1.0, medium: 1.0, low: 1.0 }; const qualityMap = { high: 0.8, medium: 0.6, low: 0.3 }
     const scale = scaleMap[quality]; const jpegQuality = qualityMap[quality]
     const pagesData: { imageBytes: Uint8Array, width: number, height: number }[] = []
     for (let i = 1; i <= item.pageCount; i++) {
@@ -191,15 +191,114 @@ export default function CompressTool() {
     })
   }
 
-  const optimizeLossless = async (item: CompressPdfFile, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array }> => {
-    // High quality: repack internals (object streams + flate) without
-    // touching content. Vectors stay vectors, text stays selectable.
+  const decodeJpeg = (data: Uint8Array): Promise<HTMLImageElement> => new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(new Blob([data as any], { type: 'image/jpeg' }))
+    const img = new Image()
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img) }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')) }
+    img.src = url
+  })
+
+  const condenseImages = async (item: CompressPdfFile, maxDim: number, jpegQuality: number, onProgress?: (p: number) => void): Promise<{ url: string, size: number, buffer: Uint8Array }> => {
+    // Condense: shrink embedded photos in place, keep text/vectors native.
+    // No new deps, no WASM: pdf-lib walks the image XObjects, platform
+    // canvas re-encodes the JPEGs. Mirrors PaperKnife+ NITRO numbers.
     const bytes = await getProcessBytes(item.file, item.password)
     let pdfDoc
     try {
       pdfDoc = await PDFDocument.load(bytes, { throwOnInvalidObject: false } as any)
     } catch {
       throw new Error(`"${item.file.name}" could not be optimized.`)
+    }
+    const context = (pdfDoc as any).context
+    const MIN_IMAGE_BYTES = 10 * 1024
+    const entries = context.enumerateIndirectObjects() as any[]
+    let shrunk = 0
+    for (let idx = 0; idx < entries.length; idx++) {
+      const [ref, obj] = entries[idx]
+      try {
+        if (!(obj instanceof PDFRawStream)) continue
+        const dict = obj.dict
+        if (!dict) continue
+        const subtype = dict.lookup(PDFName.of('Subtype'))
+        if (!subtype || subtype.toString() !== '/Image') continue
+        if (dict.lookup(PDFName.of('ImageMask'))) continue
+        const filter = dict.lookup(PDFName.of('Filter'))
+        const filterStr = filter ? filter.toString() : ''
+        const cs = dict.lookup(PDFName.of('ColorSpace'))
+        const csStr = cs ? cs.toString() : ''
+        if (!filterStr.includes('DCTDecode') || filterStr.includes('JPXDecode')) continue
+        if (csStr && !csStr.includes('RGB') && !csStr.includes('Gray') && !csStr.includes('Grey')) {
+          // ICCBased profiles (Word/Docs exports, encrypt rebuilds): accept
+          // Gray (N=1) and RGB (N=3), keep rejecting CMYK (N=4) — canvas
+          // would wreck CMYK colors. Indexed-over-RGB is also fine.
+          let colorOk = false
+          try {
+            const resolveRef = (o: any): any => {
+              try {
+                const r = context.lookup(o)
+                return r === undefined ? o : r
+              } catch { return o }
+            }
+            const iccComponents = (o: any): number => {
+              const prof = resolveRef(o)
+              const dictOf = (prof as any)?.dict
+              const nObj = dictOf ? dictOf.get(PDFName.of('N')) : undefined
+              return nObj && typeof (nObj as any).asNumber === 'function' ? (nObj as any).asNumber() : 0
+            }
+            const arr = resolveRef(cs)
+            if (arr instanceof PDFArray && arr.size() > 0) {
+              const headObj = resolveRef(arr.get(0))
+              const head = headObj ? headObj.toString() : ''
+              if (head === '/ICCBased') {
+                const n = iccComponents(arr.get(1))
+                colorOk = n === 1 || n === 3
+              } else if (head === '/Indexed') {
+                const baseObj = resolveRef(arr.get(1))
+                const bStr = baseObj ? baseObj.toString() : ''
+                if (bStr.includes('RGB') || bStr.includes('Gray') || bStr.includes('Grey')) colorOk = true
+                else {
+                  // Base may be an ICC profile stream ref (toString shows "12 0 R")
+                  const n = iccComponents(arr.get(1))
+                  colorOk = n === 1 || n === 3
+                }
+              }
+            }
+          } catch { /* resolve failure — stays rejected */ }
+          if (!colorOk) continue
+        }
+        const contents = obj.getContents() as Uint8Array
+        if (!contents || contents.byteLength < MIN_IMAGE_BYTES) continue
+        let img: HTMLImageElement
+        try {
+          img = await decodeJpeg(contents)
+        } catch { continue }
+        const w = img.naturalWidth, h = img.naturalHeight
+        if (!w || !h) continue
+        const down = Math.min(1, maxDim / Math.max(w, h))
+        const tw = Math.max(1, Math.round(w * down)), th = Math.max(1, Math.round(h * down))
+        const canvas = document.createElement('canvas')
+        canvas.width = tw; canvas.height = th
+        const ctx = canvas.getContext('2d')
+        if (!ctx) continue
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, tw, th)
+        ctx.drawImage(img, 0, 0, tw, th)
+        const dataUrl = canvas.toDataURL('image/jpeg', jpegQuality)
+        const base64 = dataUrl.split(',')[1]
+        const binaryString = window.atob(base64)
+        const fresh = new Uint8Array(binaryString.length)
+        for (let j = 0; j < binaryString.length; j++) fresh[j] = binaryString.charCodeAt(j)
+        canvas.width = 0; canvas.height = 0
+        if (fresh.byteLength >= contents.byteLength) continue
+        dict.set(PDFName.of('Width'), PDFNumber.of(tw))
+        dict.set(PDFName.of('Height'), PDFNumber.of(th))
+        context.assign(ref, PDFRawStream.of(dict, fresh))
+        shrunk++
+      } catch { /* per-image skip: masks, CMYK, odd filters stay untouched */ }
+      if (onProgress && idx % 20 === 0) onProgress(Math.round((idx / entries.length) * 100))
+    }
+    if (shrunk === 0) {
+      throw new Error(`"${item.file.name}" photos could not be shrunk.`)
     }
     const out = await pdfDoc.save({ useObjectStreams: true })
     const buffer = new Uint8Array(out)
@@ -226,6 +325,7 @@ export default function CompressTool() {
       const tierLabel = { high: 'High', medium: 'Standard', low: 'Smallest' } as const
       let res: { url: string, size: number, buffer: Uint8Array }
       let usedTier: CompressionQuality = quality
+      let crisp = false
       if (quality === 'low') {
         // Smallest path untouched, salvage pass included
         res = await compressSingleFile(item, quality, setGlobalProgress)
@@ -234,25 +334,37 @@ export default function CompressTool() {
           if (retry.size < res.size) res = retry
         }
       } else {
-        // Cascade down until something shrinks: High(lossless) -> Standard -> Smallest.
+        // Condense first (photos shrink, text stays sharp), raster fallback.
         // A compress tool must never hand back a bigger file without trying lower tiers.
-        const tiers: CompressionQuality[] = quality === 'high' ? ['high', 'medium', 'low'] : ['medium', 'low']
-        let best: { res: { url: string, size: number, buffer: Uint8Array }, usedTier: CompressionQuality } | null = null
-        for (const tier of tiers) {
-          let attempt
-          try {
-            attempt = tier === 'high'
-              ? await optimizeLossless(item, setGlobalProgress)
-              : await compressSingleFile(item, tier, setGlobalProgress)
-          } catch (e) {
-            if (tier === 'high') continue // quirky files pdf-lib can't load — fall through to raster
-            throw e
-          }
-          if (attempt && (!best || attempt.size < best.res.size)) best = { res: attempt, usedTier: tier }
-          if (attempt && attempt.size < originalSize) break
+        const condenseTiers: { maxDim: number, jpegQ: number, tier: CompressionQuality }[] = quality === 'high'
+          ? [{ maxDim: 2560, jpegQ: 0.8, tier: 'high' }, { maxDim: 1920, jpegQ: 0.65, tier: 'medium' }]
+          : [{ maxDim: 1920, jpegQ: 0.65, tier: 'medium' }]
+        const rasterTiers: CompressionQuality[] = quality === 'high' ? ['high', 'medium', 'low'] : ['medium', 'low']
+        const state: { best: { res: { url: string, size: number, buffer: Uint8Array }, usedTier: CompressionQuality, crisp: boolean } | null } = { best: null }
+        const consider = (attempt: { url: string, size: number, buffer: Uint8Array }, tier: CompressionQuality, isCrisp: boolean) => {
+          if (!state.best || attempt.size < state.best.res.size) state.best = { res: attempt, usedTier: tier, crisp: isCrisp }
+          return attempt.size < originalSize
         }
-        if (!best) throw new Error(`Failed to compress "${item.file.name}".`)
-        res = best.res; usedTier = best.usedTier
+        for (const c of condenseTiers) {
+          try {
+            const attempt = await condenseImages(item, c.maxDim, c.jpegQ, setGlobalProgress)
+            if (consider(attempt, c.tier, true)) break
+          } catch { /* photos unshrinkable — fall through to raster */ }
+        }
+        if (!state.best || state.best.res.size >= originalSize) {
+          for (const tier of rasterTiers) {
+            let attempt
+            try {
+              attempt = await compressSingleFile(item, tier, setGlobalProgress)
+            } catch (e) {
+              if (tier === 'high') continue // raster failure at top tier — fall through to lower tiers
+              throw e
+            }
+            if (attempt && consider(attempt, tier, false)) break
+          }
+        }
+        if (!state.best) throw new Error(`Failed to compress "${item.file.name}".`)
+        res = state.best.res; usedTier = state.best.usedTier; crisp = state.best.crisp
       }
       // Never ship an unusable result
       if (res.size < 1024) throw new Error(`"${item.file.name}" compressed to an unusable file.`)
@@ -261,7 +373,8 @@ export default function CompressTool() {
       const wasLocked = !!item.password
       const steppedDown = usedTier !== quality
       const pct = ((1 - res.size / originalSize) * 100).toFixed(0)
-      const outcome = usedTier === 'high' ? `Optimized by ${pct}% — text stays selectable` : steppedDown ? `Reduced by ${pct}% (used ${tierLabel[usedTier]})` : `Reduced by ${pct}%`
+      const baseOutcome = steppedDown ? `Reduced by ${pct}% (used ${tierLabel[usedTier]})` : `Reduced by ${pct}%`
+      const outcome = crisp ? `${baseOutcome} — text stays sharp` : baseOutcome
       let finalBuffer = res.buffer, finalSize = res.size, finalUrl = res.url, keptOriginal = false, unlockedGrew = false
       let finalMessage = outcome
       if (res.size >= originalSize && !wasLocked) {
@@ -284,7 +397,7 @@ export default function CompressTool() {
         type: 'application/pdf',
         originalBuffer: new Uint8Array(originalBuffer)
       })
-      if (keptOriginal || unlockedGrew || steppedDown || usedTier === 'high') toast.success(finalMessage)
+      if (keptOriginal || unlockedGrew || steppedDown || crisp) toast.success(finalMessage)
     } catch (e: any) {
       setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error' } : f))
       toast.error(e?.message || `Failed to compress "${item.file.name}".`)
@@ -371,18 +484,18 @@ export default function CompressTool() {
                  <h5 className="text-xs font-black uppercase tracking-widest dark:text-white">Strategy Details</h5>
                </div>
                <p className="text-xs text-gray-500 dark:text-zinc-400 leading-relaxed">
-                 {quality === 'high' && (
-                   <>
-                      <strong>High Quality:</strong> Lossless repack — tidies the file's internals without touching a word or pixel.
-                      Text stays selectable, quality stays perfect, and the file can never grow.
-                      Expected reduction: <span className="text-rose-500 font-bold">0-40%</span>.
-                   </>
-                 )}
+                  {quality === 'high' && (
+                    <>
+                       <strong>High Quality:</strong> Shrinks embedded photos first — text stays sharp and selectable.
+                       Falls back to a full-detail rebuild only when photos can't shrink.
+                       Expected reduction: <span className="text-rose-500 font-bold">varies by file (photo-heavy shrinks most)</span>.
+                    </>
+                  )}
                  {quality === 'medium' && (
                    <>
-                      <strong>Standard:</strong> Balanced optimization for everyday sharing and email attachments.
-                      Already-small files may shrink little — the original is kept if the result would grow.
-                      Expected reduction: <span className="text-rose-500 font-bold">10-60%</span>.
+                       <strong>Standard:</strong> Balanced photo shrink for everyday sharing and email attachments, text stays sharp.
+                       Falls back to a rebuild when photos can't shrink; the original is kept if nothing would shrink.
+                       Expected reduction: <span className="text-rose-500 font-bold">10-60%</span>.
                    </>
                  )}
                   {quality === 'low' && (
@@ -394,7 +507,7 @@ export default function CompressTool() {
                   )}
                 </p>
                 <p className="text-[10px] text-gray-400 dark:text-zinc-500 leading-relaxed mt-3">
-                  Note: High only repacks — everything stays selectable. Standard and Smallest rebuild pages as images, so text won't stay selectable. If the chosen tier would grow the file, the next lower tier is tried automatically — the original is kept only if nothing shrinks (locked inputs always ship the smallest unlocked rebuild).
+                   Note: High and Standard shrink embedded photos first so text stays sharp and selectable, and fall back to rebuilding pages as images when photos can't shrink (text not selectable then). Smallest always rebuilds. If the chosen tier would grow the file, the next option is tried automatically — the original is kept only if nothing shrinks (locked inputs always ship the smallest unlocked rebuild).
                 </p>
              </div>
 
