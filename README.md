@@ -6,7 +6,7 @@
 
 A privacy-first PDF utility: merge, compress, sign, and protect. Works 100% offline — no servers, no trackers.
 
-[![Download APK](https://img.shields.io/badge/download-APK-green)](https://github.com/potatameister/PaperKnife/releases/latest)
+[![PaperKnife+ for Android](https://img.shields.io/badge/android-PaperKnife%2B-green)](https://github.com/potatameister/PaperKnifePlus)
 [![Web App](https://img.shields.io/badge/web-live-emerald)](https://potatameister.github.io/PaperKnife/)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-rose)](LICENSE)
 
@@ -38,12 +38,9 @@ All processing happens on your device. Your files never leave your phone.
 
 ## Download
 
-Get the latest APK: [PaperKnife v1.1.0](https://github.com/potatameister/PaperKnife/releases/latest)
+**On Android, use [PaperKnife+](https://github.com/potatameister/PaperKnifePlus)** — the better Android version of PaperKnife. It's native, faster, has no `INTERNET` permission, and is still 100% free and open source (GPL-3.0+).
 
-- **Full** (GitHub releases): everything, including offline OCR.
-- **Lite** (IzzyOnDroid): same app without the OCR engine — smaller download.
-
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroidButtonGreyBorder_nofont.png" height="80" alt="Get it at IzzyOnDroid">](https://apt.izzysoft.de/packages/com.paperknife.app)
+Prefer the original PaperKnife Android build (Capacitor, includes offline OCR)? Download it from the [latest release](https://github.com/potatameister/PaperKnife/releases/latest).
 
 Or use the [live site](https://potatameister.github.io/PaperKnife/) — installable as a PWA for offline access.
 
