@@ -1,0 +1,34 @@
+schema = 1
+name = "PaperKnife"
+
+[runtime]
+kind = "node"
+version = "24"
+package_manager = "npm"
+
+[[setup.steps]]
+kind = "dependencies"
+locked = true
+
+[[setup.steps]]
+run = ["npm", "run", "vendor:ocr"]
+
+[[setup.steps]]
+run = ["node", "-e", "const f=require('node:fs');f.mkdirSync('public/qpdf',{recursive:true});for(const [a,b] of [['src/worker.js','worker.js'],['vendor/qpdf/lib/qpdf.js','qpdf.js'],['vendor/qpdf/lib/qpdf.wasm','qpdf.wasm']])f.copyFileSync('node_modules/qpdf-run/'+a,'public/qpdf/'+b)"]
+
+[[setup.steps]]
+run = ["npm", "run", "build"]
+
+[launch]
+command = ["npm", "run", "preview", "--", "--host", "{host}", "--port", "{port}", "--strictPort"]
+host = "127.0.0.1"
+port = 4173
+
+[health]
+type = "http"
+path = "/"
+timeout_seconds = 90
+
+# Browser storage is outside the managed checkout.
+[persistence]
+paths = []
