@@ -7,6 +7,7 @@ import { encryptPDF } from '@pdfsmaller/pdf-encrypt-lite'
 
 import { getProcessBytes } from './decryptInput'
 import type { ToolEngineInput, ToolEngineResult } from './rotateEngines'
+import { t } from '../i18n'
 
 export const protectPdf = async (
   input: ToolEngineInput,
@@ -26,5 +27,5 @@ export const protectPdf = async (
 
   const blob = new Blob([encryptedBytes as any], { type: 'application/pdf' })
   const buffer = new Uint8Array(await blob.arrayBuffer())
-  return { url: createUrl(blob), size: blob.size, buffer, note: 'Encrypted — opens with the new password only' }
+  return { url: createUrl(blob), size: blob.size, buffer, note: t("Encrypted — opens with the new password only") }
 }

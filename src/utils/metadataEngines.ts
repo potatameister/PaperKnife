@@ -7,6 +7,7 @@ import { PDFDocument } from 'pdf-lib'
 
 import { getProcessBytes } from './decryptInput'
 import type { ToolEngineInput, ToolEngineResult } from './rotateEngines'
+import { t } from '../i18n'
 
 export const wipeMetadata = async (
   input: ToolEngineInput,
@@ -34,5 +35,5 @@ export const wipeMetadata = async (
   const pdfBytes = await targetPdf.save()
   const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
   const buffer = new Uint8Array(await blob.arrayBuffer())
-  return { url: createUrl(blob), size: blob.size, buffer, note: 'Metadata wiped (deep clean)' }
+  return { url: createUrl(blob), size: blob.size, buffer, note: t("Metadata wiped (deep clean)") }
 }

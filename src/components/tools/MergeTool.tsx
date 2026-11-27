@@ -14,6 +14,7 @@ import { useObjectURL } from '../../utils/useObjectURL'
 import { saveWorkspace, getWorkspace, clearWorkspace } from '../../utils/workspacePersistence'
 import SuccessState from './shared/SuccessState'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { t } from '../../i18n'
 
 // File Item Type
 type PdfFile = {
@@ -61,12 +62,12 @@ function SortableItem({ id, file, onRemove, onRotate, onUnlock }: { id: string, 
         {file.isLocked ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-black text-rose-500">
             <Lock size={16} />
-            <span className="text-[8px] font-black uppercase mt-1 text-center px-1">Locked</span>
+            <span className="text-[8px] font-black uppercase mt-1 text-center px-1">{t("Locked")}</span>
           </div>
         ) : file.thumbnail ? (
           <img 
             src={file.thumbnail} 
-            alt="Preview" 
+            alt={t("Preview")} 
             className="w-full h-full object-cover transition-transform duration-500" 
             style={{ transform: `rotate(${file.rotation}deg)` }}
           />
@@ -87,7 +88,7 @@ function SortableItem({ id, file, onRemove, onRotate, onUnlock }: { id: string, 
           <div className="flex gap-1 mt-1">
             <input 
               type="password" 
-              placeholder="Password" 
+              placeholder={t("Password")} 
               value={localPass}
               onChange={(e) => setLocalPass(e.target.value)}
               className="flex-1 min-w-0 bg-gray-50 dark:bg-black border border-gray-100 dark:border-zinc-800 rounded-lg px-2 py-1 text-[10px] font-bold outline-none focus:border-rose-500 text-gray-900 dark:text-white"
@@ -97,7 +98,7 @@ function SortableItem({ id, file, onRemove, onRotate, onUnlock }: { id: string, 
               disabled={!localPass || isUnlocking}
               className="bg-rose-500 text-white px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest disabled:opacity-50 hover:scale-105 active:scale-95 transition-transform"
             >
-              {isUnlocking ? '...' : 'Unlock'}
+              {isUnlocking ? '...' : t("Unlock")}
             </button>
           </div>
         ) : (
@@ -118,7 +119,7 @@ function SortableItem({ id, file, onRemove, onRotate, onUnlock }: { id: string, 
           <button 
             onClick={() => onRotate(id)}
             className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-full text-gray-400 hover:text-rose-500 transition-all hover:rotate-90 active:scale-90"
-            title="Rotate 90°"
+            title={t("Rotate 90°")}
           >
             <RotateCw size={18} />
           </button>
@@ -152,12 +153,12 @@ export default function MergeTool() {
     const pipelined = consumePipelineFile()
     if (pipelined) {
       if (pipelined.type && pipelined.type !== 'application/pdf') {
-        toast.error('The file from the previous tool is not a PDF and cannot be used here.')
+        toast.error(t("The file from the previous tool is not a PDF and cannot be used here."))
         return
       }
       const file = new File([pipelined.buffer as any], pipelined.name, { type: 'application/pdf' })
       handleFiles([file])
-      toast.success(`Imported ${file.name} from pipeline`)
+      toast.success(t("Imported {0} from pipeline", file.name))
     }
   }, [])
 
@@ -201,7 +202,7 @@ export default function MergeTool() {
 
     setFiles(restoredFiles)
     setHasRestorableWorkspace(false)
-    toast.success('Workspace restored successfully!')
+    toast.success(t("Workspace restored successfully!"))
 
     for (const pdfFile of restoredFiles) {
       getPdfMetaData(pdfFile.file).then(meta => {
@@ -259,7 +260,7 @@ export default function MergeTool() {
         password: pass
       } : f))
     } else {
-      toast.error('Incorrect password for ' + pdfFile.file.name)
+      toast.error(t("Incorrect password for ") + pdfFile.file.name)
     }
   }
 
@@ -319,14 +320,14 @@ export default function MergeTool() {
     try {
       const fileDatas: { buffer: Uint8Array, rotation: number, name: string }[] = []
       for (const f of files) {
-        if (!f.file || f.file.size === 0) { toast.error(`"${f.file?.name || 'File'}" is empty`); setIsProcessing(false); return }
-        if (!f.pageCount || f.pageCount === 0) { toast.error(`"${f.file.name}" has no readable pages`); setIsProcessing(false); return }
+        if (!f.file || f.file.size === 0) { toast.error(t("\"{0}\" is empty", f.file?.name || t("File"))); setIsProcessing(false); return }
+        if (!f.pageCount || f.pageCount === 0) { toast.error(t("\"{0}\" has no readable pages", f.file.name)); setIsProcessing(false); return }
         let bytes: Uint8Array = new Uint8Array(await f.file.arrayBuffer())
         if (f.password) {
           try {
             bytes = await decryptInput(bytes, f.password, f.file.name)
           } catch (e: any) {
-            toast.error(e.message || `Failed to unlock "${f.file.name}".`); setIsProcessing(false); return
+            toast.error(e.message || t("Failed to unlock \"{0}\".", f.file.name)); setIsProcessing(false); return
           }
         }
         fileDatas.push({
@@ -365,7 +366,7 @@ export default function MergeTool() {
           setIsProcessing(false)
           worker.terminate()
           clearWorkspace('merge')
-          toast.success('PDFs merged successfully!')
+          toast.success(t("PDFs merged successfully!"))
         } else if (type === 'ERROR') {
           toast.error(payload)
           setIsProcessing(false)
@@ -373,7 +374,7 @@ export default function MergeTool() {
         }
       }
     } catch (error: any) {
-      toast.error('An error occurred.')
+      toast.error(t("An error occurred."))
       setIsProcessing(false)
     }
   }
@@ -384,14 +385,14 @@ export default function MergeTool() {
       disabled={isProcessing || !canMerge}
       className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 py-4 rounded-2xl text-sm md:p-6 md:rounded-3xl md:text-xl flex items-center justify-center gap-3 shadow-lg shadow-rose-500/20`}
     >
-      {isProcessing ? <><Loader2 className="animate-spin" /> {progress}%</> : <>Merge PDFs <ArrowRight size={18} /></>}
+      {isProcessing ? <><Loader2 className="animate-spin" /> {progress}%</> : <>{t("Merge PDFs")} <ArrowRight size={18} /></>}
     </button>
   )
 
   return (
     <NativeToolLayout
-      title="Merge PDF"
-      description="Combine multiple PDF files into one document. Processed entirely on your device."
+      title={t("Merge PDF")}
+      description={t("Combine multiple PDF files into one document. Processed entirely on your device.")}
       actions={files.length > 0 && !objectUrl && <ActionButton />}
     >
       <div 
@@ -405,7 +406,7 @@ export default function MergeTool() {
             <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mb-8 animate-bounce">
               <Plus size={64} strokeWidth={3} />
             </div>
-            <h2 className="text-4xl md:text-6xl font-black mb-4 text-center">Drop to Add</h2>
+            <h2 className="text-4xl md:text-6xl font-black mb-4 text-center">{t("Drop to Add")}</h2>
           </div>
         )}
 
@@ -416,8 +417,8 @@ export default function MergeTool() {
                    <RefreshCw size={24} className="animate-spin-slow" />
                 </div>
                 <div>
-                   <h4 className="font-black text-sm dark:text-white uppercase tracking-tight">Unfinished Work Found</h4>
-                   <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium">We saved your previous file list. Want to restore it?</p>
+                   <h4 className="font-black text-sm dark:text-white uppercase tracking-tight">{t("Unfinished Work Found")}</h4>
+                   <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium">{t("We saved your previous file list. Want to restore it?")}</p>
                 </div>
              </div>
              <div className="flex gap-2 w-full md:w-auto">
@@ -425,13 +426,13 @@ export default function MergeTool() {
                   onClick={restoreWorkspace}
                   className="flex-1 md:flex-none px-6 py-3 bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20 active:scale-95"
                 >
-                  Restore
+                  {t("Restore")}
                 </button>
                 <button 
                   onClick={() => { clearWorkspace('merge'); setHasRestorableWorkspace(false); }}
                   className="flex-1 md:flex-none px-6 py-3 bg-white dark:bg-zinc-800 text-gray-400 hover:text-rose-500 rounded-xl text-xs font-black uppercase tracking-widest transition-colors active:scale-95"
                 >
-                  Discard
+                  {t("Discard")}
                 </button>
              </div>
           </div>
@@ -442,9 +443,9 @@ export default function MergeTool() {
             <div className="space-y-4">
               <div className="flex justify-between items-center px-1">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  {files.length} Files • {totalPages} Pages
+                  {files.length} {t("Files •")} {totalPages} {t("Pages")}
                 </p>
-                <button onClick={() => { setFiles([]); clearUrls(); clearWorkspace('merge'); }} className="text-[10px] font-black uppercase text-rose-500/60 hover:text-rose-500 transition-colors font-bold">Clear All</button>
+                <button onClick={() => { setFiles([]); clearUrls(); clearWorkspace('merge'); }} className="text-[10px] font-black uppercase text-rose-500/60 hover:text-rose-500 transition-colors font-bold">{t("Clear All")}</button>
               </div>
 
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -461,12 +462,12 @@ export default function MergeTool() {
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full py-4 border-2 border-dashed border-gray-200 dark:border-zinc-800 rounded-2xl text-gray-400 font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:border-rose-500 hover:text-rose-500 transition-all"
               >
-                <Plus size={16} /> Add More Files
+                <Plus size={16} /> {t("Add More Files")}
               </button>
 
               {!objectUrl && (
                 <div className="p-6 bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm">
-                   <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Output Filename</label>
+                   <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">{t("Output Filename")}</label>
                    <input 
                       type="text" 
                       value={customFileName}
@@ -474,7 +475,7 @@ export default function MergeTool() {
                       className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 outline-none font-bold text-sm border border-transparent focus:border-rose-500 transition-colors dark:text-white"
                    />
                    {files.some(f => f.password) && (
-                     <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">File output will be unlocked.</p>
+                     <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">{t("File output will be unlocked.")}</p>
                    )}
                 </div>
               )}
@@ -487,8 +488,8 @@ export default function MergeTool() {
                <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-inner">
                   <Upload size={32} />
                </div>
-               <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF Files</h3>
-               <p className="text-sm text-gray-400 font-medium">Tap to browse or drag and drop here</p>
+               <h3 className="text-xl font-bold dark:text-white mb-2">{t("Select PDF Files")}</h3>
+               <p className="text-sm text-gray-400 font-medium">{t("Tap to browse or drag and drop here")}</p>
             </button>
           )}
 
@@ -497,14 +498,14 @@ export default function MergeTool() {
                 <div className="w-full bg-gray-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                    <div className="bg-rose-500 h-full transition-all" style={{ width: `${progress}%` }} />
                 </div>
-                <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">Processing on Device...</p>
+                <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">{t("Processing on Device...")}</p>
              </div>
           )}
 
           {objectUrl && (
             <div className="animate-in zoom-in duration-300">
               <SuccessState 
-                message="PDFs Merged Successfully!"
+                message={t("PDFs Merged Successfully!")}
                 downloadUrl={objectUrl}
                 fileName={`${customFileName || 'merged'}.pdf`}
                 onStartOver={() => { setFiles([]); clearUrls(); clearWorkspace('merge'); setIsProcessing(false); }}

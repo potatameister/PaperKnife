@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Tool, ToolCategory } from '../types'
+import { t } from '../i18n'
 
 const categoryColors: Record<ToolCategory, { bg: string, text: string, border: string, hover: string, glow: string }> = {
   Edit: { 
@@ -88,11 +89,11 @@ export default function WebView({ tools }: { tools: Tool[] }) {
         
         <div className="max-w-6xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-8 border border-rose-100 dark:border-rose-900/30">
-            <SparklesIcon size={14} /> Professional PDF Engine
+            <SparklesIcon size={14} /> {t("Professional PDF Engine")}
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter dark:text-white mb-8 leading-[0.9]">
-            Stop Uploading <br/>
-            <span className="text-rose-500">Your Privacy.</span>
+            {t("Stop Uploading")} <br/>
+            <span className="text-rose-500">{t("Your Privacy.")}</span>
           </h1>
           
           <div className="max-w-2xl mx-auto relative group mt-12">
@@ -101,7 +102,7 @@ export default function WebView({ tools }: { tools: Tool[] }) {
             </div>
             <input 
               type="text"
-              placeholder="Search tools (e.g. merge, compress, protect...)"
+              placeholder={t("Search tools (e.g. merge, compress, protect...)")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/5 rounded-[2rem] py-6 pl-16 pr-8 shadow-2xl shadow-gray-200/50 dark:shadow-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all font-bold text-xl dark:text-white"
@@ -124,11 +125,11 @@ export default function WebView({ tools }: { tools: Tool[] }) {
                     onClick={() => setActiveCategory(cat)}
                     className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeCategory === cat ? 'bg-zinc-900 dark:bg-white text-white dark:text-black border-transparent shadow-lg' : 'bg-white dark:bg-zinc-900 text-gray-400 border-gray-100 dark:border-white/5 hover:border-rose-500'}`}
                   >
-                    {cat}
+                    {t(cat)}
                   </button>
                 ))}
               </div>
-              <p className="hidden md:block text-[10px] font-black text-gray-400 uppercase tracking-widest">{filteredTools.length} Modules Active</p>
+              <p className="hidden md:block text-[10px] font-black text-gray-400 uppercase tracking-widest">{filteredTools.length} {t("Modules Active")}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -146,9 +147,9 @@ export default function WebView({ tools }: { tools: Tool[] }) {
                 <div className="w-20 h-20 bg-gray-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300">
                   <SearchIcon size={32} />
                 </div>
-                <h3 className="text-2xl font-black dark:text-white mb-2">No tools matched.</h3>
-                <p className="text-gray-500 dark:text-zinc-400 font-medium">Try searching for a different keyword or clear your filters.</p>
-                <button onClick={() => { setSearchQuery(''); setActiveCategory('All'); }} className="mt-8 text-rose-500 font-black uppercase tracking-widest text-xs hover:underline underline-offset-8">Reset Dashboard</button>
+                <h3 className="text-2xl font-black dark:text-white mb-2">{t("No tools matched.")}</h3>
+                <p className="text-gray-500 dark:text-zinc-400 font-medium">{t("Try searching for a different keyword or clear your filters.")}</p>
+                <button onClick={() => { setSearchQuery(''); setActiveCategory('All'); }} className="mt-8 text-rose-500 font-black uppercase tracking-widest text-xs hover:underline underline-offset-8">{t("Reset Dashboard")}</button>
               </div>
             )}
           </div>

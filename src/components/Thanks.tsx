@@ -2,6 +2,7 @@ import { Github as GHIcon, Heart as HeartIcon, Sparkles } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { NativeToolLayout } from './tools/shared/NativeToolLayout'
 import { PaperKnifeLogo } from './Logo'
+import { t } from '../i18n'
 
 const supporters = [
   'Kalyan', 'For the Planet', '1260er', 'Sushant Sangle', 'Bittu Shaw',
@@ -18,13 +19,13 @@ export default function Thanks() {
     <div className="animate-in fade-in duration-700">
       <section className={isNative ? "mb-8 text-center py-2" : "mb-12 text-center"}>
         <div className="flex items-center justify-center gap-2 text-rose-500 font-black text-[9px] uppercase tracking-[0.4em] mb-4">
-          <Sparkles size={12} /> Acknowledgments
+          <Sparkles size={12} /> {t("Acknowledgments")}
         </div>
         <h2 className={isNative ? "text-3xl font-black tracking-tighter dark:text-white leading-tight mb-3" : "text-4xl md:text-6xl font-black tracking-tighter text-gray-900 dark:text-white leading-[1.1] mb-6"}>
-          The <span className="text-rose-500">Supporters.</span>
+          {t("The")} <span className="text-rose-500">{t("Supporters.")}</span>
         </h2>
         <p className="text-base md:text-lg text-gray-500 dark:text-zinc-400 leading-relaxed font-medium max-w-xl mx-auto px-4">
-          PaperKnife is a self-funded labor of love. These are the people who keep it free and private.
+          {t("PaperKnife is a self-funded labor of love. These are the people who keep it free and private.")}
         </p>
       </section>
 
@@ -40,16 +41,16 @@ export default function Thanks() {
           </div>
           
           <div className="flex-1 text-center md:text-left relative z-10">
-            <h3 className="text-3xl font-black tracking-tighter mb-2">Hall of Fame</h3>
+            <h3 className="text-3xl font-black tracking-tighter mb-2">{t("Hall of Fame")}</h3>
             <p className="text-zinc-400 text-sm font-medium leading-relaxed max-w-lg mb-8 mx-auto md:mx-0">
-              The heroes who fuel the engine. Your support ensures PaperKnife stays free and private forever. Sponsors receive a permanent shout-out here.
+              {t("The heroes who fuel the engine. Your support ensures PaperKnife stays free and private forever. Sponsors receive a permanent shout-out here.")}
             </p>
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
               <a href="https://potatameister.github.io/support" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-3.5 bg-white text-rose-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-transform shadow-lg">
-                <HeartIcon size={14} fill="currentColor" /> Support PaperKnife
+                <HeartIcon size={14} fill="currentColor" /> {t("Support PaperKnife")}
               </a>
               <a href="https://github.com/potatameister/PaperKnife" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-3.5 bg-zinc-950 dark:bg-white text-white dark:text-black border border-white/20 dark:border-transparent rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-transform shadow-lg">
-                <GHIcon size={14} /> Source Code
+                <GHIcon size={14} /> {t("Source Code")}
               </a>
             </div>
           </div>
@@ -70,14 +71,14 @@ export default function Thanks() {
 
       <footer className="text-center py-8 opacity-20">
          <PaperKnifeLogo size={24} iconColor="#F43F5E" partColor="currentColor" className="mx-auto mb-4" />
-         <p className="text-[8px] font-black uppercase tracking-[0.5em]">PaperKnife Protocol v1.1.0</p>
+         <p className="text-[8px] font-black uppercase tracking-[0.5em]">{t("PaperKnife Protocol v1.1.0")}</p>
       </footer>
     </div>
   )
 
   if (isNative) {
     return (
-      <NativeToolLayout title="Credits" description="Hall of Fame & Ecosystem" actions={null}>
+      <NativeToolLayout title={t("Credits")} description={t("Hall of Fame & Ecosystem")} actions={null}>
         <div className="pb-20">
           {content}
         </div>

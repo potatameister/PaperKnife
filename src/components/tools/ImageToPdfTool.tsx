@@ -11,6 +11,7 @@ import { addActivity } from '../../utils/recentActivity'
 import SuccessState from './shared/SuccessState'
 import { NativeToolLayout } from './shared/NativeToolLayout'
 import { usePipeline } from '../../utils/pipelineContext'
+import { t } from '../../i18n'
 
 type ImageFile = { id: string, file: File, preview: string }
 
@@ -40,7 +41,7 @@ export default function ImageToPdfTool() {
 
   const handleFiles = (selectedFiles: FileList | File[]) => {
     const newImages = Array.from(selectedFiles).filter(f => f.type.startsWith('image/')).map(file => ({ id: Math.random().toString(36).substr(2, 9), file, preview: URL.createObjectURL(file) }))
-    if (newImages.length === 0) { toast.error('Select images (JPG, PNG, WebP)'); return }
+    if (newImages.length === 0) { toast.error(t("Select images (JPG, PNG, WebP)")); return }
     setImages(prev => [...prev, ...newImages]); setDownloadUrl(null)
   }
 
@@ -74,28 +75,28 @@ export default function ImageToPdfTool() {
 
   const ActionButton = () => (
     <button onClick={convertToPDF} disabled={isProcessing || images.length === 0} className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-rose-500/20 ${isNative ? 'py-4 rounded-2xl text-sm' : 'p-6 rounded-3xl text-xl'}`}>
-      {isProcessing ? <><Loader2 className="animate-spin" /> Working...</> : <>Generate PDF <ArrowRight size={18} /></>}
+      {isProcessing ? <><Loader2 className="animate-spin" /> {t("Working...")}</> : <>{t("Generate PDF")} <ArrowRight size={18} /></>}
     </button>
   )
 
   return (
-    <NativeToolLayout title="Image to PDF" description="Convert photos and images into a professional PDF." actions={images.length > 0 && !downloadUrl && <ActionButton />}>
+    <NativeToolLayout title={t("Image to PDF")} description={t("Convert photos and images into a professional PDF.")} actions={images.length > 0 && !downloadUrl && <ActionButton />}>
       <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files && handleFiles(e.target.files)} />
       {images.length === 0 ? (
         <div onClick={() => fileInputRef.current?.click()} className="border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group">
           <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><Upload size={32} /></div>
-          <h3 className="text-xl font-bold dark:text-white mb-2">Select Images</h3>
-          <p className="text-sm text-gray-400">JPG, PNG, or WebP</p>
+          <h3 className="text-xl font-bold dark:text-white mb-2">{t("Select Images")}</h3>
+          <p className="text-sm text-gray-400">{t("JPG, PNG, or WebP")}</p>
         </div>
       ) : !downloadUrl ? (
         <div className="space-y-6">
-          <div className="flex justify-between items-center px-1"><p className="text-[10px] font-black uppercase text-gray-400">{images.length} Images</p><button onClick={() => setImages([])} className="text-[10px] font-black uppercase text-rose-500/60">Clear</button></div>
+          <div className="flex justify-between items-center px-1"><p className="text-[10px] font-black uppercase text-gray-400">{images.length} {t("Images")}</p><button onClick={() => setImages([])} className="text-[10px] font-black uppercase text-rose-500/60">{t("Clear")}</button></div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}><SortableContext items={images.map(img => img.id)} strategy={verticalListSortingStrategy}><div className="space-y-2">{images.map(img => <SortableImageItem key={img.id} id={img.id} img={img} onRemove={(id) => setImages(prev => prev.filter(i => i.id !== id))} />)}</div></SortableContext></DndContext>
-          <button onClick={() => fileInputRef.current?.click()} className="w-full py-3 border-2 border-dashed border-gray-200 dark:border-zinc-800 rounded-2xl text-gray-400 font-bold text-sm flex items-center justify-center gap-2 hover:border-rose-500 hover:text-rose-500 transition-all"><Plus size={16} /> Add More</button>
-          <div><label className="block text-[10px] font-black uppercase text-gray-400 mb-2">Filename</label><input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm" /></div>
+          <button onClick={() => fileInputRef.current?.click()} className="w-full py-3 border-2 border-dashed border-gray-200 dark:border-zinc-800 rounded-2xl text-gray-400 font-bold text-sm flex items-center justify-center gap-2 hover:border-rose-500 hover:text-rose-500 transition-all"><Plus size={16} /> {t("Add More")}</button>
+          <div><label className="block text-[10px] font-black uppercase text-gray-400 mb-2">{t("Filename")}</label><input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm" /></div>
         </div>
       ) : (
-        <SuccessState message="PDF Ready!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setImages([]); setDownloadUrl(null); }} />
+        <SuccessState message={t("PDF Ready!")} downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setImages([]); setDownloadUrl(null); }} />
       )}
     </NativeToolLayout>
   )

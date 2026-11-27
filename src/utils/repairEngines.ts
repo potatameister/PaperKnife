@@ -6,6 +6,7 @@
 import { PDFDocument } from 'pdf-lib'
 
 import type { ToolEngineInput, ToolEngineResult } from './rotateEngines'
+import { t } from '../i18n'
 
 export const repairPdf = async (
   input: ToolEngineInput,
@@ -19,5 +20,5 @@ export const repairPdf = async (
   const pdfBytes = await pdfDoc.save()
   const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
   const buffer = new Uint8Array(await blob.arrayBuffer())
-  return { url: createUrl(blob), size: blob.size, buffer, note: 'Rebuilt via load+save' }
+  return { url: createUrl(blob), size: blob.size, buffer, note: t("Rebuilt via load+save") }
 }

@@ -29,6 +29,7 @@ import { useBackHandler } from '../utils/backHandler'
 import { hapticImpact } from '../utils/haptics'
 import { usePipeline } from '../utils/pipelineContext'
 import { toast } from 'sonner'
+import { t } from '../i18n'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -77,7 +78,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
           return
         }
         const file = files[0]
-        toast.loading(`Importing ${file.name}...`, { id: 'fab-load' })
+        toast.loading(t("Importing {0}...", file.name), { id: 'fab-load' })
         const buffer = await file.arrayBuffer()
         setPipelineFile({
           buffer: new Uint8Array(buffer),
@@ -85,9 +86,9 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
           type: file.type || 'application/pdf',
         })
         navigate(tool.path as string)
-        toast.success(`Opened in ${tool.title}`, { id: 'fab-load' })
+        toast.success(t("Opened in {0}", tool.title), { id: 'fab-load' })
       } catch {
-        toast.error('Failed to process file')
+        toast.error(t("Failed to process file"))
       }
     }
     input.click()
@@ -165,8 +166,8 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
   }, [onFileDrop])
 
   const activeTool = tools.find(t => {
-    const pathPart = t.title.split(' ')[0].toLowerCase()
-    return location.pathname.includes(`/${pathPart}`)
+    // Match by route rather than by (translatable) title
+    return !!t.path && (location.pathname === t.path || location.pathname.startsWith(`${t.path}/`))
   })
 
   const isHome = location.pathname === '/'
@@ -185,7 +186,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
         <div className="fixed inset-0 z-[200] bg-rose-500/10 backdrop-blur-sm flex items-center justify-center pointer-events-none">
           <div className="bg-white dark:bg-zinc-900 p-12 rounded-[3rem] shadow-2xl border-4 border-dashed border-rose-500 animate-in zoom-in duration-300">
             <UploadIcon size={64} className="text-rose-500 animate-bounce" />
-            <p className="mt-4 font-black uppercase tracking-widest text-rose-500 text-center text-sm">Drop PDF to start</p>
+            <p className="mt-4 font-black uppercase tracking-widest text-rose-500 text-center text-sm">{t("Drop PDF to start")}</p>
           </div>
         </div>
       )}
@@ -204,7 +205,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             <div className="h-6 w-[1px] bg-gray-200 dark:bg-zinc-800 mx-1 md:mx-2 shrink-0" />
             <div className="relative min-w-0" ref={dropdownRef}>
               <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className={`flex items-center gap-2 px-2 md:px-3 py-1.5 rounded-xl transition-all font-black text-[10px] md:text-sm uppercase tracking-widest min-w-0 ${isDropdownOpen ? 'bg-rose-500 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900'}`}>
-                <span className="truncate">{isHome ? 'All Tools' : activeTool?.title || 'Tool'}</span>
+                <span className="truncate">{isHome ? t("All Tools") : activeTool?.title || t("Tool")}</span>
                 <ChevronDownIcon size={14} className={`transition-transform duration-300 shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               {isDropdownOpen && (
@@ -213,7 +214,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
                     const colors = categoryColors[category as ToolCategory]
                     return (
                       <div key={category} className="mb-4">
-                        <div className="px-6 py-2"><span className={`text-[10px] font-black uppercase tracking-[0.2em] ${colors.text} opacity-60`}>{category}</span></div>
+                        <div className="px-6 py-2"><span className={`text-[10px] font-black uppercase tracking-[0.2em] ${colors.text} opacity-60`}>{t(category)}</span></div>
                         <div className="grid grid-cols-1 gap-1 px-2">
                           {categoryTools.map((tool, i) => {
                             const Icon = tool.icon; const isActive = activeTool?.title === tool.title && !isHome
@@ -240,12 +241,12 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
                 className="hidden xs:flex items-center gap-2 px-3 py-1.5 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
               >
                 <Download size={14} strokeWidth={3} />
-                Get APK
+                {t("Get APK")}
               </a>
             )}
             <Link to="/about" className={`p-2 md:px-4 md:py-2 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${location.pathname.includes('about') ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-900'}`}>
               <InfoIcon size={18} />
-              <span className="hidden sm:block">About</span>
+              <span className="hidden sm:block">{t("About")}</span>
             </Link>
             <button onClick={toggleTheme} className="p-2 text-gray-400 hover:text-rose-500 transition-colors">
               {theme === 'light' ? <MoonIcon size={20} /> : <SunIcon size={20} />}
@@ -276,13 +277,13 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
                   <span className="font-bold tracking-tight text-lg group-hover:text-rose-500 transition-colors">PaperKnife</span>
                 </Link>
                 <p className="text-gray-500 dark:text-zinc-500 text-xs leading-relaxed max-w-sm">
-                  The privacy-first PDF toolkit. 100% client-side logic. <br/>
-                  Zero servers. Open source and forever free.
+                  {t("The privacy-first PDF toolkit. 100% client-side logic.")} <br/>
+                  {t("Zero servers. Open source and forever free.")}
                 </p>
                 <div className="flex items-center gap-2 pt-1">
                    <div className="flex items-center gap-2 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 rounded-full text-[9px] font-bold uppercase tracking-wide border border-emerald-100 dark:border-emerald-900/20">
                       <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                      Live Engine
+                      {t("Live Engine")}
                    </div>
                    <a href="https://github.com/potatameister/PaperKnife" target="_blank" className="p-2 bg-gray-50 dark:bg-zinc-900 rounded-xl hover:bg-rose-500 hover:text-white transition-all text-gray-500 dark:text-zinc-500">
                      <GHIcon size={14} />
@@ -292,28 +293,28 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
 
               {/* Legal Column */}
               <div className="col-span-1 md:col-span-3">
-                <h4 className="font-bold text-[10px] uppercase tracking-widest text-gray-900 dark:text-white mb-4">Protocol</h4>
+                <h4 className="font-bold text-[10px] uppercase tracking-widest text-gray-900 dark:text-white mb-4">{t("Protocol")}</h4>
                 <ul className="space-y-2.5 text-xs text-gray-500 dark:text-zinc-500">
-                  <li><Link to="/about" className="hover:text-rose-500 transition-colors">About</Link></li>
-                  <li><a href="https://potatameister.github.io/privacy/paperknife" target="_blank" rel="noopener noreferrer" className="hover:text-rose-500 transition-colors">Privacy Spec</a></li>
-                  <li><a href="https://github.com/potatameister/PaperKnife/blob/main/LICENSE" target="_blank" className="hover:text-rose-500 transition-colors">License</a></li>
+                  <li><Link to="/about" className="hover:text-rose-500 transition-colors">{t("About")}</Link></li>
+                  <li><a href="https://potatameister.github.io/privacy/paperknife" target="_blank" rel="noopener noreferrer" className="hover:text-rose-500 transition-colors">{t("Privacy Spec")}</a></li>
+                  <li><a href="https://github.com/potatameister/PaperKnife/blob/main/LICENSE" target="_blank" className="hover:text-rose-500 transition-colors">{t("License")}</a></li>
                 </ul>
               </div>
 
               {/* Community Column */}
               <div className="col-span-1 md:col-span-3">
-                <h4 className="font-bold text-[10px] uppercase tracking-widest text-gray-900 dark:text-white mb-4">Ecosystem</h4>
+                <h4 className="font-bold text-[10px] uppercase tracking-widest text-gray-900 dark:text-white mb-4">{t("Ecosystem")}</h4>
                 <ul className="space-y-2.5 text-xs text-gray-500 dark:text-zinc-500">
-                  <li><a href="https://github.com/sponsors/potatameister" target="_blank" className="flex items-center gap-2 hover:text-rose-500 transition-colors">Sponsor <HeartIcon size={10} className="text-rose-500" /></a></li>
-                  <li><a href="https://github.com/potatameister/PaperKnife/issues" target="_blank" className="hover:text-rose-500 transition-colors">Report Bug</a></li>
-                  <li><Link to="/thanks" className="hover:text-rose-500 transition-colors">Hall of Fame</Link></li>
+                  <li><a href="https://github.com/sponsors/potatameister" target="_blank" className="flex items-center gap-2 hover:text-rose-500 transition-colors">{t("Sponsor")} <HeartIcon size={10} className="text-rose-500" /></a></li>
+                  <li><a href="https://github.com/potatameister/PaperKnife/issues" target="_blank" className="hover:text-rose-500 transition-colors">{t("Report Bug")}</a></li>
+                  <li><Link to="/thanks" className="hover:text-rose-500 transition-colors">{t("Hall of Fame")}</Link></li>
                 </ul>
               </div>
 
             </div>
             
             <div className="pt-6 border-t border-gray-100 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-gray-400 dark:text-zinc-600 font-medium">
-              <p>© 2026 PaperKnife Project. No cookies used.</p>
+              <p>{t("© 2026 PaperKnife Project. No cookies used.")}</p>
               <div className="flex gap-6 items-center">
                  <a href="https://github.com/potatameister" target="_blank" className="hover:text-gray-900 dark:hover:text-white transition-colors">@potatameister</a>
               </div>
@@ -330,7 +331,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${location.pathname === '/' ? 'text-rose-500' : 'text-gray-400 dark:text-zinc-600'}`}
           >
             <HomeIcon size={24} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
-            <span className="text-[10px] font-bold">Home</span>
+            <span className="text-[10px] font-bold">{t("Home")}</span>
           </button>
 
           <button 
@@ -338,7 +339,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${location.pathname === '/android-tools' ? 'text-rose-500' : 'text-gray-400 dark:text-zinc-600'}`}
           >
             <LayoutGridIcon size={24} strokeWidth={location.pathname === '/android-tools' ? 2.5 : 2} />
-            <span className="text-[10px] font-bold">Tools</span>
+            <span className="text-[10px] font-bold">{t("Tools")}</span>
           </button>
 
           {/* Floating Action Button - Lifted */}
@@ -347,17 +348,17 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
                <div className="fixed inset-x-0 bottom-0 z-[110] flex justify-center pointer-events-none">
                <div className="w-full max-w-md max-h-[62vh] overflow-y-auto scrollbar-hide rounded-t-[2.5rem] bg-[#FAFAFA] dark:bg-zinc-950 shadow-2xl border-t border-x border-gray-100 dark:border-white/10 p-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-4 animate-in slide-in-from-bottom-full duration-500 ease-out pointer-events-auto">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-zinc-500">Quick Actions</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-zinc-500">{t("Quick Actions")}</p>
                     <button
                       onClick={() => { hapticImpact(); setShowFabMenu(false); setShowFabMore(false) }}
-                      aria-label="Close quick actions"
+                      aria-label={t("Close quick actions")}
                       className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-400 active:scale-90 transition-all"
                     >
                       <XIcon size={18} />
                     </button>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3 ml-1">Essentials</p>
+                    <p className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3 ml-1">{t("Essentials")}</p>
                     <div className="grid grid-cols-2 gap-2.5">
                       {tools.filter(t => t.implemented && t.path).slice(0, 4).map(fabToolRow)}
                     </div>
@@ -368,7 +369,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
                       onClick={() => { hapticImpact(); setShowFabMore(!showFabMore) }}
                       className="w-full flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-rose-500 transition-colors shadow-sm"
                     >
-                      <span>Full Tool Catalog</span>
+                      <span>{t("Full Tool Catalog")}</span>
                       <ChevronDownIcon size={14} className={`transition-transform duration-300 ${showFabMore ? 'rotate-180' : ''}`} />
                     </button>
 
@@ -387,7 +388,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
                   hapticImpact()
                   setShowFabMenu(!showFabMenu)
                 }}
-                aria-label="Open quick actions"
+                aria-label={t("Open quick actions")}
                 className={`w-14 h-14 bg-rose-500 text-white rounded-2xl shadow-xl shadow-rose-500/40 flex items-center justify-center active:scale-90 transition-all ring-4 ring-white dark:ring-black z-[110] relative ${showFabMenu ? 'opacity-0 pointer-events-none scale-50' : 'opacity-100 scale-100'}`}
               >
                 <PlusIcon size={32} strokeWidth={3} />
@@ -399,7 +400,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${location.pathname === '/android-history' ? 'text-rose-500' : 'text-gray-400 dark:text-zinc-600'}`}
           >
             <HistoryIcon size={24} strokeWidth={location.pathname === '/android-history' ? 2.5 : 2} />
-            <span className="text-[10px] font-bold">History</span>
+            <span className="text-[10px] font-bold">{t("History")}</span>
           </button>
 
           <Link 
@@ -407,7 +408,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             className={`flex flex-col items-center gap-1.5 flex-1 transition-all no-underline ${location.pathname.includes('settings') ? 'text-rose-500' : 'text-gray-400 dark:text-zinc-600'}`}
           >
             <SettingsIcon size={24} strokeWidth={location.pathname.includes('settings') ? 2.5 : 2} />
-            <span className="text-[10px] font-bold">Settings</span>
+            <span className="text-[10px] font-bold">{t("Settings")}</span>
           </Link>
         </nav>
       )}
@@ -418,7 +419,7 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <HistoryIcon className="text-rose-500" size={24} />
-              <h2 className="text-xl font-black dark:text-white">Activity</h2>
+              <h2 className="text-xl font-black dark:text-white">{t("Activity")}</h2>
             </div>
             <div className="flex items-center gap-2">
               {activity.length > 0 && (
@@ -435,11 +436,11 @@ export default function Layout({ children, theme, toggleTheme, tools, onFileDrop
             </div>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 scrollbar-hide">
-            {activity.length === 0 ? (<div className="text-center py-20 opacity-40"><p className="text-xs font-bold uppercase tracking_widest text-gray-400">No recent files</p></div>) : (
+            {activity.length === 0 ? (<div className="text-center py-20 opacity-40"><p className="text-xs font-bold uppercase tracking_widest text-gray-400">{t("No recent files")}</p></div>) : (
               activity.map((item) => (
                 <div key={item.id} className="p-4 bg-gray-50 dark:bg-zinc-900/50 rounded-2xl border border-gray-100 dark:border-zinc-800 group relative">
                   <div className="flex items-center gap-3 mb-2"><div className="w-8 h-8 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg flex items-center justify-center"><CheckCircleIcon size={16} /></div><div className="flex-1 min-w-0"><p className="text-xs font-bold truncate dark:text-white">{item.name}</p><p className="text-[10px] text-gray-400 font-black uppercase tracking-tighter">{item.tool}</p></div></div>
-                  <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold"><span>{new Date(item.timestamp).toLocaleTimeString()}</span>{(item.buffer || item.resultUrl) && (<button onClick={async () => { try { const { downloadFile } = await import('../utils/pdfHelpers'); await downloadFile(item.buffer || item.resultUrl!, item.name, item.name.endsWith('.zip') ? 'application/zip' : 'application/pdf') } catch { /* toast handled by caller */ } }} className="text-rose-500 hover:underline flex items-center gap-1"><DownloadIcon size={10} /> Redownload</button>)}</div>
+                  <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold"><span>{new Date(item.timestamp).toLocaleTimeString()}</span>{(item.buffer || item.resultUrl) && (<button onClick={async () => { try { const { downloadFile } = await import('../utils/pdfHelpers'); await downloadFile(item.buffer || item.resultUrl!, item.name, item.name.endsWith('.zip') ? 'application/zip' : 'application/pdf') } catch { /* toast handled by caller */ } }} className="text-rose-500 hover:underline flex items-center gap-1"><DownloadIcon size={10} /> {t("Redownload")}</button>)}</div>
                 </div>
               ))
             )}

@@ -14,6 +14,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 // Explicitly import the worker as a URL so Vite handles it correctly
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { t } from '../i18n'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -132,7 +133,7 @@ export const shareFile = async (data: Uint8Array | string, fileName: string, mim
         title: fileName,
         text: `Shared via PaperKnife`,
         url: result.uri,
-        dialogTitle: 'Share PDF'
+        dialogTitle: t("Share PDF")
       });
       
       return true;
@@ -153,7 +154,7 @@ export const shareFile = async (data: Uint8Array | string, fileName: string, mim
         await navigator.share({
           files: [file],
           title: fileName,
-          text: 'Shared via PaperKnife'
+          text: t("Shared via PaperKnife")
         });
         return true;
       } catch (e) {
@@ -207,7 +208,7 @@ export const renderPageThumbnail = async (pdf: any, pageNum: number, scale = 1.0
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d', { alpha: true });
-    if (!context) throw new Error('Canvas context not available');
+    if (!context) throw new Error(t("Canvas context not available"));
     
     canvas.height = thumbViewport.height;
     canvas.width = thumbViewport.width;

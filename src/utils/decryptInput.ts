@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core'
 import { PDFDocument } from 'pdf-lib'
 import { nativeDecrypt } from './nativeUnlock'
 import { IS_UNLOCK_WASM_DISABLED, qpdfDecrypt } from './qpdfUnlock'
+import { t } from '../i18n'
 
 /**
  * Real vector decrypt of locked input bytes (native plugin on Android,
@@ -21,22 +22,22 @@ export const decryptInput = async (data: Uint8Array, password: string, label: st
     try {
       pdfBytes = (await nativeDecrypt(data, password)).bytes
     } catch (e: any) {
-      if (e?.message === 'INCORRECT_PASSWORD') throw new Error(`Incorrect password for "${label}".`)
-      throw new Error(`"${label}" could not be unlocked on this device.`)
+      if (e?.message === 'INCORRECT_PASSWORD') throw new Error(t("Incorrect password for \"{0}\".", label))
+      throw new Error(t("\"{0}\" could not be unlocked on this device.", label))
     }
   } else {
-    if (IS_UNLOCK_WASM_DISABLED) throw new Error(`Unlock engine missing for "${label}".`)
+    if (IS_UNLOCK_WASM_DISABLED) throw new Error(t("Unlock engine missing for \"{0}\".", label))
     try {
       pdfBytes = await qpdfDecrypt(data, password)
     } catch (e: any) {
-      if (e?.message === 'INCORRECT_PASSWORD') throw new Error(`Incorrect password for "${label}".`)
-      throw new Error(`"${label}" could not be unlocked (${e?.message || 'unsupported file'}).`)
+      if (e?.message === 'INCORRECT_PASSWORD') throw new Error(t("Incorrect password for \"{0}\".", label))
+      throw new Error(t('"{0}" could not be unlocked ({1}).', label, e?.message || t("unsupported file")))
     }
   }
   try {
     await PDFDocument.load(pdfBytes, { throwOnInvalidObject: false } as any)
   } catch {
-    throw new Error(`"${label}" unlocked copy failed verification.`)
+    throw new Error(t("\"{0}\" unlocked copy failed verification.", label))
   }
   return pdfBytes
 }
