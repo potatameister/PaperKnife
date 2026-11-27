@@ -11,6 +11,7 @@ import { useBackHandler } from '../utils/backHandler'
 import PdfPreview from './PdfPreview'
 import { TabHeader } from './AndroidHeader'
 import { toast } from 'sonner'
+import { t } from '../i18n'
 
 // Originating tool route for preview's "+" (process) action (zip outputs offer Download/Share/Delete only)
 const TOOL_ROUTES: Record<string, string> = {
@@ -41,19 +42,19 @@ export default function AndroidHistoryView() {
   }, [])
 
   const handleClear = async () => {
-    toast('Wipe all history?', {
+    toast(t("Wipe all history?"), {
       id: 'history-wipe-confirm',
       action: {
-        label: 'Confirm',
+        label: t("Confirm"),
         onClick: async () => {
           await clearActivity()
           setHistory([])
-          toast.success('History wiped', { id: 'history-wipe-done' })
+          toast.success(t("History wiped"), { id: 'history-wipe-done' })
           toast.dismiss('history-wipe-confirm')
         }
       },
       cancel: {
-        label: 'Cancel',
+        label: t("Cancel"),
         onClick: () => toast.dismiss('history-wipe-confirm')
       }
     })
@@ -61,13 +62,14 @@ export default function AndroidHistoryView() {
 
   const filteredHistory = history.filter(item => 
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.tool.toLowerCase().includes(searchQuery.toLowerCase())
+    item.tool.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t(item.tool).toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const formatSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
+    if (bytes === 0) return t("0 Bytes")
     const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const sizes = [t("Bytes"), 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
@@ -92,8 +94,8 @@ export default function AndroidHistoryView() {
     const route = routeOf(previewItem)
     setPipelineFile({ buffer: previewItem.buffer, name: previewItem.name, type: mimeOf(previewItem) })
     setPreviewItem(null)
-    if (route) { navigate(route); toast.success(`Opened in ${previewItem.tool}`) }
-    else toast.success('Sent to tools')
+    if (route) { navigate(route); toast.success(t("Opened in {0}", t(previewItem.tool))) }
+    else toast.success(t("Sent to tools"))
   }
 
   const handleDownload = async (item: ActivityEntry) => {
@@ -102,9 +104,9 @@ export default function AndroidHistoryView() {
     try {
       if (item.buffer) await downloadFile(item.buffer, item.name, mimeOf(item))
       else if (item.resultUrl) await downloadFile(item.resultUrl, item.name, mimeOf(item))
-      else { toast.error('File expired — please re-process'); return }
-      toast.success('Saved')
-    } catch { toast.error('Download failed') } finally { setBusy(null) }
+      else { toast.error(t("File expired — please re-process")); return }
+      toast.success(t("Saved"))
+    } catch { toast.error(t("Download failed")) } finally { setBusy(null) }
   }
 
   const handleShare = async (item: ActivityEntry) => {
@@ -113,28 +115,28 @@ export default function AndroidHistoryView() {
     try {
       if (item.buffer) await shareFile(item.buffer, item.name, mimeOf(item))
       else if (item.resultUrl) await shareFile(item.resultUrl, item.name, mimeOf(item))
-      else { toast.error('File expired — please re-process'); return }
-    } catch { toast.error('Share failed') } finally { setBusy(null) }
+      else { toast.error(t("File expired — please re-process")); return }
+    } catch { toast.error(t("Share failed")) } finally { setBusy(null) }
   }
 
   const handleDelete = async (item: ActivityEntry) => {
     await deleteActivity(item.id)
     setHistory(prev => prev.filter(h => h.id !== item.id))
     setSelected(null)
-    toast.success('Deleted from history')
+    toast.success(t("Deleted from history"))
   }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-black pb-32 transition-colors">
       <TabHeader
-        title="Activity"
+        title={t("Activity")}
         query={searchQuery}
         onQuery={setSearchQuery}
-        placeholder="Search documents..."
+        placeholder={t("Search documents...")}
         action={history.length > 0 ? (
           <button
             onClick={handleClear}
-            aria-label="Clear history"
+            aria-label={t("Clear history")}
             className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl active:scale-90 transition-all shadow-sm"
           >
             <Trash2Icon size={20} />
@@ -148,8 +150,8 @@ export default function AndroidHistoryView() {
             <div className="w-20 h-20 bg-gray-50 dark:bg-zinc-900 rounded-[2.5rem] flex items-center justify-center text-gray-300 mb-6 border border-gray-100 dark:border-white/5">
               <HistoryIcon size={32} strokeWidth={1.5} />
             </div>
-            <h3 className="text-xl font-black dark:text-white tracking-tight">Everything Clear</h3>
-            <p className="text-xs text-gray-500 dark:text-zinc-500 max-w-[200px] mt-2 font-medium leading-relaxed">Documents processed on this device will appear here temporarily.</p>
+            <h3 className="text-xl font-black dark:text-white tracking-tight">{t("Everything Clear")}</h3>
+            <p className="text-xs text-gray-500 dark:text-zinc-500 max-w-[200px] mt-2 font-medium leading-relaxed">{t("Documents processed on this device will appear here temporarily.")}</p>
           </div>
         ) : (
           filteredHistory.map((item) => (
@@ -161,7 +163,7 @@ export default function AndroidHistoryView() {
                 <p className="text-xs font-black truncate dark:text-white mb-0.5">{item.name}</p>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1 text-[9px] text-gray-400 font-black uppercase tracking-tighter bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-md">
-                    {item.tool}
+                    {t(item.tool)}
                   </div>
                   <div className="flex items-center gap-1 text-[9px] text-gray-400 font-bold">
                     <HardDriveIcon size={10} /> {formatSize(item.size)}
@@ -171,7 +173,7 @@ export default function AndroidHistoryView() {
                   </div>
                 </div>
                 {!item.buffer && !item.resultUrl && (
-                  <p className="text-[9px] font-bold text-amber-500 mt-1">Expired — re-process to use again</p>
+                  <p className="text-[9px] font-bold text-amber-500 mt-1">{t("Expired — re-process to use again")}</p>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -199,30 +201,30 @@ export default function AndroidHistoryView() {
           <div className="w-full max-w-md bg-white dark:bg-zinc-950 rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 pb-2">
               <p className="text-xs font-black truncate dark:text-white">{selected.name}</p>
-              <p className="text-[10px] font-bold text-gray-400 mt-1">{selected.tool} • {formatSize(selected.size)} • {formatDate(selected.timestamp)}</p>
+              <p className="text-[10px] font-bold text-gray-400 mt-1">{t(selected.tool)} • {formatSize(selected.size)} • {formatDate(selected.timestamp)}</p>
               {!selected.buffer && !selected.resultUrl && (
-                <p className="text-[10px] font-bold text-amber-500 mt-2">File bytes expired — only Delete is available.</p>
+                <p className="text-[10px] font-bold text-amber-500 mt-2">{t("File bytes expired — only Delete is available.")}</p>
               )}
             </div>
             <div className="p-4 space-y-2">
               {canPreview(selected) && (
                 <button onClick={() => handleOpen(selected)} className="w-full p-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
-                  <OpenIcon size={16} /> Preview
+                  <OpenIcon size={16} /> {t("Preview")}
                 </button>
               )}
               <div className="flex gap-2">
                 <button disabled={busy !== null || (!selected.buffer && !selected.resultUrl)} onClick={() => handleDownload(selected)} className="flex-1 p-4 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50">
-                  <DownloadIcon size={16} /> {busy === 'download' ? 'Saving…' : 'Download'}
+                  <DownloadIcon size={16} /> {busy === 'download' ? t("Saving…") : t("Download")}
                 </button>
                 <button disabled={busy !== null || (!selected.buffer && !selected.resultUrl)} onClick={() => handleShare(selected)} className="flex-1 p-4 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50">
-                  <ShareIcon size={16} /> {busy === 'share' ? 'Sharing…' : 'Share'}
+                  <ShareIcon size={16} /> {busy === 'share' ? t("Sharing…") : t("Share")}
                 </button>
               </div>
               <button onClick={() => handleDelete(selected)} className="w-full p-4 text-rose-500 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
-                <Trash2Icon size={16} /> Delete
+                <Trash2Icon size={16} /> {t("Delete")}
               </button>
               <button onClick={() => setSelected(null)} className="w-full p-3 text-gray-400 rounded-2xl font-black uppercase text-[10px] flex items-center justify-center gap-2">
-                <XIcon size={14} /> Close
+                <XIcon size={14} /> {t("Close")}
               </button>
             </div>
           </div>

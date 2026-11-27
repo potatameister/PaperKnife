@@ -6,6 +6,7 @@ import { PDFDocument, PDFName, PDFNumber, PDFRawStream, PDFArray } from 'pdf-lib
 
 import { loadPdfDocument } from './pdfHelpers'
 import { getProcessBytes } from './decryptInput'
+import { t } from '../i18n'
 
 export type CompressionQuality = 'low' | 'medium' | 'high'
 
@@ -102,11 +103,11 @@ export const compressSingleFile = async (
       }
 
       worker.onerror = () => {
-        reject(new Error('Worker failed to start or execution error.'))
+        reject(new Error(t("Worker failed to start or execution error.")))
         worker.terminate()
       }
     } catch (e: any) {
-      reject(new Error(`Failed to start worker: ${e.message}`))
+      reject(new Error(t("Failed to start worker: {0}", e.message)))
     }
   })
 }
@@ -175,7 +176,7 @@ export const condenseImages = async (
   try {
     pdfDoc = await PDFDocument.load(bytes, { throwOnInvalidObject: false } as any)
   } catch {
-    throw new Error(`"${item.file.name}" could not be optimized.`)
+    throw new Error(t("\"{0}\" could not be optimized.", item.file.name))
   }
   const context = (pdfDoc as any).context
   const MIN_IMAGE_BYTES = 10 * 1024
@@ -239,7 +240,7 @@ export const condenseImages = async (
     if (onProgress && idx % 20 === 0) onProgress(Math.round((idx / entries.length) * 100))
   }
   if (stats.shrunk === 0) {
-    const err: any = new Error(`"${item.file.name}" photos could not be shrunk.`)
+    const err: any = new Error(t("\"{0}\" photos could not be shrunk.", item.file.name))
     err.condenseStats = stats
     throw err
   }

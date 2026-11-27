@@ -7,6 +7,7 @@ import { PDFDocument } from 'pdf-lib'
 import { getPdfMetaData, unlockPdf, destroyPdf } from './pdfHelpers'
 import { decryptInput } from './decryptInput'
 import type { ToolEngineInput, ToolEngineResult } from './rotateEngines'
+import { t } from '../i18n'
 
 export const unlockPdfFile = async (
   input: ToolEngineInput,
@@ -18,11 +19,11 @@ export const unlockPdfFile = async (
   if (!locked) {
     const original = new Uint8Array(await input.file.arrayBuffer())
     const blob = new Blob([original as any], { type: 'application/pdf' })
-    return { url: createUrl(blob), size: blob.size, buffer: original, note: 'File was already unlocked (byte-identical)' }
+    return { url: createUrl(blob), size: blob.size, buffer: original, note: t("File was already unlocked (byte-identical)") }
   }
-  if (!password) throw new Error(`Password required for "${sourceName}".`)
+  if (!password) throw new Error(t("Password required for \"{0}\".", sourceName))
   const probe = await unlockPdf(input.file, password)
-  if (!probe.success || !probe.pdfDoc) throw new Error(`Incorrect password for "${sourceName}".`)
+  if (!probe.success || !probe.pdfDoc) throw new Error(t("Incorrect password for \"{0}\".", sourceName))
   const expectedPages = probe.pageCount
   await destroyPdf(probe.pdfDoc)
   const raw = new Uint8Array(await input.file.arrayBuffer())
@@ -31,10 +32,10 @@ export const unlockPdfFile = async (
   try {
     check = await PDFDocument.load(pdfBytes, { throwOnInvalidObject: false } as any)
   } catch {
-    throw new Error(`"${sourceName}" unlocked copy failed verification.`)
+    throw new Error(t("\"{0}\" unlocked copy failed verification.", sourceName))
   }
-  if (check.getPageCount() !== expectedPages) throw new Error(`"${sourceName}" unlocked copy failed verification.`)
+  if (check.getPageCount() !== expectedPages) throw new Error(t("\"{0}\" unlocked copy failed verification.", sourceName))
   const blob = new Blob([pdfBytes as any], { type: 'application/pdf' })
   const buffer = new Uint8Array(await blob.arrayBuffer())
-  return { url: createUrl(blob), size: blob.size, buffer, note: 'Encryption removed, page count verified' }
+  return { url: createUrl(blob), size: blob.size, buffer, note: t("Encryption removed, page count verified") }
 }

@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { loadPdfDocument, renderPageThumbnail, renderGridThumbnail, shareFile, unlockPdf } from '../utils/pdfHelpers'
 import { useBackHandler } from '../utils/backHandler'
 import { PaperKnifeLogo } from './Logo'
+import { t } from '../i18n'
 
 interface PdfPreviewProps {
   file: File
@@ -89,7 +90,7 @@ const LazyPage = ({ pdfDoc, pageNum, hiRes, calmRef, calmTick }: {
         {src ? (
           <img
             src={src}
-            alt={`Page ${pageNum}`}
+            alt={t("Page {0}", pageNum)}
             decoding="async"
             className="max-w-full h-auto object-contain select-none"
             draggable={false}
@@ -352,12 +353,12 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
         setPdfDoc(result.pdfDoc)
         setTotalPages(result.pageCount)
         setIsLocked(false)
-        toast.success('Document unlocked')
+        toast.success(t("Document unlocked"))
       } else {
-        toast.error('Incorrect password')
+        toast.error(t("Incorrect password"))
       }
     } catch (e) {
-      toast.error('Failed to unlock')
+      toast.error(t("Failed to unlock"))
     } finally {
       setIsUnlocking(false)
     }
@@ -421,7 +422,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
                 <h2 className="text-sm font-black text-white truncate max-w-[140px] leading-tight">{file.name}</h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                   <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Secure View</p>
+                   <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">{t("Secure View")}</p>
                 </div>
              </div>
           </div>
@@ -432,7 +433,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
             <button
               onClick={zoomOut}
               disabled={scale <= 1}
-              aria-label="Zoom out"
+              aria-label={t("Zoom out")}
               className="w-8 h-8 flex items-center justify-center text-zinc-300 rounded-xl active:bg-white/10 transition-all disabled:opacity-30"
             >
               <Minus size={16} strokeWidth={2.5} />
@@ -441,7 +442,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
             <button
               onClick={zoomIn}
               disabled={scale >= 3}
-              aria-label="Zoom in"
+              aria-label={t("Zoom in")}
               className="w-8 h-8 flex items-center justify-center text-zinc-300 rounded-xl active:bg-white/10 transition-all disabled:opacity-30"
             >
               <Plus size={16} strokeWidth={2.5} />
@@ -484,7 +485,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
           {isLoading && (
             <div className="h-full flex flex-col items-center justify-center gap-4">
               <Loader2 className="w-10 h-10 text-rose-500 animate-spin" />
-              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em]">Decoding Layers...</p>
+              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em]">{t("Decoding Layers...")}</p>
             </div>
           )}
 
@@ -493,8 +494,8 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
               <div className="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-inner border border-rose-500/20">
                 <Lock size={32} />
               </div>
-              <h3 className="text-2xl font-black text-white tracking-tighter mb-3">Layer Protected</h3>
-              <p className="text-sm text-zinc-500 max-w-xs mx-auto leading-relaxed mb-8">This document is encrypted. Enter the password to view the contents.</p>
+              <h3 className="text-2xl font-black text-white tracking-tighter mb-3">{t("Layer Protected")}</h3>
+              <p className="text-sm text-zinc-500 max-w-xs mx-auto leading-relaxed mb-8">{t("This document is encrypted. Enter the password to view the contents.")}</p>
               
               <div className="w-full max-w-xs space-y-3 mb-10">
                  <input 
@@ -502,7 +503,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
                    value={password}
                    onChange={(e) => setPassword(e.target.value)}
                    onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
-                   placeholder="Enter Password"
+                   placeholder={t("Enter Password")}
                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold text-center outline-none focus:border-rose-500 transition-all"
                    autoFocus
                  />
@@ -512,7 +513,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
                    className="w-full py-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                  >
                    {isUnlocking ? <Loader2 className="animate-spin" size={16} /> : <Unlock size={16} />} 
-                   Unlock Layer
+                   {t("Unlock Layer")}
                  </button>
               </div>
 
@@ -520,7 +521,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
                 onClick={onProcess} 
                 className="text-zinc-500 font-black uppercase text-[10px] tracking-[0.2em] hover:text-white transition-colors"
               >
-                Tool Selection
+                {t("Tool Selection")}
               </button>
             </div>
           ) : (
@@ -549,7 +550,7 @@ export default function PdfPreview({ file, onClose, onProcess }: PdfPreviewProps
           <div className="flex items-center gap-2 opacity-60">
              <span>{(file.size / (1024*1024)).toFixed(2)} MB</span>
              <span className="opacity-30">•</span>
-             <span>PDF Document</span>
+             <span>{t("PDF Document")}</span>
           </div>
          <div className="text-zinc-400 font-bold tracking-[0.1em]">
             <span ref={el => { pctEls.current[1] = el }}>{Math.round(scale * 100)}%</span> • {currentPage} / {totalPages}

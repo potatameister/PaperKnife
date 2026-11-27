@@ -10,6 +10,7 @@ import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { t } from '../../i18n'
 
 type SignaturePdfData = { file: File, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string }
 type SavedSig = { id: string, dataUrl: string, createdAt: number }
@@ -64,7 +65,7 @@ const blobToDataUrl = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(new Error('Failed to read signature'))
+    reader.onerror = () => reject(new Error(t("Failed to read signature")))
     reader.readAsDataURL(blob)
   })
 
@@ -186,12 +187,12 @@ function SignaturePad({ onSave, onCancel, inkColor }: { onSave: (blob: Blob) => 
           onTouchEnd={stopDrawing}
         />
         <div className="absolute top-4 right-4 flex gap-2">
-          <button onClick={handleClear} className="p-2.5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 hover:bg-rose-500 hover:text-white rounded-xl transition-all shadow-sm text-gray-400" title="Clear"><Eraser size={18} /></button>
+          <button onClick={handleClear} className="p-2.5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 hover:bg-rose-500 hover:text-white rounded-xl transition-all shadow-sm text-gray-400" title={t("Clear")}><Eraser size={18} /></button>
         </div>
       </div>
       <div className="flex gap-2">
-        <button onClick={onCancel} className="flex-1 py-3 bg-gray-100 dark:bg-zinc-800 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500">Cancel</button>
-        <button onClick={handleDone} className="flex-[2] py-3 bg-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20"><Check size={16} /> Use Signature</button>
+        <button onClick={onCancel} className="flex-1 py-3 bg-gray-100 dark:bg-zinc-800 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500">{t("Cancel")}</button>
+        <button onClick={handleDone} className="flex-[2] py-3 bg-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20"><Check size={16} /> {t("Use Signature")}</button>
       </div>
     </div>
   )
@@ -252,7 +253,7 @@ export default function SignatureTool() {
     try {
       localStorage.setItem(SIG_STORE_KEY, JSON.stringify(list))
     } catch {
-      toast.error('Signature library is full — delete one first.')
+      toast.error(t("Signature library is full — delete one first."))
     }
   }
 
@@ -260,11 +261,11 @@ export default function SignatureTool() {
     if (!signatureFile) return
     try {
       const dataUrl = await blobToDataUrl(signatureFile)
-      if (savedSigs.some(s => s.dataUrl === dataUrl)) { toast.success('Already in your library.'); return }
+      if (savedSigs.some(s => s.dataUrl === dataUrl)) { toast.success(t("Already in your library.")); return }
       persistSigs([{ id: Math.random().toString(36).slice(2), dataUrl, createdAt: Date.now() }, ...savedSigs].slice(0, MAX_SAVED_SIGS))
-      toast.success('Saved — stored only on this device.')
+      toast.success(t("Saved — stored only on this device."))
     } catch {
-      toast.error('Could not save signature.')
+      toast.error(t("Could not save signature."))
     }
   }
 
@@ -273,7 +274,7 @@ export default function SignatureTool() {
       const blob = await (await fetch(s.dataUrl)).blob()
       await ingestSignature(blob)
     } catch {
-      toast.error('Could not load that signature.')
+      toast.error(t("Could not load that signature."))
     }
   }
 
@@ -292,8 +293,8 @@ export default function SignatureTool() {
     try {
       const result = await unlockPdf(pdfData.file, unlockPassword)
       if (result.success) { setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword }); setActivePage(1); const thumb = await renderPageThumbnail(result.pdfDoc, 1, 2.0); setThumbnail(thumb) }
-      else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
-    } catch { toast.error('Failed to unlock PDF') } finally { setIsProcessing(false) }
+      else { toast.error(t("Incorrect password for \"{0}\".", pdfData?.file.name)) }
+    } catch { toast.error(t("Failed to unlock PDF")) } finally { setIsProcessing(false) }
   }
 
   const handleFile = async (file: File) => {
@@ -303,7 +304,7 @@ export default function SignatureTool() {
       const meta = await getPdfMetaData(file)
       if (meta.isLocked) { setPdfData({ file, pageCount: 0, isLocked: true }) }
       else { const pdfDoc = await loadPdfDocument(file); setPdfData({ file, pageCount: meta.pageCount, isLocked: false, pdfDoc }); setActivePage(1); const thumb = await renderPageThumbnail(pdfDoc, 1, 2.0); setThumbnail(thumb) }
-    } catch { toast.error('Failed to open PDF') } finally { 
+    } catch { toast.error(t("Failed to open PDF")) } finally { 
       setIsProcessing(false) 
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
@@ -316,7 +317,7 @@ export default function SignatureTool() {
     setActivePage(clamped); setThumbnail(null)
     try {
       setThumbnail(await renderPageThumbnail(pdfData.pdfDoc, clamped, 2.0))
-    } catch { toast.error('Failed to render page') }
+    } catch { toast.error(t("Failed to render page")) }
   }
 
   const thumbImgRef = useRef<HTMLImageElement>(null)
@@ -377,7 +378,7 @@ export default function SignatureTool() {
       setPlacements(prev => [...prev, p])
       setSelectedId(p.id)
     } catch {
-      toast.error('Could not place signature.')
+      toast.error(t("Could not place signature."))
     }
   }
 
@@ -393,7 +394,7 @@ export default function SignatureTool() {
       try {
         bytes = await getProcessBytes(pdfData.file, pdfData.password)
       } catch (e: any) {
-        toast.error(e.message || `Failed to unlock "${pdfData.file.name}".`); setIsProcessing(false); return
+        toast.error(e.message || t("Failed to unlock \"{0}\".", pdfData.file.name)); setIsProcessing(false); return
       }
       const pdfDoc = await PDFDocument.load(bytes, { throwOnInvalidObject: false } as any)
       const embedded = new Map<string, any>()
@@ -431,34 +432,34 @@ export default function SignatureTool() {
       }
       const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes as any], { type: 'application/pdf' }); const url = URL.createObjectURL(blob)
       setDownloadUrl(url); addActivity({ name: `${customFileName}.pdf`, tool: 'Signature', size: blob.size, resultUrl: url, buffer: new Uint8Array(await blob.arrayBuffer()) })
-    } catch { toast.error('Failed to sign PDF') } finally { setIsProcessing(false) }
+    } catch { toast.error(t("Failed to sign PDF")) } finally { setIsProcessing(false) }
   }
 
   const ActionButton = () => (
     <button onClick={saveSignedPdf} disabled={isProcessing || placements.length === 0} className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-rose-500/20 ${isNative ? 'py-4 rounded-2xl text-sm' : 'p-6 rounded-3xl text-xl'}`}>
-      {isProcessing ? <Loader2 className="animate-spin" /> : <>Sign & Save <ArrowRight size={18} /></>}
+      {isProcessing ? <Loader2 className="animate-spin" /> : <>{t("Sign & Save")} <ArrowRight size={18} /></>}
     </button>
   )
 
   return (
-    <NativeToolLayout title="Signature" description="Sign any PDF by dragging your signature image." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
+    <NativeToolLayout title={t("Signature")} description={t("Sign any PDF by dragging your signature image.")} actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-      <input type="file" accept="image/*" className="hidden" ref={signatureInputRef} onChange={(e) => { const file = e.target.files?.[0]; if (signatureInputRef.current) signatureInputRef.current.value = ''; if (!file) return; if (!file.type.startsWith('image/')) { toast.error('Please upload an image file'); return } ingestSignature(file) }} />
+      <input type="file" accept="image/*" className="hidden" ref={signatureInputRef} onChange={(e) => { const file = e.target.files?.[0]; if (signatureInputRef.current) signatureInputRef.current.value = ''; if (!file) return; if (!file.type.startsWith('image/')) { toast.error(t("Please upload an image file")); return } ingestSignature(file) }} />
       {!pdfData ? (
         <button 
           onClick={() => !isProcessing && fileInputRef.current?.click()} 
           className="w-full border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 transition-all cursor-pointer group"
         >
           <ImageIcon size={32} className="mx-auto mb-4 text-rose-500" />
-          <h3 className="text-xl font-bold dark:text-white">Select PDF</h3>
+          <h3 className="text-xl font-bold dark:text-white">{t("Select PDF")}</h3>
         </button>
       ) : pdfData.isLocked ? (
         <div className="max-w-md mx-auto relative z-[100]">
           <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 text-center shadow-2xl">
             <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6"><Lock size={32} /></div>
-            <h3 className="text-2xl font-bold mb-2 dark:text-white">Protected File</h3>
-            <input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} placeholder="Password" className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white" />
-            <button onClick={handleUnlock} disabled={!unlockPassword || isProcessing} className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs">Unlock</button>
+            <h3 className="text-2xl font-bold mb-2 dark:text-white">{t("Protected File")}</h3>
+            <input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} placeholder={t("Password")} className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white" />
+            <button onClick={handleUnlock} disabled={!unlockPassword || isProcessing} className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs">{t("Unlock")}</button>
           </div>
         </div>
       ) : (
@@ -469,62 +470,62 @@ export default function SignatureTool() {
                 <div className="w-12 h-16 bg-gray-50 dark:bg-black rounded-xl overflow-hidden shrink-0 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-rose-500 shadow-inner">{thumbnail ? <img src={thumbnail} className="w-full h-full object-cover" /> : <ImageIcon size={24} />}</div>
                 <div className="flex-1 min-w-0 text-left">
                   <h3 className="font-bold text-sm truncate dark:text-white">{pdfData.file.name}</h3>
-                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{pdfData.pageCount} Pages • {(pdfData.file.size / (1024*1024)).toFixed(1)} MB</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{pdfData.pageCount} {t("Pages •")} {(pdfData.file.size / (1024*1024)).toFixed(1)} MB</p>
                 </div>
                 <button onClick={() => { setPdfData(null); clearSignature(); }} className="p-2 text-gray-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
               </div>
               <button onClick={() => signatureInputRef.current?.click()} className="w-full p-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs hover:bg-rose-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20">
-                <span className="flex items-center justify-center gap-2"><ImageIcon size={16}/> {signatureImg ? 'Replace Signature' : 'Upload Signature'}</span>
+                <span className="flex items-center justify-center gap-2"><ImageIcon size={16}/> {signatureImg ? t("Replace Signature") : t("Upload Signature")}</span>
               </button>
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 px-1">Signature</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 px-1">{t("Signature")}</label>
                 {!signatureImg && sigMode === null && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => setSigMode('draw')} className="aspect-video bg-rose-50 dark:bg-rose-900/10 border-2 border-rose-100 dark:border-rose-900/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-rose-500 hover:bg-rose-100 transition-all"><Pen size={24} /><span className="text-[10px] font-black uppercase tracking-widest">Draw</span></button>
-                      <button onClick={() => signatureInputRef.current?.click()} className="aspect-video bg-rose-50 dark:bg-rose-900/10 border-2 border-rose-100 dark:border-rose-900/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-rose-500 hover:bg-rose-100 transition-all"><ImageIcon size={24} /><span className="text-[10px] font-black uppercase tracking-widest">Upload</span></button>
+                      <button onClick={() => setSigMode('draw')} className="aspect-video bg-rose-50 dark:bg-rose-900/10 border-2 border-rose-100 dark:border-rose-900/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-rose-500 hover:bg-rose-100 transition-all"><Pen size={24} /><span className="text-[10px] font-black uppercase tracking-widest">{t("Draw")}</span></button>
+                      <button onClick={() => signatureInputRef.current?.click()} className="aspect-video bg-rose-50 dark:bg-rose-900/10 border-2 border-rose-100 dark:border-rose-900/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-rose-500 hover:bg-rose-100 transition-all"><ImageIcon size={24} /><span className="text-[10px] font-black uppercase tracking-widest">{t("Upload")}</span></button>
                     </div>
                   </div>
                 )}
                 {sigMode === 'draw' && !signatureImg && <SignaturePad inkColor="#000000" onSave={(blob) => { ingestSignature(blob); setSigMode(null); }} onCancel={() => setSigMode(null)} />}
                 {signatureImg && (
                   <div className="relative group">
-                    <div className="w-full p-4 bg-white rounded-2xl border-2 border-gray-100 flex items-center justify-center min-h-[100px] shadow-inner"><img src={signatureImg} className="h-20 object-contain" alt="Signature preview" /></div>
-                    <button onClick={clearSignature} className="absolute -top-2 -right-2 bg-rose-500 text-white p-1.5 rounded-full shadow-lg" aria-label="Remove signature"><Trash2 size={14} /></button>
+                    <div className="w-full p-4 bg-white rounded-2xl border-2 border-gray-100 flex items-center justify-center min-h-[100px] shadow-inner"><img src={signatureImg} className="h-20 object-contain" alt={t("Signature preview")} /></div>
+                    <button onClick={clearSignature} className="absolute -top-2 -right-2 bg-rose-500 text-white p-1.5 rounded-full shadow-lg" aria-label={t("Remove signature")}><Trash2 size={14} /></button>
                   </div>
                 )}
                 {signatureImg && signatureFile && (
-                  <button onClick={saveForReuse} className="mt-3 w-full py-3 bg-gray-100 dark:bg-zinc-800 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 dark:text-zinc-300 hover:text-rose-500 transition-colors">Save for reuse</button>
+                  <button onClick={saveForReuse} className="mt-3 w-full py-3 bg-gray-100 dark:bg-zinc-800 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 dark:text-zinc-300 hover:text-rose-500 transition-colors">{t("Save for reuse")}</button>
                 )}
                 {savedSigs.length > 0 && (
                   <div className="mt-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">Saved signatures</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">{t("Saved signatures")}</p>
                     <div className="flex gap-2 overflow-x-auto pb-1">
                       {savedSigs.map(s => (
                         <div key={s.id} className="relative shrink-0">
-                          <button onClick={() => loadSavedSig(s)} className="w-20 h-14 bg-white rounded-xl border-2 border-gray-100 hover:border-rose-500 transition-colors flex items-center justify-center p-1" aria-label="Use saved signature"><img src={s.dataUrl} className="max-h-full max-w-full object-contain" alt="Saved signature" /></button>
-                          <button onClick={() => deleteSavedSig(s.id)} className="absolute -top-1.5 -right-1.5 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-full p-0.5 shadow" aria-label="Delete saved signature"><X size={12} /></button>
+                          <button onClick={() => loadSavedSig(s)} className="w-20 h-14 bg-white rounded-xl border-2 border-gray-100 hover:border-rose-500 transition-colors flex items-center justify-center p-1" aria-label={t("Use saved signature")}><img src={s.dataUrl} className="max-h-full max-w-full object-contain" alt={t("Saved signature")} /></button>
+                          <button onClick={() => deleteSavedSig(s.id)} className="absolute -top-1.5 -right-1.5 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-full p-0.5 shadow" aria-label={t("Delete saved signature")}><X size={12} /></button>
                         </div>
                       ))}
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-2 px-1">Saved signatures stay only on this device.</p>
+                    <p className="text-[11px] text-gray-400 mt-2 px-1">{t("Saved signatures stay only on this device.")}</p>
                   </div>
                 )}
               </div>
               {pdfData.pageCount > 1 && (
                 <div className="flex items-center justify-between bg-white dark:bg-zinc-900 px-4 py-3 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
-                  <button onClick={() => changePage(activePage - 1)} disabled={activePage <= 1} className="p-2 text-gray-400 hover:text-rose-500 disabled:opacity-30 transition-colors" aria-label="Previous page"><ChevronLeft size={20} /></button>
-                  <span className="text-[11px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">Page {activePage} of {pdfData.pageCount}</span>
-                  <button onClick={() => changePage(activePage + 1)} disabled={activePage >= pdfData.pageCount} className="p-2 text-gray-400 hover:text-rose-500 disabled:opacity-30 transition-colors" aria-label="Next page"><ChevronRight size={20} /></button>
+                  <button onClick={() => changePage(activePage - 1)} disabled={activePage <= 1} className="p-2 text-gray-400 hover:text-rose-500 disabled:opacity-30 transition-colors" aria-label={t("Previous page")}><ChevronLeft size={20} /></button>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-gray-500 dark:text-zinc-400">{t("Page")} {activePage} of {pdfData.pageCount}</span>
+                  <button onClick={() => changePage(activePage + 1)} disabled={activePage >= pdfData.pageCount} className="p-2 text-gray-400 hover:text-rose-500 disabled:opacity-30 transition-colors" aria-label={t("Next page")}><ChevronRight size={20} /></button>
                 </div>
               )}
               {signatureImg && placements.length === 0 && (
-                <p className="text-center text-[11px] font-bold text-gray-400">Tap the page to place your signature — tap again for more copies, on any page.</p>
+                <p className="text-center text-[11px] font-bold text-gray-400">{t("Tap the page to place your signature — tap again for more copies, on any page.")}</p>
               )}
               <div className="bg-white dark:bg-zinc-900 p-4 rounded-3xl border border-gray-100 dark:border-white/5 overflow-hidden touch-none" ref={previewRef} onClick={stampAt}>
                 {thumbnail ? (
                   <div className="relative w-full">
-                    <img ref={thumbImgRef} src={thumbnail} className="w-full h-auto block" alt={`Page ${activePage} preview`} />
+                    <img ref={thumbImgRef} src={thumbnail} className="w-full h-auto block" alt={t("Page {0} preview", activePage)} />
                     {placements.filter(p => p.page === activePage).map(p => (
                       <div
                         key={p.id}
@@ -534,11 +535,11 @@ export default function SignatureTool() {
                         style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.size}%`, transform: 'translate(-50%, -50%)' }}
                         className={`absolute cursor-move rounded-sm ${selectedId === p.id ? 'ring-2 ring-rose-500' : 'ring-1 ring-black/10'}`}
                       >
-                        <img src={p.dataUrl} className="w-full pointer-events-none" alt="Signature placement" />
+                        <img src={p.dataUrl} className="w-full pointer-events-none" alt={t("Signature placement")} />
                         {selectedId === p.id && (
                           <>
                             <div onMouseDown={(e) => { e.stopPropagation(); dragRef.current = { id: p.id, mode: 'resize' } }} onTouchStart={(e) => { e.stopPropagation(); dragRef.current = { id: p.id, mode: 'resize' } }} className="absolute -bottom-2 -right-2 w-6 h-6 bg-rose-500 rounded-full border-2 border-white cursor-nwse-resize" />
-                            <button onClick={(e) => { e.stopPropagation(); removePlacement(p.id) }} className="absolute -top-2 -right-2 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-full p-1 shadow" aria-label="Remove this signature"><X size={12} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); removePlacement(p.id) }} className="absolute -top-2 -right-2 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-full p-1 shadow" aria-label={t("Remove this signature")}><X size={12} /></button>
                           </>
                         )}
                       </div>
@@ -550,25 +551,25 @@ export default function SignatureTool() {
               </div>
               {placements.length > 0 && (
                 <div className="flex items-center justify-between px-1">
-                  <p className="text-[11px] font-bold text-gray-400">{placements.length} placed • tap a copy to move, resize, or remove it</p>
-                  <button onClick={() => { setPlacements([]); setSelectedId(null) }} className="text-[11px] font-black uppercase text-gray-400 hover:text-rose-500 transition-colors">Clear all</button>
+                  <p className="text-[11px] font-bold text-gray-400">{placements.length} {t("placed • tap a copy to move, resize, or remove it")}</p>
+                  <button onClick={() => { setPlacements([]); setSelectedId(null) }} className="text-[11px] font-black uppercase text-gray-400 hover:text-rose-500 transition-colors">{t("Clear all")}</button>
                 </div>
               )}
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 px-1">Output Filename</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 px-1">{t("Output Filename")}</label>
                 <input 
                   type="text" 
                   value={customFileName} 
                   onChange={(e) => setCustomFileName(e.target.value)} 
                   className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" 
                 />
-                {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">File output will be unlocked.</p>)}
+                {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">{t("File output will be unlocked.")}</p>)}
               </div>
             </>
           ) : (
-            <SuccessState message="Signed Successfully!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setPdfData(null); clearSignature(); setSigMode(null); setPlacements([]); setSelectedId(null); }} />
+            <SuccessState message={t("Signed Successfully!")} downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setPdfData(null); clearSignature(); setSigMode(null); setPlacements([]); setSelectedId(null); }} />
           )}
-          <button onClick={() => { setPdfData(null); clearSignature(); setSigMode(null); setPlacements([]); setSelectedId(null); }} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors">Close File</button>
+          <button onClick={() => { setPdfData(null); clearSignature(); setSigMode(null); setPlacements([]); setSelectedId(null); }} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors">{t("Close File")}</button>
         </div>
       )}
     </NativeToolLayout>

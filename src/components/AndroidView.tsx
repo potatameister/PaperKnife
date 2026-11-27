@@ -27,6 +27,7 @@ import {
 import { useState, useEffect, useRef } from 'react'
 import { getRecentActivity, ActivityEntry } from '../utils/recentActivity'
 import { PaperKnifeLogo } from './Logo'
+import { t } from '../i18n'
 
 interface AndroidViewProps {
   theme: 'light' | 'dark'
@@ -44,10 +45,10 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
   }, [])
 
   const quickActions = [
-    { title: 'Merge', icon: LayersIcon, path: '/merge', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', sub: 'Combine' },
-    { title: 'Compress', icon: ZapIcon, path: '/compress', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', sub: 'Optimize' },
-    { title: 'Split', icon: ScissorsIcon, path: '/split', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', sub: 'Extract' },
-    { title: 'Protect', icon: LockIcon, path: '/protect', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', sub: 'Secure' },
+    { title: t("Merge"), icon: LayersIcon, path: '/merge', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', sub: t("Combine") },
+    { title: t("Compress"), icon: ZapIcon, path: '/compress', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', sub: t("Optimize") },
+    { title: t("Split"), icon: ScissorsIcon, path: '/split', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', sub: t("Extract") },
+    { title: t("Protect"), icon: LockIcon, path: '/protect', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', sub: t("Secure") },
   ]
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,7 +78,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
                    <span className="text-lg font-black tracking-tighter text-gray-900 dark:text-white leading-none">PaperKnife</span>
                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
                 </div>
-                <span className="text-[7px] font-black text-rose-500 uppercase tracking-[0.2em] mt-0.5">Secure Engine</span>
+                <span className="text-[7px] font-black text-rose-500 uppercase tracking-[0.2em] mt-0.5">{t("Secure Engine")}</span>
              </div>
           </div>
           
@@ -107,12 +108,12 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
                        <UploadIcon size={28} strokeWidth={2.5} />
                     </div>
                     <div className="px-3 py-1.5 bg-rose-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
-                       Start Session
+                       {t("Start Session")}
                     </div>
                  </div>
                  <div>
-                    <h2 className="text-3xl font-black text-white dark:text-black tracking-tight leading-none mb-2">Select PDF</h2>
-                    <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-tight">Tap to load from device storage</p>
+                    <h2 className="text-3xl font-black text-white dark:text-black tracking-tight leading-none mb-2">{t("Select PDF")}</h2>
+                    <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-tight">{t("Tap to load from device storage")}</p>
                  </div>
               </div>
            </button>
@@ -124,9 +125,9 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
             <div className="flex items-center justify-between px-2 mb-3">
                <div className="flex items-center gap-2">
                   <ClipboardList size={12} className="text-gray-400" />
-                  <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 leading-none">History Clipboard</h3>
+                  <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 leading-none">{t("History Clipboard")}</h3>
                </div>
-               <button onClick={() => navigate('/android-history')} className="text-[9px] font-black uppercase text-rose-500 tracking-wider">View All</button>
+               <button onClick={() => navigate('/android-history')} className="text-[9px] font-black uppercase text-rose-500 tracking-wider">{t("View All")}</button>
             </div>
             
             <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm divide-y divide-gray-50 dark:divide-white/5 overflow-hidden">
@@ -142,7 +143,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold truncate text-gray-900 dark:text-white leading-tight mb-0.5">{item.name}</p>
                     <div className="flex items-center gap-2">
-                       <span className="text-[9px] text-rose-500 font-black uppercase tracking-tight">{item.tool}</span>
+                       <span className="text-[9px] text-rose-500 font-black uppercase tracking-tight">{t(item.tool)}</span>
                        <span className="text-[14px] text-gray-200 dark:text-zinc-800 leading-none">•</span>
                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">{(item.size / (1024*1024)).toFixed(2)} MB</span>
                     </div>
@@ -157,7 +158,7 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
         {/* Static Bento Grid */}
         <section>
            <div className="px-2 mb-3 flex items-center justify-between">
-              <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Core Engines</h3>
+              <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">{t("Core Engines")}</h3>
            </div>
            
            <div className="grid grid-cols-2 gap-3">
@@ -189,8 +190,8 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
                        <LayoutGridIcon size={20} strokeWidth={2.5} />
                     </div>
                     <div>
-                       <span className="text-sm font-black block leading-none mb-1">More Engines</span>
-                       <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">Full Catalog</span>
+                       <span className="text-sm font-black block leading-none mb-1">{t("More Engines")}</span>
+                       <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest">{t("Full Catalog")}</span>
                     </div>
                  </div>
                  <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center relative z-10">
@@ -212,8 +213,8 @@ export default function AndroidView({ theme, toggleTheme, onFileSelect }: Androi
               <HeartIcon size={20} className="text-rose-500" fill="currentColor" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-black text-white dark:text-black block leading-none mb-1">Support PaperKnife</span>
-              <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Help fuel development</span>
+              <span className="text-sm font-black text-white dark:text-black block leading-none mb-1">{t("Support PaperKnife")}</span>
+              <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{t("Help fuel development")}</span>
             </div>
             <div className="w-8 h-8 bg-white/10 dark:bg-black/5 rounded-full flex items-center justify-center shrink-0">
               <GHIcon size={16} className="text-white dark:text-black" />

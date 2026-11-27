@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 export const IS_UNLOCK_WASM_DISABLED = import.meta.env.VITE_DISABLE_UNLOCK_WASM === 'true'
 
 let runnerPromise: Promise<any> | null = null
@@ -35,7 +36,7 @@ export const qpdfDecrypt = async (data: Uint8Array, password: string): Promise<U
   } catch (e: any) {
     const detail = [...(e?.stderr || []), ...(e?.stdout || []), e?.message || ''].join(' ').toLowerCase()
     if (detail.includes('password')) throw new Error('INCORRECT_PASSWORD')
-    if (e?.code === 'QPDF_TIMEOUT') throw new Error('Timed out while unlocking.')
-    throw new Error(e?.message || 'Could not decrypt file.')
+    if (e?.code === 'QPDF_TIMEOUT') throw new Error(t("Timed out while unlocking."))
+    throw new Error(e?.message || t("Could not decrypt file."))
   }
 }

@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { Directory, Filesystem } from '@capacitor/filesystem'
 import { PdfUnlock } from '../plugins/pdfUnlock'
+import { t } from '../i18n'
 
 export const isNativeUnlockAvailable = () => Capacitor.isNativePlatform()
 
@@ -37,7 +38,7 @@ export const nativeDecrypt = async (data: Uint8Array, password: string): Promise
     } catch (e: any) {
       const msg = String(e?.message || '')
       if (msg.includes('INCORRECT_PASSWORD')) throw new Error('INCORRECT_PASSWORD')
-      throw new Error(msg || 'Native unlock failed.')
+      throw new Error(msg || t("Native unlock failed."))
     }
     const out = await Filesystem.readFile({ path: result.name, directory: Directory.Cache })
     return { bytes: base64ToBytes(out.data as string), pages: result.pages }

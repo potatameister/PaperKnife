@@ -55,25 +55,26 @@ import SignatureTool from './components/tools/SignatureTool'
 import RepairTool from './components/tools/RepairTool'
 import ExtractImagesTool from './components/tools/ExtractImagesTool'
 import GrayscaleTool from './components/tools/GrayscaleTool'
+import { t } from './i18n'
 
 const tools: Tool[] = [
-  { title: 'Merge PDF', desc: 'Combine multiple PDF files into one document.', icon: Layers, implemented: true, path: '/merge', category: 'Edit', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
-  { title: 'Split PDF', desc: 'Visually extract specific pages or ranges.', icon: Scissors, implemented: true, path: '/split', category: 'Edit', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-  { title: 'Compress PDF', desc: 'Optimize your file size for easier sharing.', icon: Zap, implemented: true, path: '/compress', category: 'Optimize', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-  { title: 'Protect PDF', desc: 'Secure your documents with strong encryption.', icon: Lock, implemented: true, path: '/protect', category: 'Secure', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
-  { title: 'Unlock PDF', desc: 'Remove passwords from your protected files.', icon: Unlock, implemented: true, path: '/unlock', category: 'Secure', color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20' },
-  { title: 'Rotate PDF', desc: 'Fix page orientation permanently.', icon: RotateCw, implemented: true, path: '/rotate-pdf', category: 'Edit', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20' },
-  { title: 'Rearrange PDF', desc: 'Drag and drop pages to reorder them.', icon: ArrowUpDown, implemented: true, path: '/rearrange-pdf', category: 'Edit', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-  { title: 'Page Numbers', desc: 'Add numbering to your documents automatically.', icon: Hash, implemented: true, path: '/page-numbers', category: 'Edit', color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-900/20' },
-  { title: 'Watermark', desc: 'Overlay custom text for branding or security.', icon: Type, implemented: true, path: '/watermark', category: 'Edit', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-  { title: 'Metadata', desc: 'Edit document properties for better privacy.', icon: Tags, implemented: true, path: '/metadata', category: 'Secure', color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-900/20' },
-  { title: 'Signature', desc: 'Add your electronic signature to any document.', icon: PenTool, implemented: true, path: '/signature', category: 'Edit', color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20' },
-  { title: 'Grayscale', desc: 'Convert all document pages to black and white.', icon: Palette, implemented: true, path: '/grayscale', category: 'Optimize', color: 'text-zinc-500', bg: 'bg-zinc-50 dark:bg-zinc-900/20' },
-  { title: 'PDF to Image', desc: 'Convert document pages into high-quality images.', icon: FileImage, implemented: true, path: '/pdf-to-image', category: 'Convert', color: 'text-lime-500', bg: 'bg-lime-50 dark:bg-lime-900/20' },
-  { title: 'Image to PDF', desc: 'Convert JPG, PNG, and WebP into a professional PDF.', icon: ImagePlus, implemented: true, path: '/image-to-pdf', category: 'Convert', color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-900/20' },
-  { title: 'Extract Images', desc: 'Pull out all original images embedded in a PDF.', icon: FileImage, implemented: true, path: '/extract-images', category: 'Convert', color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
-  { title: 'PDF to Text', desc: 'Extract plain text from your PDF documents.', icon: FileText, implemented: true, path: '/pdf-to-text', category: 'Convert', color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/20' },
-  { title: 'Repair PDF', desc: 'Attempt to fix corrupted or unreadable documents.', icon: Wrench, implemented: true, path: '/repair', category: 'Optimize', color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
+  { title: t("Merge PDF"), desc: t("Combine multiple PDF files into one document."), icon: Layers, implemented: true, path: '/merge', category: 'Edit', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
+  { title: t("Split PDF"), desc: t("Visually extract specific pages or ranges."), icon: Scissors, implemented: true, path: '/split', category: 'Edit', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+  { title: t("Compress PDF"), desc: t("Optimize your file size for easier sharing."), icon: Zap, implemented: true, path: '/compress', category: 'Optimize', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+  { title: t("Protect PDF"), desc: t("Secure your documents with strong encryption."), icon: Lock, implemented: true, path: '/protect', category: 'Secure', color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
+  { title: t("Unlock PDF"), desc: t("Remove passwords from your protected files."), icon: Unlock, implemented: true, path: '/unlock', category: 'Secure', color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20' },
+  { title: t("Rotate PDF"), desc: t("Fix page orientation permanently."), icon: RotateCw, implemented: true, path: '/rotate-pdf', category: 'Edit', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+  { title: t("Rearrange PDF"), desc: t("Drag and drop pages to reorder them."), icon: ArrowUpDown, implemented: true, path: '/rearrange-pdf', category: 'Edit', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+  { title: t("Page Numbers"), desc: t("Add numbering to your documents automatically."), icon: Hash, implemented: true, path: '/page-numbers', category: 'Edit', color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-900/20' },
+  { title: t("Watermark"), desc: t("Overlay custom text for branding or security."), icon: Type, implemented: true, path: '/watermark', category: 'Edit', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+  { title: t("Metadata"), desc: t("Edit document properties for better privacy."), icon: Tags, implemented: true, path: '/metadata', category: 'Secure', color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-900/20' },
+  { title: t("Signature"), desc: t("Add your electronic signature to any document."), icon: PenTool, implemented: true, path: '/signature', category: 'Edit', color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-900/20' },
+  { title: t("Grayscale"), desc: t("Convert all document pages to black and white."), icon: Palette, implemented: true, path: '/grayscale', category: 'Optimize', color: 'text-zinc-500', bg: 'bg-zinc-50 dark:bg-zinc-900/20' },
+  { title: t("PDF to Image"), desc: t("Convert document pages into high-quality images."), icon: FileImage, implemented: true, path: '/pdf-to-image', category: 'Convert', color: 'text-lime-500', bg: 'bg-lime-50 dark:bg-lime-900/20' },
+  { title: t("Image to PDF"), desc: t("Convert JPG, PNG, and WebP into a professional PDF."), icon: ImagePlus, implemented: true, path: '/image-to-pdf', category: 'Convert', color: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-900/20' },
+  { title: t("Extract Images"), desc: t("Pull out all original images embedded in a PDF."), icon: FileImage, implemented: true, path: '/extract-images', category: 'Convert', color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
+  { title: t("PDF to Text"), desc: t("Extract plain text from your PDF documents."), icon: FileText, implemented: true, path: '/pdf-to-text', category: 'Convert', color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/20' },
+  { title: t("Repair PDF"), desc: t("Attempt to fix corrupted or unreadable documents."), icon: Wrench, implemented: true, path: '/repair', category: 'Optimize', color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
 ]
 
 export const IS_OCR_DISABLED = import.meta.env.VITE_DISABLE_OCR === 'true'
@@ -100,7 +101,7 @@ function QuickDropModal({ file, onClear, onBack }: { file: File, onClear: () => 
   const otherTools = activeTools.slice(4)
 
   const handleAction = async (path: string, title: string) => {
-    toast.loading(`Importing ${file.name}...`, { id: 'quick-load' })
+    toast.loading(t("Importing {0}...", file.name), { id: 'quick-load' })
     
     try {
       const buffer = await file.arrayBuffer()
@@ -112,9 +113,9 @@ function QuickDropModal({ file, onClear, onBack }: { file: File, onClear: () => 
 
       onClear()
       navigate(path)
-      toast.success(`Opened in ${title}`, { id: 'quick-load' })
+      toast.success(t("Opened in {0}", title), { id: 'quick-load' })
     } catch (err) {
-      toast.error('Failed to process file', { id: 'quick-load' })
+      toast.error(t("Failed to process file"), { id: 'quick-load' })
     }
   }
 
@@ -136,7 +137,7 @@ function QuickDropModal({ file, onClear, onBack }: { file: File, onClear: () => 
                 </div>
                 <div className="min-w-0">
                    <h3 className="text-lg font-black dark:text-white truncate max-w-[200px] leading-none mb-1">{file.name}</h3>
-                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{(file.size / (1024*1024)).toFixed(2)} MB • PDF Document</p>
+                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{(file.size / (1024*1024)).toFixed(2)} {t("MB • PDF Document")}</p>
                 </div>
              </div>
              <button onClick={onClear} className="p-2 bg-gray-100 dark:bg-zinc-900 rounded-full text-gray-400 hover:text-rose-500 transition-colors"><X size={18}/></button>
@@ -145,7 +146,7 @@ function QuickDropModal({ file, onClear, onBack }: { file: File, onClear: () => 
         
         <div className="px-6 pb-6 space-y-4 max-h-[60vh] overflow-y-auto scrollbar-hide">
            <div>
-              <h4 className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3 ml-1">Essentials</h4>
+              <h4 className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3 ml-1">{t("Essentials")}</h4>
               <div className="grid grid-cols-2 gap-2.5">
                  {essentials.map(tool => (
                    <button
@@ -167,7 +168,7 @@ function QuickDropModal({ file, onClear, onBack }: { file: File, onClear: () => 
                 onClick={() => setShowMore(!showMore)}
                 className="w-full flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-rose-500 transition-colors shadow-sm"
               >
-                <span>Full Tool Catalog</span>
+                <span>{t("Full Tool Catalog")}</span>
                 <ChevronDown size={14} className={`transition-transform duration-300 ${showMore ? 'rotate-180' : ''}`} />
               </button>
               
@@ -243,16 +244,16 @@ function AppContent({ theme, toggleTheme, setTheme, viewMode, setViewMode }: {
   useEffect(() => {
     const handleIntentFile = async (uri: string) => {
       try {
-        toast.loading('Importing file...', { id: 'intent-load' })
+        toast.loading(t("Importing file..."), { id: 'intent-load' })
         const fileContent = await Filesystem.readFile({ path: uri })
         const blob = await (await fetch(`data:application/pdf;base64,${fileContent.data}`)).blob()
         const fileName = uri.split('/').pop() || 'imported-file.pdf'
         const file = new File([blob], fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`, { type: 'application/pdf' })
         setDroppedFile(file)
-        toast.success('File imported successfully!', { id: 'intent-load' })
+        toast.success(t("File imported successfully!"), { id: 'intent-load' })
       } catch (error) {
         console.error('Intent load error:', error)
-        toast.error('Failed to import file.', { id: 'intent-load' })
+        toast.error(t("Failed to import file."), { id: 'intent-load' })
       }
     }
 
@@ -287,14 +288,14 @@ function AppContent({ theme, toggleTheme, setTheme, viewMode, setViewMode }: {
     if (allImages) {
       setPipelineFiles(fileArray)
       navigate('/image-to-pdf')
-      toast.success(`Imported ${fileArray.length} images`)
+      toast.success(t("Imported {0} images", fileArray.length))
       return
     }
 
     // Otherwise look for the first PDF
     const file = fileArray.find(f => f.type === 'application/pdf')
     if (!file) {
-      toast.error('Please select a PDF file or images.')
+      toast.error(t("Please select a PDF file or images."))
       return
     }
     setDroppedFile(file)
@@ -385,7 +386,7 @@ function AppContent({ theme, toggleTheme, setTheme, viewMode, setViewMode }: {
           <button
             onClick={() => setViewMode(prev => prev === 'web' ? 'android' : 'web')}
             className="bg-gray-900 dark:bg-zinc-800 text-white p-4 rounded-3xl shadow-2xl hover:bg-rose-500 transition-all duration-300 flex items-center gap-3 border border-white/10 group active:scale-95"
-            title="Toggle Chameleon Mode"
+            title={t("Toggle Chameleon Mode")}
           >
             {viewMode === 'web' ? <SmartphoneIcon size={20} /> : <MonitorIcon size={20} />}
             <span className="text-xs font-black uppercase tracking-tighter">{viewMode}</span>

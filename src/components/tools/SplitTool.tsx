@@ -9,6 +9,7 @@ import { usePipeline } from '../../utils/pipelineContext'
 import { useObjectURL } from '../../utils/useObjectURL'
 import SuccessState from './shared/SuccessState'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { t } from '../../i18n'
 
 type SplitPdfFile = {
   file: File
@@ -36,7 +37,7 @@ const LazyThumbnail = ({ pdfDoc, pageNum }: { pdfDoc: any, pageNum: number }) =>
     return () => observer.disconnect()
   }, [pdfDoc, pageNum, src])
 
-  if (src) return <img src={src} className="w-full h-full object-cover animate-in fade-in duration-300" alt={`Page ${pageNum}`} />
+  if (src) return <img src={src} className="w-full h-full object-cover animate-in fade-in duration-300" alt={t("Page {0}", pageNum)} />
   return (
     <div ref={imgRef} className="w-full h-full bg-gray-50 dark:bg-zinc-900 flex items-center justify-center text-xs font-bold text-gray-400">
       <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent dark:border-zinc-700 rounded-full animate-spin" />
@@ -74,7 +75,7 @@ export default function SplitTool() {
       const all = new Set<number>(); for (let i = 1; i <= result.pageCount; i++) all.add(i)
       setSelectedPages(all); setRangeInput(`1-${result.pageCount}`)
     } else {
-      toast.error(`Incorrect password for "${pdfData?.file.name}".`)
+      toast.error(t("Incorrect password for \"{0}\".", pdfData?.file.name))
     }
     setIsLoadingMeta(false)
   }
@@ -139,9 +140,9 @@ export default function SplitTool() {
       try {
         buffer = await getProcessBytes(pdfData.file, pdfData.password)
       } catch (e: any) {
-        toast.error(e.message || `Failed to unlock "${pdfData.file.name}".`); setIsProcessing(false); return
+        toast.error(e.message || t("Failed to unlock \"{0}\".", pdfData.file.name)); setIsProcessing(false); return
       }
-      if (!buffer || buffer.byteLength === 0) { toast.error(`"${pdfData.file.name}" is empty`); setIsProcessing(false); return }
+      if (!buffer || buffer.byteLength === 0) { toast.error(t("\"{0}\" is empty", pdfData.file.name)); setIsProcessing(false); return }
       const worker = new Worker(new URL('../../utils/pdfWorker.ts', import.meta.url), { type: 'module' })
       worker.postMessage({ type: 'SPLIT_PDF', payload: { buffer, selectedPages: Array.from(selectedPages), mode: splitMode, customFileName, name: pdfData.file.name } }, [buffer.buffer] as any)
       worker.onmessage = async (e) => {
@@ -164,7 +165,7 @@ export default function SplitTool() {
         }
       }
     } catch (error: any) {
-      toast.error(error.message || 'Error splitting PDF.'); setIsProcessing(false)
+      toast.error(error.message || t("Error splitting PDF.")); setIsProcessing(false)
     }
   }
 
@@ -174,14 +175,14 @@ export default function SplitTool() {
       disabled={isProcessing || selectedPages.size === 0}
       className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 py-4 rounded-2xl text-sm md:p-6 md:rounded-3xl md:text-xl flex items-center justify-center gap-3 shadow-lg shadow-rose-500/20`}
     >
-      {isProcessing ? <><Loader2 className="animate-spin" /> Working...</> : <>Extract {selectedPages.size} Pages <ArrowRight size={18} /></>}
+      {isProcessing ? <><Loader2 className="animate-spin" /> {t("Working...")}</> : <>{t("Extract")} {selectedPages.size} {t("Pages")} <ArrowRight size={18} /></>}
     </button>
   )
 
   return (
     <NativeToolLayout
-      title="Split PDF"
-      description="Select pages visually or by range to extract them. Everything stays on your device."
+      title={t("Split PDF")}
+      description={t("Select pages visually or by range to extract them. Everything stays on your device.")}
       actions={pdfData && !pdfData.isLocked && !objectUrl && <ActionButton />}
     >
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
@@ -194,15 +195,15 @@ export default function SplitTool() {
           {isLoadingMeta ? (
             <div className="flex flex-col items-center">
               <Loader2 size={48} className="text-rose-500 animate-spin mb-4" />
-              <h3 className="text-xl font-bold mb-2">Analyzing PDF...</h3>
+              <h3 className="text-xl font-bold mb-2">{t("Analyzing PDF...")}</h3>
             </div>
           ) : (
             <>
               <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                 <Scissors size={32} />
               </div>
-              <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF File</h3>
-              <p className="text-sm text-gray-400 font-medium">Tap to start splitting</p>
+              <h3 className="text-xl font-bold dark:text-white mb-2">{t("Select PDF File")}</h3>
+              <p className="text-sm text-gray-400 font-medium">{t("Tap to start splitting")}</p>
             </>
           )}
         </button>
@@ -212,12 +213,12 @@ export default function SplitTool() {
             <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <Lock size={32} />
             </div>
-            <h3 className="text-2xl font-bold mb-2 dark:text-white">Protected File</h3>
+            <h3 className="text-2xl font-bold mb-2 dark:text-white">{t("Protected File")}</h3>
             <input 
               type="password" 
               value={unlockPassword}
               onChange={(e) => setUnlockPassword(e.target.value)}
-              placeholder="Enter Password"
+              placeholder={t("Enter Password")}
               className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white"
               autoFocus
             />
@@ -226,7 +227,7 @@ export default function SplitTool() {
               disabled={!unlockPassword || isLoadingMeta}
               className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-50"
             >
-              Unlock PDF
+              {t("Unlock PDF")}
             </button>
           </div>
         </div>
@@ -236,7 +237,7 @@ export default function SplitTool() {
             <div className="w-12 h-16 bg-gray-50 dark:bg-black rounded-xl overflow-hidden shrink-0 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-rose-500 shadow-inner">{pdfData.thumbnail ? <img src={pdfData.thumbnail} className="w-full h-full object-cover" /> : <Scissors size={24} />}</div>
             <div className="flex-1 min-w-0 text-left">
               <h3 className="font-bold text-sm truncate dark:text-white">{pdfData.file.name}</h3>
-              <p className="text-[10px] text-gray-400 uppercase font-black">{pdfData.pageCount} Pages • {(pdfData.file.size / (1024*1024)).toFixed(1)} MB</p>
+              <p className="text-[10px] text-gray-400 uppercase font-black">{pdfData.pageCount} {t("Pages •")} {(pdfData.file.size / (1024*1024)).toFixed(1)} MB</p>
             </div>
             <button onClick={() => setPdfData(null)} className="p-2 text-gray-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
           </div>
@@ -247,8 +248,8 @@ export default function SplitTool() {
                   <Zap size={16} />
                </div>
                <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">Heavy Document</p>
-                  <p className="text-[11px] font-medium leading-tight">Visual selection for large files may be slower. Use range selection for speed.</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{t("Heavy Document")}</p>
+                  <p className="text-[11px] font-medium leading-tight">{t("Visual selection for large files may be slower. Use range selection for speed.")}</p>
                </div>
             </div>
           )}
@@ -257,10 +258,10 @@ export default function SplitTool() {
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
-                  <h4 className="font-black uppercase tracking-widest text-[10px] text-gray-400 px-2">Page Selection</h4>
+                  <h4 className="font-black uppercase tracking-widest text-[10px] text-gray-400 px-2">{t("Page Selection")}</h4>
                   <div className="flex gap-2">
-                    <button onClick={() => { const all = new Set<number>(); for(let i=1;i<=pdfData.pageCount;i++) all.add(i); setSelectedPages(all); }} className="text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 px-2 py-1 rounded-lg transition-colors">Select All</button>
-                    <button onClick={() => setSelectedPages(new Set())} className="text-[10px] font-black uppercase text-gray-400 px-2 py-1 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors">Clear</button>
+                    <button onClick={() => { const all = new Set<number>(); for(let i=1;i<=pdfData.pageCount;i++) all.add(i); setSelectedPages(all); }} className="text-[10px] font-black uppercase text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 px-2 py-1 rounded-lg transition-colors">{t("Select All")}</button>
+                    <button onClick={() => setSelectedPages(new Set())} className="text-[10px] font-black uppercase text-gray-400 px-2 py-1 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors">{t("Clear")}</button>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1 scrollbar-hide">
@@ -274,7 +275,7 @@ export default function SplitTool() {
                               {isSelected ? <Check size={20} strokeWidth={3} /> : <Plus size={20} />}
                            </div>
                         </div>
-                        <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[9px] font-black text-white">PAGE {pageNum}</div>
+                        <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[9px] font-black text-white">{t("PAGE")} {pageNum}</div>
                       </div>
                     )
                   })}
@@ -287,40 +288,40 @@ export default function SplitTool() {
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Split Mode</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">{t("Split Mode")}</label>
                       <div className="grid grid-cols-2 gap-2 bg-gray-50 dark:bg-black p-1 rounded-2xl">
-                        <button onClick={() => { setSplitMode('single'); clearUrls(); }} className={`py-2 px-3 rounded-xl text-[9px] font-black uppercase transition-all ${splitMode === 'single' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}>One Document</button>
-                        <button onClick={() => { setSplitMode('individual'); clearUrls(); }} className={`py-2 px-3 rounded-xl text-[9px] font-black uppercase transition-all ${splitMode === 'individual' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}>Separate Files</button>
+                        <button onClick={() => { setSplitMode('single'); clearUrls(); }} className={`py-2 px-3 rounded-xl text-[9px] font-black uppercase transition-all ${splitMode === 'single' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}>{t("One Document")}</button>
+                        <button onClick={() => { setSplitMode('individual'); clearUrls(); }} className={`py-2 px-3 rounded-xl text-[9px] font-black uppercase transition-all ${splitMode === 'individual' ? 'bg-white dark:bg-zinc-800 text-rose-500 shadow-sm' : 'text-gray-400'}`}>{t("Separate Files")}</button>
                       </div>
                       <p className="text-[8px] text-gray-400 mt-2 px-1 leading-relaxed font-bold uppercase tracking-tight">
-                        <b>One Document:</b> Merges selected pages into one PDF.<br/>
-                        <b>Separate Files:</b> Each page becomes its own PDF (ZIP).
+                        <b>{t("One Document:")}</b> {t("Merges selected pages into one PDF.")}<br/>
+                        <b>{t("Separate Files:")}</b> {t("Each page becomes its own PDF (ZIP).")}
                       </p>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Output Filename</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">{t("Output Filename")}</label>
                       <input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
                       {pdfData.password && (
-                        <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">File output will be unlocked.</p>
+                        <p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">{t("File output will be unlocked.")}</p>
                       )}
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Range Selection</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">{t("Range Selection")}</label>
                       <div className="flex gap-2">
-                        <input type="text" value={rangeInput} onChange={(e) => setRangeInput(e.target.value)} placeholder="e.g. 1, 3-5" className="flex-1 min-w-0 bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
-                        <button onClick={() => parseRange(rangeInput)} className="px-4 bg-rose-500 text-white rounded-xl font-black text-[10px] uppercase active:scale-95 transition-transform">Apply</button>
+                        <input type="text" value={rangeInput} onChange={(e) => setRangeInput(e.target.value)} placeholder={t("e.g. 1, 3-5")} className="flex-1 min-w-0 bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
+                        <button onClick={() => parseRange(rangeInput)} className="px-4 bg-rose-500 text-white rounded-xl font-black text-[10px] uppercase active:scale-95 transition-transform">{t("Apply")}</button>
                       </div>
-                      <p className="text-[8px] text-gray-400 mt-2 px-1">Use commas for separate pages and dashes for ranges.</p>
+                      <p className="text-[8px] text-gray-400 mt-2 px-1">{t("Use commas for separate pages and dashes for ranges.")}</p>
                     </div>
                   </div>
                   <div className="pt-6 border-t border-gray-100 dark:border-white/5">
                     <div className="flex justify-between items-center mb-4 px-1">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Selected</span>
-                      <span className="text-xl font-black text-rose-500">{selectedPages.size} <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Pages</span></span>
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{t("Selected")}</span>
+                      <span className="text-xl font-black text-rose-500">{selectedPages.size} <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{t("Pages")}</span></span>
                     </div>
                     {objectUrl && (
                       <SuccessState 
-                        message="Split Successful!"
+                        message={t("Split Successful!")}
                         downloadUrl={objectUrl}
                         fileName={`${customFileName || 'split'}.${splitMode === 'single' ? 'pdf' : 'zip'}`}
                         onStartOver={() => { clearUrls(); setPdfData(null); setIsProcessing(false); }}
@@ -328,7 +329,7 @@ export default function SplitTool() {
                       />
                     )}
                   </div>
-                  <button onClick={() => { setPdfData(null); clearUrls(); }} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors">Close File</button>
+                  <button onClick={() => { setPdfData(null); clearUrls(); }} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors">{t("Close File")}</button>
                 </div>
               </div>
             </div>

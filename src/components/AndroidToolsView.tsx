@@ -6,6 +6,7 @@ import {
 import { Tool, ToolCategory } from '../types'
 import { PaperKnifeLogo } from './Logo'
 import { TabHeader } from './AndroidHeader'
+import { t } from '../i18n'
 
 export default function AndroidToolsView({ tools }: { tools: Tool[] }) {
   const navigate = useNavigate()
@@ -36,17 +37,17 @@ export default function AndroidToolsView({ tools }: { tools: Tool[] }) {
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-black pb-32 transition-colors">
       <TabHeader
-        title="All Tools"
+        title={t("All Tools")}
         query={searchQuery}
         onQuery={setSearchQuery}
-        placeholder="Search for a tool..."
+        placeholder={t("Search for a tool...")}
       />
 
       <main className="px-4 space-y-8">
         {(Object.keys(groupedTools) as ToolCategory[]).map((category) => (
           <section key={category} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h3 className="px-2 mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-[#49454F] dark:text-[#CAC4D0]">
-              {category} Tools
+              {t("{0} Tools", t(category))}
             </h3>
             <div className="grid grid-cols-1 gap-2">
               {groupedTools[category].map((tool, i) => {
@@ -76,7 +77,7 @@ export default function AndroidToolsView({ tools }: { tools: Tool[] }) {
 
       <footer className="text-center py-12 opacity-20">
          <PaperKnifeLogo size={24} iconColor="#F43F5E" partColor="currentColor" className="mx-auto mb-4" />
-         <p className="text-[9px] font-black uppercase tracking-[0.5em]">PaperKnife Version 1.1.0</p>
+         <p className="text-[9px] font-black uppercase tracking-[0.5em]">{t("PaperKnife Version 1.1.0")}</p>
       </footer>
     </div>
   )

@@ -1,5 +1,6 @@
 import React from 'react'
 import { ArrowLeft, Search, X } from 'lucide-react'
+import { t } from '../i18n'
 
 interface AndroidHeaderProps {
   title: string
@@ -20,7 +21,7 @@ export default function AndroidHeader({ title, subtitle, onBack, action, childre
           {onBack && (
             <button
               onClick={onBack}
-              aria-label="Back"
+              aria-label={t("Back")}
               className="w-10 h-10 flex items-center justify-center rounded-full active:bg-zinc-100 dark:active:bg-zinc-900 transition-colors -ml-1 shrink-0"
             >
               <ArrowLeft size={24} className="text-gray-900 dark:text-white" />
@@ -65,7 +66,7 @@ export function TabHeader({ title, query, onQuery, placeholder, action }: TabHea
           </div>
           <input
             type="text"
-            placeholder={placeholder ?? 'Search...'}
+            placeholder={placeholder ?? t("Search...")}
             value={query ?? ''}
             onChange={(e) => onQuery(e.target.value)}
             className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-white/5 rounded-2xl py-4 pl-14 pr-12 text-sm font-bold placeholder:text-gray-400 focus:border-rose-500 shadow-sm outline-none transition-all dark:text-white"
@@ -73,7 +74,7 @@ export function TabHeader({ title, query, onQuery, placeholder, action }: TabHea
           {query && (
             <button
               onClick={() => onQuery('')}
-              aria-label="Clear search"
+              aria-label={t("Clear search")}
               className="absolute inset-y-0 right-4 flex items-center text-gray-400 active:scale-90 transition-all"
             >
               <X size={16} />

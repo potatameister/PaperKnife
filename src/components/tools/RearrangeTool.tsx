@@ -11,6 +11,7 @@ import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { t } from '../../i18n'
 
 type RearrangePdfData = { file: File, pageCount: number, isLocked: boolean, pdfDoc?: any, password?: string, thumbnail?: string }
 
@@ -35,7 +36,7 @@ function SortablePage({ id, pageNum, pdfDoc }: { id: string, pageNum: number, pd
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={`relative group cursor-grab active:cursor-grabbing aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all bg-gray-50 dark:bg-black touch-none ${isDragging ? 'border-rose-500 shadow-2xl scale-105 opacity-90' : 'border-transparent hover:border-rose-500 shadow-sm'}`}>
       <div className="w-full h-full p-2"><LazyThumbnail pdfDoc={pdfDoc} pageNum={pageNum} /></div>
       <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-md rounded-lg p-1.5 text-white opacity-0 group-hover:opacity-100 transition-opacity"><Move size={14} /></div>
-      <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[9px] font-black text-white">PAGE {pageNum}</div>
+      <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[9px] font-black text-white">{t("PAGE")} {pageNum}</div>
     </div>
   )
 }
@@ -72,7 +73,7 @@ export default function RearrangeTool() {
       setPdfData({ ...pdfData, isLocked: false, pageCount: result.pageCount, pdfDoc: result.pdfDoc, password: unlockPassword, thumbnail: result.thumbnail })
       setPageOrder(Array.from({ length: result.pageCount }, (_, i) => (i + 1).toString()))
       setCustomFileName(`${pdfData.file.name.replace('.pdf', '')}-rearranged`)
-    } else { toast.error(`Incorrect password for "${pdfData?.file.name}".`) }
+    } else { toast.error(t("Incorrect password for \"{0}\".", pdfData?.file.name)) }
     setIsProcessing(false)
   }
 
@@ -88,7 +89,7 @@ export default function RearrangeTool() {
         setPageOrder(Array.from({ length: meta.pageCount }, (_, i) => (i + 1).toString()))
         setCustomFileName(`${file.name.replace('.pdf', '')}-rearranged`)
       }
-    } catch (err) { console.error(err); toast.error('Failed to open PDF') } finally { setIsProcessing(false); setDownloadUrl(null) }
+    } catch (err) { console.error(err); toast.error(t("Failed to open PDF")) } finally { setIsProcessing(false); setDownloadUrl(null) }
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -115,27 +116,27 @@ export default function RearrangeTool() {
 
   const ActionButton = () => (
     <button onClick={savePDF} disabled={isProcessing} className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 py-4 rounded-2xl text-sm md:p-6 md:rounded-3xl md:text-xl flex items-center justify-center gap-3 shadow-lg shadow-rose-500/20`}>
-      {isProcessing ? <Loader2 className="animate-spin" /> : <RefreshCcw size={20} />} Save New Order
+      {isProcessing ? <Loader2 className="animate-spin" /> : <RefreshCcw size={20} />} {t("Save New Order")}
     </button>
   )
 
   return (
-    <NativeToolLayout title="Rearrange PDF" description="Drag and drop to reorder pages visually." actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
+    <NativeToolLayout title={t("Rearrange PDF")} description={t("Drag and drop to reorder pages visually.")} actions={pdfData && !pdfData.isLocked && !downloadUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
       
       {!pdfData ? (
         <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group">
           <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><Grid size={32} /></div>
-          <h3 className="text-xl font-bold dark:text-white mb-2">Select PDF</h3>
-          <p className="text-sm text-gray-400 font-medium">Tap to start reordering</p>
+          <h3 className="text-xl font-bold dark:text-white mb-2">{t("Select PDF")}</h3>
+          <p className="text-sm text-gray-400 font-medium">{t("Tap to start reordering")}</p>
         </div>
       ) : pdfData.isLocked ? (
         <div className="max-w-md mx-auto relative z-[100]">
           <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 text-center shadow-2xl">
             <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6"><Lock size={32} /></div>
-            <h3 className="text-2xl font-bold mb-2 dark:text-white">Protected File</h3>
-            <input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} placeholder="Password" className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white" />
-            <button onClick={handleUnlock} disabled={!unlockPassword || isProcessing} className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase text-xs">Unlock</button>
+            <h3 className="text-2xl font-bold mb-2 dark:text-white">{t("Protected File")}</h3>
+            <input type="password" value={unlockPassword} onChange={(e) => setUnlockPassword(e.target.value)} placeholder={t("Password")} className="w-full bg-gray-50 dark:bg-black rounded-2xl px-6 py-4 border border-transparent focus:border-rose-500 outline-none font-bold text-center mb-4 dark:text-white" />
+            <button onClick={handleUnlock} disabled={!unlockPassword || isProcessing} className="w-full bg-rose-500 text-white p-4 rounded-2xl font-black uppercase text-xs">{t("Unlock")}</button>
           </div>
         </div>
       ) : (
@@ -144,15 +145,15 @@ export default function RearrangeTool() {
             <div className="w-12 h-16 bg-gray-50 dark:bg-black rounded-xl overflow-hidden shrink-0 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-rose-500 shadow-inner">{pdfData.thumbnail ? <img src={pdfData.thumbnail} className="w-full h-full object-cover" /> : <Grid size={24} />}</div>
             <div className="flex-1 min-w-0 text-left">
               <h3 className="font-bold text-sm truncate dark:text-white">{pdfData.file.name}</h3>
-              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{pdfData.pageCount} Pages • {(pdfData.file.size / (1024*1024)).toFixed(1)} MB</p>
+              <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{pdfData.pageCount} {t("Pages •")} {(pdfData.file.size / (1024*1024)).toFixed(1)} MB</p>
             </div>
             <button onClick={() => setPdfData(null)} className="p-2 text-gray-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
           </div>
 
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-sm">
             <div className="flex justify-between items-center mb-6 px-2">
-              <h4 className="font-black uppercase tracking-widest text-[10px] text-gray-400">Hold & drag pages</h4>
-              <button onClick={() => setPageOrder(Array.from({ length: pdfData.pageCount }, (_, i) => (i + 1).toString()))} className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-1 hover:text-rose-500 transition-colors font-bold"><RefreshCcw size={12}/> Reset</button>
+              <h4 className="font-black uppercase tracking-widest text-[10px] text-gray-400">{t("Hold & drag pages")}</h4>
+              <button onClick={() => setPageOrder(Array.from({ length: pdfData.pageCount }, (_, i) => (i + 1).toString()))} className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-1 hover:text-rose-500 transition-colors font-bold"><RefreshCcw size={12}/> {t("Reset")}</button>
             </div>
             
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -168,15 +169,15 @@ export default function RearrangeTool() {
             {!downloadUrl ? (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 mb-3">Output Filename</label>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 mb-3">{t("Output Filename")}</label>
                   <input type="text" value={customFileName} onChange={(e) => setCustomFileName(e.target.value)} className="w-full bg-gray-50 dark:bg-black rounded-xl px-4 py-3 border border-transparent focus:border-rose-500 outline-none font-bold text-sm dark:text-white" />
-                  {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">File output will be unlocked.</p>)}
+                  {pdfData.password && (<p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed mt-3 text-center">{t("File output will be unlocked.")}</p>)}
                 </div>
               </div>
             ) : (
-              <SuccessState message="Rearranged Successfully!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setPdfData(null); }} />
+              <SuccessState message={t("Rearranged Successfully!")} downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setPdfData(null); }} />
             )}
-            <button onClick={() => setPdfData(null)} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors">Close File</button>
+            <button onClick={() => setPdfData(null)} className="w-full py-2 text-[10px] font-black uppercase text-gray-300 hover:text-rose-500 transition-colors">{t("Close File")}</button>
           </div>
         </div>
       )}

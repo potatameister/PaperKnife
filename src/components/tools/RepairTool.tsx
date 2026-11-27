@@ -8,6 +8,7 @@ import { addActivity } from '../../utils/recentActivity'
 import { usePipeline } from '../../utils/pipelineContext'
 import SuccessState from './shared/SuccessState'
 import { NativeToolLayout } from './shared/NativeToolLayout'
+import { t } from '../../i18n'
 
 export default function RepairTool() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -33,7 +34,7 @@ export default function RepairTool() {
     setDownloadUrl(null)
     const meta = await getPdfMetaData(file)
     setIsLockedFile(meta.isLocked)
-    if (meta.isLocked) toast.error(`"${file.name}" is locked — unlock it first, then repair.`)
+    if (meta.isLocked) toast.error(t("\"{0}\" is locked — unlock it first, then repair.", file.name))
   }
 
   const startRepair = async () => {
@@ -44,9 +45,9 @@ export default function RepairTool() {
 
       setDownloadUrl(res.url)
       addActivity({ name: `${customFileName}.pdf`, tool: 'Repair', size: res.size, resultUrl: res.url, buffer: res.buffer })
-      toast.success('PDF rebuilt successfully!')
+      toast.success(t("PDF rebuilt successfully!"))
     } catch (error: any) {
-      toast.error(`Repair failed for "${originalFile.name}": ${error.message}`)
+      toast.error(t("Repair failed for \"{0}\": {1}", originalFile.name, error.message))
     } finally { 
       setIsProcessing(false) 
     }
@@ -54,19 +55,19 @@ export default function RepairTool() {
 
   const ActionButton = () => (
     <button onClick={startRepair} disabled={isProcessing || isLockedFile} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 py-4 rounded-2xl text-sm md:p-6 md:rounded-3xl md:text-xl flex items-center justify-center gap-3 shadow-lg shadow-rose-500/20">
-      {isProcessing ? <Loader2 className="animate-spin" /> : <FileCheck size={20} />} Attempt Repair
+      {isProcessing ? <Loader2 className="animate-spin" /> : <FileCheck size={20} />} {t("Attempt Repair")}
     </button>
   )
 
   return (
-    <NativeToolLayout title="Repair PDF" description="Fix corrupted or unreadable PDF files by rebuilding structure." actions={originalFile && !downloadUrl && <ActionButton />}>
+    <NativeToolLayout title={t("Repair PDF")} description={t("Fix corrupted or unreadable PDF files by rebuilding structure.")} actions={originalFile && !downloadUrl && <ActionButton />}>
       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
       
       {!originalFile ? (
         <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-gray-100 dark:border-zinc-900 rounded-[2.5rem] p-12 text-center hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all cursor-pointer group">
           <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"><Upload size={32} /></div>
-          <h3 className="text-xl font-bold dark:text-white mb-2">Select Corrupted PDF</h3>
-          <p className="text-sm text-gray-400">Tap to browse local files</p>
+          <h3 className="text-xl font-bold dark:text-white mb-2">{t("Select Corrupted PDF")}</h3>
+          <p className="text-sm text-gray-400">{t("Tap to browse local files")}</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -83,7 +84,7 @@ export default function RepairTool() {
             {!downloadUrl ? (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 mb-3">Output Filename</label>
+                  <label className="block text-[10px] font-black uppercase text-gray-400 mb-3">{t("Output Filename")}</label>
                   <input 
                     type="text" 
                     value={customFileName} 
@@ -92,11 +93,11 @@ export default function RepairTool() {
                   />
                 </div>
                 {isLockedFile && (
-                  <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/20 text-center"><p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed">This file is locked — unlock it with the Unlock tool first, then repair the unlocked copy.</p></div>
+                  <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/20 text-center"><p className="text-amber-700 dark:text-amber-400 font-bold text-[11px] leading-relaxed">{t("This file is locked — unlock it with the Unlock tool first, then repair the unlocked copy.")}</p></div>
                 )}
               </div>
             ) : (
-              <SuccessState message="Reconstruction Complete!" downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setOriginalFile(null); }} showPreview={true} />
+              <SuccessState message={t("Reconstruction Complete!")} downloadUrl={downloadUrl} fileName={`${customFileName}.pdf`} onStartOver={() => { setDownloadUrl(null); setOriginalFile(null); }} showPreview={true} />
             )}
           </div>
         </div>
@@ -105,8 +106,8 @@ export default function RepairTool() {
       <div className="mt-8 p-6 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-white/5 flex items-start gap-4">
         <ShieldAlert className="text-amber-500 shrink-0" size={20} />
         <div className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed text-left">
-          <p className="font-black mb-1 uppercase tracking-widest text-[10px]">Technical Protocol:</p>
-          PaperKnife rebuilds the internal cross-reference table and regenerates the file structure from scratch. This can restore access to many files that "cannot be opened."
+          <p className="font-black mb-1 uppercase tracking-widest text-[10px]">{t("Technical Protocol:")}</p>
+          {t("PaperKnife rebuilds the internal cross-reference table and regenerates the file structure from scratch. This can restore access to many files that \"cannot be opened.\"")}
         </div>
       </div>
     </NativeToolLayout>
